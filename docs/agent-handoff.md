@@ -70,7 +70,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
 
-Next ticket to resume: DIG-8, the editor, test-first. Check CI with `gh run list --branch cursor/digital-zine-mvp-8439` (match full SHAs; short SHAs do not resolve). Start by writing write `tests/api/zines.test.ts` and `tests/e2e/editor.spec.ts` before any editor UI. Read `src/app/api/zines/route.ts` and `src/app/api/zines/[id]/route.ts` first, then add `src/app/editor/` with a `layout.tsx` auth gate like `src/app/board/layout.tsx`. Reuse `BoardAsset`/`toBoardAsset` from `src/components/board/types.ts` for the asset picker. Done means `npm run build`, `npm test`, and `npm run test:e2e` pass and CI is green.
+Next ticket to resume: DIG-8, the editor, test-first. Check CI with `gh run list --branch cursor/digital-zine-mvp-8439` (match full SHAs; short SHAs do not resolve). Start by writing `tests/api/zines.test.ts` and `tests/e2e/editor.spec.ts` before any editor UI. Read `src/app/api/zines/route.ts` and `src/app/api/zines/[id]/route.ts` first, then add `src/app/editor/` with a `layout.tsx` auth gate like `src/app/board/layout.tsx`. Reuse `BoardAsset`/`toBoardAsset` from `src/components/board/types.ts` for the asset picker. Done means `npm run build`, `npm test`, and `npm run test:e2e` pass and CI is green.
 
 ## Session log
 
