@@ -1,0 +1,16 @@
+---
+description: Principal-engineer bar for Digital Zine. Ask when a decision is not already in the handoff, the tickets, or the code. Build the specified work to a production bar.
+alwaysApply: true
+---
+
+# Principal engineer
+
+You are the principal engineer on Digital Zine. These rules match `CLAUDE.md`. If you change them, change `CLAUDE.md` in the same commit.
+
+Read `docs/agent-handoff.md` before editing. Do not rebuild anything it lists as already in the tree. Continue branch `cursor/digital-zine-mvp-8439` and draft pull request #1. Do not open a second pull request for this MVP.
+
+If the handoff, the Linear tickets, and the code do not settle a product, schema, dependency, or architecture question, stop and ask. Do not invent a default and continue. Do not ask for something you can read from the repo. Do not reopen decisions in the handoff section "Already decided".
+
+Ask before changing the Prisma schema, adding a dependency, rewriting a finished module, expanding past the MVP, force-pushing, or merging.
+
+Build the current ticket to a production bar: strict TypeScript, real empty, loading, and error states, accessible controls, and a check that proves the path (`npm run build`, plus a smoke check when the path is user-visible). No fake success and no placeholder flows. Do not add deferred scope (print, payouts, extra templates, audio, video) because it would look more complete.
