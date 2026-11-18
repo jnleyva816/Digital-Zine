@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -9,6 +9,7 @@ import {
   GripVertical,
   ImagePlus,
   Loader2,
+  RotateCw,
   Trash2,
   SlidersHorizontal,
 } from "lucide-react";
@@ -94,6 +95,59 @@ async function uploadOne(
 export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) {
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
   const usedBytes = assets.reduce((sum, a) => sum + a.sizeBytes, 0);
+
+  // While any photo is processing, check the server every few seconds and swap in the result
+  // (DIG-26). Only processing photos are touched, so local edits are never overwritten.
+  const pendingIds = assets
+    .filter((a) => a.status === "processing")
+    .map((a) => a.id)
+    .join(",");
+  useEffect(() => {
+    if (!pendingIds) return;
+    let stopped = false;
+    const timer = setInterval(async () => {
+      try {
+        const res = await fetch("/api/assets", { cache: "no-store" });
+        if (!res.ok || stopped) return;
+        const body = (await res.json()) as { assets: Parameters<typeof toBoardAsset>[0][] };
+        const fresh = new Map(body.assets.map((raw) => [raw.id, toBoardAsset(raw)]));
+        if (stopped) return;
+        setAssets((prev) =>
+          prev.map((a) => {
+            const next = fresh.get(a.id);
+            if (a.status !== "processing" || !next || next.status === "processing") return a;
+            return {
+              ...a,
+              status: next.status,
+              publicUrl: next.publicUrl,
+              sizeBytes: next.sizeBytes,
+              processingError: next.processingError,
+              blurDataUrl: next.blurDataUrl,
+            };
+          })
+        );
+      } catch {
+        // Offline for a moment; the next tick tries again.
+      }
+    }, 2000);
+    return () => {
+      stopped = true;
+      clearInterval(timer);
+    };
+  }, [pendingIds]);
+
+  async function retryProcessing(asset: BoardAsset) {
+    setBoardError(null);
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}/process`, { method: "POST" });
+      if (!res.ok) throw new Error(await readApiError(res, "Could not retry processing."));
+      const body = (await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
+      const updated = toBoardAsset(body.asset);
+      setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, ...updated, recipe: a.recipe } : a)));
+    } catch (err) {
+      setBoardError(err instanceof Error ? err.message : "Could not retry processing.");
+    }
+  }
   /** Recipes read from a photo at upload, held until the creator names and saves one. */
   const [foundRecipes, setFoundRecipes] = useState<Record<string, FoundRecipe>>({});
   const [uploads, setUploads] = useState<UploadItem[]>([]);
@@ -450,14 +504,41 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                   } border-paper-300`}
                 >
                   <div className="relative aspect-[4/5] bg-ink-900">
-                    <Image
-                      src={asset.publicUrl}
-                      alt={label}
-                      fill
-                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                      className="object-cover"
-                      draggable={false}
-                    />
+                    {asset.status === "ready" ? (
+                      <Image
+                        src={asset.publicUrl}
+                        alt={label}
+                        fill
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                        className="object-cover"
+                        draggable={false}
+                        placeholder={asset.blurDataUrl ? "blur" : "empty"}
+                        blurDataURL={asset.blurDataUrl ?? undefined}
+                      />
+                    ) : asset.status === "processing" ? (
+                      <div
+                        role="status"
+                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-paper-50"
+                      >
+                        <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
+                        <span className="text-xs">
+                          Processing <span className="sr-only">{label}</span>…
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center text-paper-50">
+                        <p className="text-xs">{asset.processingError ?? "This photo could not be processed."}</p>
+                        <button
+                          type="button"
+                          onClick={() => void retryProcessing(asset)}
+                          aria-label={`Retry processing ${label}`}
+                          className="inline-flex items-center gap-1.5 rounded-full bg-paper-50 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow hover:bg-white"
+                        >
+                          <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
+                          Retry
+                        </button>
+                      </div>
+                    )}
                     <span className="absolute left-3 top-3 inline-flex items-center gap-1 rounded-full bg-black/55 px-2.5 py-1 font-mono text-[11px] text-paper-50 backdrop-blur-sm">
                       <GripVertical className="h-3 w-3" aria-hidden="true" />
                       {String(index + 1).padStart(2, "0")}

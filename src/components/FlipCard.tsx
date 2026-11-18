@@ -10,6 +10,8 @@ export interface FlipCardProps {
   pageNumber: number;
   totalPages: number;
   imageUrl: string;
+  /** Tiny inline image shown while the photo loads (DIG-26). */
+  blurDataUrl?: string | null;
   caption?: string;
   flipEnabled: boolean;
   kind: "photo" | "recipe";
@@ -23,6 +25,7 @@ export function FlipCard({
   pageNumber,
   totalPages,
   imageUrl,
+  blurDataUrl,
   caption,
   flipEnabled,
   kind,
@@ -81,6 +84,8 @@ export function FlipCard({
               priority={priority}
               sizes="(max-width: 768px) 100vw, 680px"
               className="object-cover"
+              placeholder={blurDataUrl ? "blur" : "empty"}
+              blurDataURL={blurDataUrl ?? undefined}
             />
 
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/60 via-black/20 to-transparent p-4 sm:p-5">

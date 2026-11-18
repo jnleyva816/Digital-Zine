@@ -30,6 +30,9 @@ export default async function BoardPage() {
         exif: true,
         recipe: true,
         sizeBytes: true,
+        status: true,
+        processingError: true,
+        blurDataUrl: true,
       },
     }),
     prisma.zine.findFirst({

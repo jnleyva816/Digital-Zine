@@ -1,5 +1,5 @@
 import type { ImageLoaderProps } from "next/image";
-import { pickVariantUrl } from "@/lib/media/variants";
+import { pickVariantUrl } from "@/lib/media/variant-urls";
 
 /**
  * Custom next/image loader.

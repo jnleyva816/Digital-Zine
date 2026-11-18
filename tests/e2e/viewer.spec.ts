@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { createUserWithPhotos, deleteUser, testDb } from "./helpers";
+import { createUser, createUserWithPhotos, deleteUser, signIn, testDb, uploadAndProcess } from "./helpers";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -192,4 +192,36 @@ test("the seeded zine is publicly viewable", async ({ page }) => {
   await page.goto("/z/golden-hour-field-notes-issue-01");
   await expect(page.getByRole("heading", { level: 1, name: "Golden Hour Field Notes — Issue 01" })).toBeVisible();
   await expect(zinePages(page)).toHaveCount(4);
+});
+
+test("a zine of processed photos loads a phone-sized copy and shares a JPEG preview (DIG-26)", async ({ page, baseURL }) => {
+  const user = await createUser();
+  cleanup.push(user.id);
+  await signIn(page, user.email, user.password);
+  const asset = await uploadAndProcess(page, user.id, "cover.jpg");
+  const slug = `processed-${randomUUID().slice(0, 8)}`;
+  await testDb.zine.create({
+    data: {
+      ownerId: user.id,
+      title: "Processed",
+      slug,
+      published: true,
+      publishedAt: new Date(),
+      pages: { create: [{ pageNumber: 1, content: { assetId: asset.id, caption: "Blue hour" } }] },
+    },
+  });
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const copy = page.waitForResponse((r) => /\/w\d+\.avif/.test(r.url()));
+  await page.goto(`/z/${slug}`);
+  const res = await copy;
+  // 390 px wide at 1x needs the 480 px copy, never the 2400 px original size.
+  expect(res.url()).toMatch(/\/w480\.avif/);
+  expect(res.headers()["content-type"]).toBe("image/avif");
+
+  const html = await (await page.request.get(`/z/${slug}`)).text();
+  const ogImage = metaContent(html, "property", "og:image");
+  expect(ogImage).toBe(`${baseURL}${asset.publicUrl.replace(/\/full\.avif$/, "/og.jpg")}`);
+  const og = await page.request.get(ogImage!);
+  expect(og.headers()["content-type"]).toBe("image/jpeg");
 });

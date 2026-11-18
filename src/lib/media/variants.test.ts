@@ -1,6 +1,7 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
 import { AVIF_QUALITY, VARIANT_WIDTHS } from "@/lib/limits";
+import { shareImageUrl } from "./variant-urls";
 import { pickVariantUrl, renderVariants, variantKeys } from "./variants";
 
 describe("variant settings (DIG-26)", () => {
@@ -21,6 +22,16 @@ describe("variantKeys", () => {
         1600: "users/u1/123-abc-dscf1368/w1600.avif",
       },
     });
+  });
+});
+
+describe("shareImageUrl", () => {
+  it("shares the JPEG preview of a processed photo, because link crawlers do not read AVIF", () => {
+    expect(shareImageUrl("/api/media/users/u1/x/full.avif")).toBe("/api/media/users/u1/x/og.jpg");
+  });
+
+  it("shares an unprocessed photo as it is", () => {
+    expect(shareImageUrl("/api/media/users/u1/x.jpg")).toBe("/api/media/users/u1/x.jpg");
   });
 });
 
