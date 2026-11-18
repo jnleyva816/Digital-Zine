@@ -87,6 +87,21 @@ describe("BillingPanel", () => {
     expect(navigate).toHaveBeenCalledWith("https://billing.stripe.test/p");
   });
 
+  it("tells admins they have full access, with no billing buttons", () => {
+    setup({ plan: "Admin" });
+    expect(screen.getByRole("heading", { name: "Your plan: Admin" })).toBeInTheDocument();
+    expect(screen.getByText(/Full access to every feature/)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Upgrade to Pro" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Manage subscription" })).not.toBeInTheDocument();
+  });
+
+  it("shows admins previewing as Free the Free page, with checkout disabled", () => {
+    setup({ plan: "Free", previewOnly: true });
+    expect(screen.getByRole("heading", { name: "Your plan: Free" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Upgrade to Pro" })).toBeDisabled();
+    expect(screen.getByText("Preview only: admin accounts can't subscribe.")).toBeInTheDocument();
+  });
+
   it("warns Pro creators whose renewal failed", () => {
     setup({ plan: "Pro", paymentFailed: true });
     expect(screen.getByRole("alert")).toHaveTextContent("Your last payment failed. Update your card to keep Pro.");

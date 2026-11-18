@@ -18,6 +18,13 @@ export async function POST(_req: Request) {
     return NextResponse.json({ configured: false, url: null, error: BILLING_NOT_CONFIGURED }, { status: 503 });
   }
 
+  if (user.role === "admin") {
+    return NextResponse.json(
+      { error: "Admin accounts have full access and can't subscribe. Use \"View as Free\" only to preview." },
+      { status: 409 }
+    );
+  }
+
   if (user.tier === "pro") {
     return NextResponse.json(
       { error: "You already have Pro. Use Manage subscription to change or cancel it." },

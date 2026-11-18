@@ -41,7 +41,7 @@ export default async function BoardPage() {
   return (
     <>
       <StudioHeader
-        user={{ email: user.email, name: user.name, tier: user.tier }}
+        user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={latestZine?.id ?? null}
         publishedSlug={latestZine?.published ? latestZine.slug : null}
       />

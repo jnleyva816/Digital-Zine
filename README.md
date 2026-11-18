@@ -68,6 +68,8 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Builds the app, starts it on port 3417, and runs the Playwright browser tests against the test database |
 | `npm run test:db:reset` | Applies the schema to the test database, empties it, and reseeds it |
+| `npm run admin:create -- --email <email>` | Creates an admin account, or promotes an existing one (see "Admin accounts") |
+| `npm run smoke` | Smoke-checks a running server and refreshes `docs/screenshots/` (set `SMOKE_BASE_URL`) |
 
 ## Testing
 
@@ -106,6 +108,19 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `AWS_S3_PUBLIC_URL` | No | Public base URL for reading objects |
 | `NEXT_PUBLIC_IMAGE_CDN_URL` | No | Image CDN prefix. See below. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID`, `STRIPE_AUTOMATIC_TAX` | No | Pro subscription billing and sales tax (see "Billing" below). If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
+
+## Admin accounts
+
+Admins have every Pro feature, including PDF export, without a Stripe subscription. They can't see other users' data.
+
+```bash
+npm run admin:create -- --email you@example.com            # create, or promote an existing account
+npm run admin:create -- --email you@example.com --reset    # set a new password
+```
+
+A new account, or `--reset`, gets a random password that is printed once. Store it in a password manager. Promoting an existing account keeps its password. The command works against whatever database `DATABASE_URL` points to. Run `npm run db:push` first after pulling the change that added `User.role`.
+
+Signed-in admins see an "Admin" badge and a **View as Free** switch in the studio header. Turning it on shows the app exactly as a Free user sees it: the PDF upsell, a 403 from the PDF API, and the Free plan on `/billing`. A banner stays up until you switch back. The setting lives in an httpOnly cookie, so it survives reloads. It can only remove access: regular users can't use it, and admins can never start a Stripe checkout.
 
 ## Billing (Stripe)
 

@@ -156,6 +156,14 @@ describe("POST /api/billing/checkout", () => {
     expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
   });
 
+  it("never starts a checkout for an admin, even one viewing as Free", async () => {
+    me = { ...me, role: "admin", tier: "free", viewingAsFree: true };
+    const res = await CHECKOUT(post("/api/billing/checkout"));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: expect.stringMatching(/admin/i) });
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
   it("never builds return URLs from the request host", async () => {
     vi.stubEnv("NEXT_PUBLIC_APP_URL", "");
     const res = await CHECKOUT(post("/api/billing/checkout"));

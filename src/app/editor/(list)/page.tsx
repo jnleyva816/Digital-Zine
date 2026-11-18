@@ -34,7 +34,7 @@ export default async function ZineListPage() {
   return (
     <>
       <StudioHeader
-        user={{ email: user.email, name: user.name, tier: user.tier }}
+        user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={latest?.id ?? null}
         publishedSlug={latest?.published ? latest.slug : null}
       />

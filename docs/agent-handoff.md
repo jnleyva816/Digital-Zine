@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 2:00 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) done in `5f931b9`; CI green (run 44339460602). DIG-11 (billing) done in `08dbc9e`; CI green (run 44341471872). DIG-16 (Stripe Tax) built test-first; see the ticket table. Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 2:50 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) done in `5f931b9`; CI green (run 44339460602). DIG-11 (billing) done in `08dbc9e`; CI green (run 44341471872). DIG-16 (Stripe Tax) done in `33955b3`; CI green. DIG-17 (admin role) built test-first; see the ticket table. DIG-12 is paused with a smoke script in progress. Foundation checkpoint: `698c7bb`.
 
 ## Do this first
 
@@ -30,6 +30,13 @@ Do not reopen these unless the user explicitly changes them.
   - `/billing` opens Stripe's hosted Customer Portal ("Manage subscription") for cancelling, card updates, and invoices.
   - `active`, `trialing`, and `past_due` count as Pro. A failed renewal keeps Pro and shows a warning; the plan drops to Free at `unpaid` or `canceled`.
   - Refund, dispute, and fraud-warning events are out of scope and tracked in DIG-15 (Backlog). Ask the user what each should do before building it.
+- Admin (decided 18 Nov, DIG-17):
+  - `User.role` (`user` | `admin`, default `user`). The user approved this schema change.
+  - Admins get every Pro feature without a subscription. No access to other users' data, and no admin page.
+  - `npm run admin:create -- --email <email> [--reset]` prints a random password once.
+  - The "View as Free" header switch, stored in the `dz_view_as_free` httpOnly cookie, makes the whole app treat the admin as Free, and a banner shows while it's on.
+  - Admins can never start a Stripe checkout.
+- Smoke checks (decided 18 Nov, DIG-12): `scripts/smoke.ts` must create its own throwaway user and data and delete them afterwards. The dev database holds the owner's real data; the seeded zine was renamed "Car Show".
 - Sales tax (decided 18 Nov, DIG-16): Pro is $15/month plus applicable tax (exclusive). `STRIPE_AUTOMATIC_TAX=true` turns on Stripe Tax at Checkout for an environment. When it's unset, no tax is sent. Stripe-side setup (head office, registrations, product tax code) belongs to the account owner and is described in the README. Never enable it in code unconditionally.
 - Screenshots (decided 18 Nov, DIG-12): commit them to `docs/screenshots/` and embed them in the README and PR #1.
 - `publishedAt` means *first* published (decided 18 Nov, DIG-8): unpublishing flips only `published` and keeps `publishedAt`, which is what locks the slug. `PATCH /api/zines/[id]` returns 409 for a slug change once `publishedAt` is set, and 400 when publishing would leave zero pages.
@@ -48,6 +55,15 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 - Assets: `src/app/api/assets/route.ts`, `src/app/api/assets/[id]/route.ts`, `src/app/api/assets/reorder/route.ts`.
 - Zines: `src/app/api/zines/route.ts`, `src/app/api/zines/[id]/route.ts`. Template id is `full-bleed-photo`.
 - PDF (DIG-10): `src/lib/pdf-zine.tsx` and `GET /api/pdf/[slug]`. The route returns 401 signed out, 403 for Free, and 404 unless the caller owns the published zine. It uses only the owner's assets. Images are read from local storage by key, or fetched only from absolute `https://` public URLs (S3), never from the request host. A page whose image can't be loaded is left out and the rest are renumbered. The response sets `Cache-Control: private, no-store`. `src/components/editor/PdfExport.tsx` downloads the file through a blob link. The editor's leave warning ignores `a[download]`. E2E photos from `createUserWithPhotos` are now real files copied from the seed images under each user's own storage key; `deleteUser` removes them.
+- Admin (DIG-17):
+  - `src/lib/entitlements.ts` has `effectiveAccess` and `VIEW_AS_FREE_COOKIE`. `getAuthenticatedUser()` now returns:
+    - `tier`: the effective tier that every feature check uses
+    - `billingTier`: what Stripe says
+    - `role` and `viewingAsFree`
+  - `POST /api/admin/view-as` sets or clears the cookie. It returns 403 for non-admins.
+  - `src/lib/admin-account.ts` has `ensureAdmin`; `scripts/admin-create.ts` is the CLI.
+  - `src/components/AdminViewToggle.tsx` has the switch and the banner. `StudioHeader` takes `role` and `viewingAsFree`.
+  - `/billing` shows "Your plan: Admin", or the Free page with checkout disabled when previewing.
 - Billing (DIG-11):
   - `src/lib/billing.ts`: `tierForStatus`, `describeSubscription`, `appOrigin` (return URLs come only from `NEXT_PUBLIC_APP_URL`, never from the request host).
   - `POST /api/billing/checkout`: 401 signed out, 503 `configured: false` without keys or app URL, 409 if already Pro. It reuses the stored customer, or creates one with an idempotency key.
@@ -89,12 +105,13 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | Done (pending CI) | Owner-only route hardened and tested against Postgres; "Download PDF" in the editor, with an upgrade prompt for Free creators. |
 | [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | Done | `/billing` with Checkout, Customer Portal, failed-payment warning, and not-configured state. Webhook hardened and tested with signed events. |
 | [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Backlog | Refund, dispute, and fraud-warning webhooks. Product response not decided; ask first. |
-| [DIG-16](https://linear.app/digital-zine/issue/DIG-16/collect-sales-tax-on-pro-with-stripe-tax) | Done (pending CI) | Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, exclusive pricing, README setup guide. Registrations are the account owner's job. |
+| [DIG-16](https://linear.app/digital-zine/issue/DIG-16/collect-sales-tax-on-pro-with-stripe-tax) | Done | Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, exclusive pricing, README setup guide. Registrations are the account owner's job. |
+| [DIG-17](https://linear.app/digital-zine/issue/DIG-17/admin-role-with-full-access-and-a-view-as-free-toggle) | Done (pending CI) | Admin role, `admin:create`, "View as Free" header switch and banner. |
 | [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Todo | Build, smoke checks, screenshots, mark PR #1 ready. |
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
 
-Next ticket to resume: DIG-12, final verification. It gates marking PR #1 ready.
+Next ticket to resume: DIG-12, final verification. It gates marking PR #1 ready. It was paused for DIG-17. `scripts/smoke.ts` and `npm run smoke` exist, but the script still assumes the seeded creator's data. Rewrite it to create and delete its own test user (photos copied from `.data/uploads/seed/`, plus a published zine), then run it against a production build on the dev DB (`NEXT_DIST_DIR=.next-smoke`, port 3430).
 - `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green.
 - The README covers env vars, local Postgres, the seeded user, and how to run. Check this; it mostly does already.
 - Smoke check against local Postgres (dev DB, `next dev` on 3420): sign-in, board, editor, public flip viewer, PDF gate, and the Stripe unconfigured path.
@@ -109,6 +126,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 2:50 PM | Claude Code (local) | Paused DIG-12 at the user's request and built DIG-17, the admin role, test-first: 3 entitlement unit tests, 10 admin API tests, 1 checkout test, 6 component tests, 3 e2e tests. Schema: `User.role`. Ran `prisma db push` on the dev DB, which only added the column. | Create the user's admin account, then DIG-12. |
 | 18 Nov 2026, 2:20 PM | Claude Code (local) | DIG-16: Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, with exclusive pricing and a "plus applicable tax" label. 5 new tests (unit, API, component), all seen red first. The README has a Stripe Tax setup guide. | DIG-12. |
 | 18 Nov 2026, 2:00 PM | Claude Code (local) | Built DIG-11, billing, test-first: 33 billing unit and API tests, 10 `BillingPanel` component tests, 8 billing e2e tests. Added the Customer Portal route and `/billing`. Webhook: re-reads subscriptions, maps users only by customer, gates on payment, keeps Pro while `past_due`, returns 500 for retries. Checkout: 409 for Pro, idempotent customer creation, no Host-derived URLs. Filed DIG-15. README now has a Billing section. | DIG-12 next. |
 | 18 Nov 2026, 1:10 PM | Claude Code (local) | CI speedups: `node_modules` and Next build caches, headless-shell Chromium without `--with-deps`, alpine Postgres; a typical run is about 1:34. Built DIG-10, PDF export, test-first: 10 API tests, 5 `PdfExport` component tests, 5 PDF e2e tests. Fixes: export is owner-only, no email in the PDF, no fetching from the request host, missing images no longer crash the export, and the leave warning no longer blocks downloads. | DIG-11 next. |

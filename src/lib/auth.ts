@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
+import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
+import { effectiveAccess, VIEW_AS_FREE_COOKIE } from "@/lib/entitlements";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -71,15 +73,23 @@ export async function getAuthenticatedUser() {
   const userId = session?.user?.id;
   if (!userId) return null;
 
-  return prisma.user.findUnique({
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     select: {
       id: true,
       email: true,
       name: true,
       tier: true,
+      role: true,
       subscriptionStatus: true,
       stripeCustomerId: true,
     },
   });
+  if (!user) return null;
+
+  // `tier` is what feature checks use: Pro for admins (unless viewing as Free), otherwise the
+  // billed tier. `billingTier` is what Stripe says, for the billing page.
+  const viewAsFree = (await cookies()).get(VIEW_AS_FREE_COOKIE)?.value === "1";
+  const access = effectiveAccess(user, viewAsFree);
+  return { ...user, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree };
 }

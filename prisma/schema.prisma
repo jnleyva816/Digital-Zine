@@ -12,6 +12,12 @@ enum Tier {
   pro
 }
 
+/// Admins get every Pro feature without a subscription (DIG-17).
+enum Role {
+  user
+  admin
+}
+
 enum AssetKind {
   photo
   recipe
@@ -26,6 +32,7 @@ model User {
   stripeSubscriptionId String?      @unique
   subscriptionStatus   String       @default("inactive")
   tier                 Tier         @default(free)
+  role                 Role         @default(user)
   createdAt            DateTime     @default(now())
   updatedAt            DateTime     @updatedAt
   assets               MediaAsset[]

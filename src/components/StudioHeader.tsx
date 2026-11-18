@@ -3,13 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { BookOpen, CreditCard, ExternalLink, Layers, LogOut, Sparkles } from "lucide-react";
+import { BookOpen, CreditCard, ExternalLink, Layers, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { AdminViewBanner, AdminViewToggle } from "./AdminViewToggle";
 
 interface StudioHeaderProps {
   user: {
     email: string;
     name: string | null;
+    /** The tier features use: Pro for admins unless they are viewing as Free. */
     tier: "free" | "pro";
+    role: "user" | "admin";
+    viewingAsFree: boolean;
   };
   activeZineId?: string | null;
   publishedSlug?: string | null;
@@ -22,9 +26,12 @@ export function StudioHeader({
 }: StudioHeaderProps) {
   const pathname = usePathname();
   const editorHref = activeZineId ? `/editor/${activeZineId}` : "/editor";
+  const isAdmin = user.role === "admin";
+  const showAdminBadge = isAdmin && !user.viewingAsFree;
 
   return (
     <header className="sticky top-0 z-30 border-b border-paper-300 bg-paper-50/95 backdrop-blur">
+      {isAdmin && user.viewingAsFree ? <AdminViewBanner /> : null}
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
         <div className="flex items-center gap-6">
           <Link href="/board" className="group flex items-baseline gap-2.5">
@@ -84,16 +91,24 @@ export function StudioHeader({
             </Link>
           ) : null}
 
+          {isAdmin ? <AdminViewToggle viewingAsFree={user.viewingAsFree} /> : null}
+
           <Link
             href="/billing"
             className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-mono text-xs uppercase tracking-wider ${
-              user.tier === "pro"
-                ? "bg-vermilion-500 text-white"
-                : "border border-paper-300 bg-paper-200/70 text-ink-800 hover:border-vermilion-500"
+              showAdminBadge
+                ? "bg-ink-900 text-paper-50"
+                : user.tier === "pro"
+                  ? "bg-vermilion-500 text-white"
+                  : "border border-paper-300 bg-paper-200/70 text-ink-800 hover:border-vermilion-500"
             }`}
           >
-            <Sparkles className="h-3 w-3" />
-            {user.tier === "pro" ? "Pro Tier" : "Free Tier"}
+            {showAdminBadge ? (
+              <ShieldCheck className="h-3 w-3" aria-hidden="true" />
+            ) : (
+              <Sparkles className="h-3 w-3" aria-hidden="true" />
+            )}
+            {showAdminBadge ? "Admin" : user.tier === "pro" ? "Pro Tier" : "Free Tier"}
           </Link>
 
           <span className="hidden text-xs text-ink-500 md:inline">

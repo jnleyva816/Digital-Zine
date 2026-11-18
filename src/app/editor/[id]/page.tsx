@@ -35,7 +35,7 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
   return (
     <>
       <StudioHeader
-        user={{ email: user.email, name: user.name, tier: user.tier }}
+        user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={zine.id}
         publishedSlug={zine.published ? zine.slug : null}
       />

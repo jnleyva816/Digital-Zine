@@ -15,6 +15,9 @@ export async function createTestUser(): Promise<SessionUser> {
     email: user.email,
     name: user.name,
     tier: user.tier,
+    billingTier: user.tier,
+    role: user.role,
+    viewingAsFree: false,
     subscriptionStatus: user.subscriptionStatus,
     stripeCustomerId: user.stripeCustomerId,
   };

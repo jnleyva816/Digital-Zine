@@ -6,7 +6,9 @@ import { AlertTriangle, Check, CreditCard, Loader2, Sparkles } from "lucide-reac
 import { readApiError } from "@/components/board/types";
 
 export interface BillingPanelProps {
-  plan: "Free" | "Pro";
+  plan: "Free" | "Pro" | "Admin";
+  /** An admin previewing the Free view: show the Free page but never start a checkout. */
+  previewOnly?: boolean;
   /** Pro is kept while Stripe retries a failed renewal; this shows the warning. */
   paymentFailed: boolean;
   /** False when Stripe keys or the app URL are missing in this environment. */
@@ -32,6 +34,7 @@ export function BillingPanel({
   configured,
   checkout,
   taxExclusive,
+  previewOnly = false,
   navigate = goTo,
 }: BillingPanelProps) {
   const router = useRouter();
@@ -114,7 +117,12 @@ export function BillingPanel({
         <h2 id="current-plan" className="font-serif text-xl font-bold text-ink-900">
           Your plan: {plan}
         </h2>
-        {plan === "Pro" ? (
+        {plan === "Admin" ? (
+          <p className="mt-2 text-sm text-ink-700">
+            Full access to every feature, including PDF export. Admin accounts don&apos;t need a subscription. Use
+            &ldquo;View as Free&rdquo; in the header to see the app the way a Free user does.
+          </p>
+        ) : plan === "Pro" ? (
           <>
             <p className="mt-2 text-sm text-ink-700">
               You can export your published zines as PDFs. Change your card, see invoices, or cancel in the subscription
@@ -164,14 +172,18 @@ export function BillingPanel({
           <button
             type="button"
             onClick={() => void open("checkout")}
-            disabled={!configured || busy !== null}
+            disabled={!configured || previewOnly || busy !== null}
             aria-busy={busy === "checkout"}
             className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:bg-ink-500 sm:w-auto"
           >
             {busy === "checkout" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             {busy === "checkout" ? "Opening checkout…" : "Upgrade to Pro"}
           </button>
-          <p className="mt-2 text-xs text-ink-500">Payment is handled by Stripe. You can cancel anytime.</p>
+          <p className="mt-2 text-xs text-ink-500">
+            {previewOnly
+              ? "Preview only: admin accounts can't subscribe."
+              : "Payment is handled by Stripe. You can cancel anytime."}
+          </p>
         </section>
       ) : null}
 

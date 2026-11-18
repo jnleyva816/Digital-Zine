@@ -24,12 +24,16 @@ export default async function BillingPage({ searchParams }: Props) {
     orderBy: { updatedAt: "desc" },
     select: { id: true, slug: true, published: true },
   });
-  const { plan, paymentFailed } = describeSubscription(user);
+  // Admins have full access and no subscription; viewing as Free shows the Free page as a preview.
+  const isAdmin = user.role === "admin";
+  const billed = describeSubscription({ tier: user.billingTier, subscriptionStatus: user.subscriptionStatus });
+  const plan = isAdmin ? (user.viewingAsFree ? "Free" : "Admin") : billed.plan;
+  const paymentFailed = !isAdmin && billed.paymentFailed;
 
   return (
     <>
       <StudioHeader
-        user={{ email: user.email, name: user.name, tier: user.tier }}
+        user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={latestZine?.id ?? null}
         publishedSlug={latestZine?.published ? latestZine.slug : null}
       />
@@ -40,6 +44,7 @@ export default async function BillingPage({ searchParams }: Props) {
         </div>
         <BillingPanel
           plan={plan}
+          previewOnly={isAdmin}
           paymentFailed={paymentFailed}
           configured={isStripeConfigured() && appOrigin() !== null}
           checkout={checkout === "success" || checkout === "cancelled" ? checkout : null}
