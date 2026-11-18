@@ -61,7 +61,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 - Pages: `/billing` (DIG-11). Until it exists, the `StudioHeader` link to it prefetches a 404. That is expected.
 - On this NixOS machine, run e2e with `PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(nix build --no-link --print-out-paths nixpkgs#chromium)/bin/chromium` (see the README's NixOS section).
 - Pull request #1 is a draft checkpoint, not a finished review.
-- CI caches `node_modules` (keyed on the lockfile; a hit skips `npm ci`) and `.next/cache` plus `tsconfig.tsbuildinfo`. It installs only Playwright's headless Chromium shell and uses `postgres:17-alpine`. Commit the handoff together with the code it describes, so a docs-only follow-up doesn't trigger a second full CI run.
+- CI caches `node_modules` (keyed on the lockfile; a hit skips `npm ci`) and `.next/cache` plus `tsconfig.tsbuildinfo`. It installs only Playwright's headless Chromium shell, without `--with-deps` (the runner already has the libraries; add the flag back if Chromium fails to launch) and uses `postgres:17-alpine`. Commit the handoff together with the code it describes, so a docs-only follow-up doesn't trigger a second full CI run.
 
 ## Tickets
 

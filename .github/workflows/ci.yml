@@ -79,8 +79,11 @@ jobs:
         run: npm test
 
       # Tests run headless, so the headless shell is enough; it is a much smaller download.
+      # No --with-deps: ubuntu-latest already has Chromium's libraries, and the flag only adds
+      # optional CJK/Thai font packs from a mirror that can stall for minutes. If Chromium ever
+      # fails to launch with a missing shared library, add --with-deps back.
       - name: Install Chromium for Playwright
-        run: npx playwright install --with-deps --only-shell chromium
+        run: npx playwright install --only-shell chromium
 
       - name: End-to-end tests
         run: npm run test:e2e
