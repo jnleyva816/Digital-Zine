@@ -4,7 +4,9 @@ import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { checkUpload } from "@/lib/limits";
 import { getStorageDriver } from "@/lib/storage";
+import { getBoardUsageBytes, withUserLock } from "@/lib/usage";
 
 const exifSchema = z
   .object({
@@ -66,29 +68,57 @@ export async function POST(req: Request) {
   }
 
   const driver = getStorageDriver();
-  const publicUrl = driver.getPublicUrl(parsed.data.storageKey);
+  const storageKey = parsed.data.storageKey;
+  const publicUrl = driver.getPublicUrl(storageKey);
 
-  const aggregate = await prisma.mediaAsset.aggregate({
-    where: { ownerId: user.id },
-    _max: { sortOrder: true },
-  });
-  const nextSortOrder = (aggregate._max.sortOrder ?? -1) + 1;
+  // The size comes from storage, never from the client (DIG-32).
+  const sizeBytes = await driver.getObjectSize(storageKey);
+  if (sizeBytes === null) {
+    return NextResponse.json(
+      { error: "The upload was not found. Try uploading the photo again." },
+      { status: 400 }
+    );
+  }
 
-  const asset = await prisma.mediaAsset.create({
-    data: {
-      ownerId: user.id,
-      storageKey: parsed.data.storageKey,
-      publicUrl,
-      originalName: parsed.data.originalName ?? null,
-      mimeType: parsed.data.mimeType ?? "image/jpeg",
-      kind: parsed.data.kind,
-      exif: parsed.data.exif ? (parsed.data.exif as Prisma.InputJsonValue) : Prisma.DbNull,
-      recipe: parsed.data.recipe
-        ? (parsed.data.recipe as Prisma.InputJsonValue)
-        : Prisma.DbNull,
-      sortOrder: nextSortOrder,
-    },
+  const result = await withUserLock(user.id, async (tx) => {
+    const check = checkUpload({ size: sizeBytes, usedBytes: await getBoardUsageBytes(user.id, tx) });
+    if (!check.ok) return { rejected: check, asset: null } as const;
+
+    const aggregate = await tx.mediaAsset.aggregate({
+      where: { ownerId: user.id },
+      _max: { sortOrder: true },
+    });
+    const nextSortOrder = (aggregate._max.sortOrder ?? -1) + 1;
+
+    const asset = await tx.mediaAsset.create({
+      data: {
+        ownerId: user.id,
+        storageKey,
+        publicUrl,
+        originalName: parsed.data.originalName ?? null,
+        mimeType: parsed.data.mimeType ?? "image/jpeg",
+        sizeBytes,
+        kind: parsed.data.kind,
+        exif: parsed.data.exif ? (parsed.data.exif as Prisma.InputJsonValue) : Prisma.DbNull,
+        recipe: parsed.data.recipe
+          ? (parsed.data.recipe as Prisma.InputJsonValue)
+          : Prisma.DbNull,
+        sortOrder: nextSortOrder,
+      },
+    });
+    return { rejected: null, asset } as const;
   });
+
+  if (result.rejected) {
+    // Nothing references the bytes, so they would only cost money.
+    await driver.deleteObject(storageKey);
+    const { reason, message } = result.rejected;
+    return NextResponse.json(
+      { error: message, code: reason },
+      { status: reason === "too_large" ? 413 : reason === "over_quota" ? 403 : 400 }
+    );
+  }
+  const { asset } = result;
 
   return NextResponse.json({ asset }, { status: 201 });
 }

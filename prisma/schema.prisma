@@ -47,6 +47,9 @@ model MediaAsset {
   publicUrl    String
   originalName String?
   mimeType     String    @default("image/jpeg")
+  /// Bytes in storage, read from the storage driver at create time, never from the client (DIG-32).
+  /// Rows from before DIG-32 are 0.
+  sizeBytes    Int       @default(0)
   kind         AssetKind @default(photo)
   exif         Json?     @db.JsonB
   recipe       Json?     @db.JsonB

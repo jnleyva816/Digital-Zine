@@ -32,6 +32,21 @@ export class LocalStorageDriver implements StorageDriver {
     return `/api/media/${encodeKeyPath(storageKey)}`;
   }
 
+  async getObjectSize(storageKey: string): Promise<number | null> {
+    try {
+      const stat = await fs.stat(resolveSafePath(storageKey));
+      return stat.isFile() ? stat.size : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async deleteObject(storageKey: string): Promise<void> {
+    const filePath = resolveSafePath(storageKey);
+    await fs.rm(filePath, { force: true });
+    await fs.rm(`${filePath}.meta.json`, { force: true });
+  }
+
   async prepareUpload(params: {
     storageKey: string;
     contentType: string;
