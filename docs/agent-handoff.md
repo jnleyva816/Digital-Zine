@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 9:13 AM America/New_York. Checkpoint commit before this handoff: `698c7bb`.
+Last updated: 18 Nov 2026, 9:16 AM America/New_York. Branch head includes `3463549`. Foundation checkpoint before the handoff: `698c7bb`.
 
 ## Do this first
 
