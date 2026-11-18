@@ -40,6 +40,8 @@ export function FlipCard({
   );
   const showRecipePrimary = kind === "recipe" && hasRecipe;
   const reverseBadgeLabel = showRecipePrimary ? "Recipe Card" : "Camera EXIF";
+  const reverseName = showRecipePrimary ? "recipe" : "camera details";
+  const isFlipped = flipEnabled && flipped;
 
   const handleToggle = () => {
     if (!flipEnabled) return;
@@ -50,7 +52,7 @@ export function FlipCard({
     <article
       data-testid={`zine-flip-card-${pageNumber}`}
       data-flip-enabled={flipEnabled ? "true" : "false"}
-      data-flipped={flipped && flipEnabled ? "true" : "false"}
+      data-flipped={isFlipped ? "true" : "false"}
       className="w-full"
     >
       <div
@@ -64,25 +66,22 @@ export function FlipCard({
         }}
         role={flipEnabled ? "button" : undefined}
         tabIndex={flipEnabled ? 0 : undefined}
-        aria-label={
-          flipEnabled
-            ? `Page ${pageNumber}: Activate to flip between photo and ${reverseBadgeLabel}`
-            : undefined
-        }
+        aria-label={flipEnabled ? `Page ${pageNumber}: flip to ${reverseName}` : undefined}
+        aria-pressed={flipEnabled ? isFlipped : undefined}
         className={`flip-perspective relative aspect-[4/5] w-full select-none ${
           flipEnabled ? "cursor-pointer" : "cursor-default"
         }`}
       >
         <div
           className={`flip-inner rounded-2xl shadow-xl ring-1 ring-ink-900/10 ${
-            flipped && flipEnabled ? "is-flipped" : ""
+            isFlipped ? "is-flipped" : ""
           }`}
         >
           {/* FRONT FACE: Full-bleed photo page with optional caption */}
-          <div className="flip-face overflow-hidden rounded-2xl bg-ink-900">
+          <div className="flip-face overflow-hidden rounded-2xl bg-ink-900" aria-hidden={isFlipped || undefined}>
             <Image
               src={imageUrl}
-              alt={caption || `Zine plate ${pageNumber}`}
+              alt={caption || `Page ${pageNumber} of ${totalPages}`}
               fill
               priority={priority}
               sizes="(max-width: 768px) 100vw, 680px"
@@ -101,12 +100,12 @@ export function FlipCard({
                   className="inline-flex items-center gap-1.5 rounded-full bg-paper-50/95 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-md backdrop-blur"
                 >
                   {showRecipePrimary ? (
-                    <UtensilsCrossed className="h-3.5 w-3.5 text-vermilion-500" />
+                    <UtensilsCrossed className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
                   ) : (
-                    <Camera className="h-3.5 w-3.5 text-vermilion-500" />
+                    <Camera className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
                   )}
                   Flip · {reverseBadgeLabel}
-                  <RotateCw className="h-3 w-3 text-ink-500" />
+                  <RotateCw className="h-3 w-3 text-ink-500" aria-hidden="true" />
                 </span>
               ) : null}
             </div>
@@ -122,7 +121,9 @@ export function FlipCard({
 
           {/* BACK FACE: Text and structured fields ONLY (EXIF or Recipe Card) */}
           {flipEnabled ? (
-            <div className="flip-face flip-face-back flex flex-col justify-between overflow-y-auto rounded-2xl border border-paper-300 bg-paper-100 p-5 text-ink-900 sm:p-8">
+            <div
+              aria-hidden={!isFlipped || undefined}
+              className="flip-face flip-face-back flex flex-col justify-between overflow-y-auto rounded-2xl border border-paper-300 bg-paper-100 p-5 text-ink-900 sm:p-8">
               <div>
                 <div className="flex items-center justify-between border-b border-paper-300 pb-3.5">
                   <div className="flex items-center gap-2">
@@ -131,7 +132,7 @@ export function FlipCard({
                     </span>
                   </div>
                   <span className="inline-flex items-center gap-1.5 rounded-full border border-paper-300 bg-paper-50 px-3 py-1 text-xs font-medium text-ink-700">
-                    <RotateCw className="h-3 w-3" />
+                    <RotateCw className="h-3 w-3" aria-hidden="true" />
                     Flip to Photo
                   </span>
                 </div>
