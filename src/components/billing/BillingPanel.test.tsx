@@ -23,7 +23,9 @@ afterEach(() => {
 });
 
 function setup(props: Partial<BillingPanelProps> = {}) {
-  render(<BillingPanel plan="Free" paymentFailed={false} configured checkout={null} navigate={navigate} {...props} />);
+  render(
+    <BillingPanel plan="Free" paymentFailed={false} configured taxExclusive={false} checkout={null} navigate={navigate} {...props} />
+  );
   return userEvent.setup();
 }
 
@@ -34,6 +36,11 @@ describe("BillingPanel", () => {
     expect(screen.getByText("$15/month")).toBeInTheDocument();
     expect(screen.getByText("Export your published zines as PDFs")).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Manage subscription" })).not.toBeInTheDocument();
+  });
+
+  it("says tax is added on top when automatic tax is on", () => {
+    setup({ taxExclusive: true });
+    expect(screen.getByText("$15/month plus applicable tax")).toBeInTheDocument();
   });
 
   it("sends Free creators to Stripe Checkout", async () => {

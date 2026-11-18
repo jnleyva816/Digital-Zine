@@ -105,7 +105,7 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `AWS_S3_ENDPOINT` | No | Endpoint for S3-compatible stores such as R2 or MinIO |
 | `AWS_S3_PUBLIC_URL` | No | Public base URL for reading objects |
 | `NEXT_PUBLIC_IMAGE_CDN_URL` | No | Image CDN prefix. See below. |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` | No | Pro subscription billing (see "Billing" below). If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID`, `STRIPE_AUTOMATIC_TAX` | No | Pro subscription billing and sales tax (see "Billing" below). If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
 
 ## Billing (Stripe)
 
@@ -128,7 +128,21 @@ How it behaves:
 - The webhook re-reads each subscription from Stripe instead of trusting the event payload, so events that arrive out of order are handled. It finds users only by their linked Stripe customer.
 - `active`, `trialing`, and `past_due` count as Pro. While Stripe retries a failed renewal, the creator keeps Pro and sees a warning on `/billing`. They drop to Free when the subscription becomes `unpaid` or `canceled`.
 - Without `STRIPE_SECRET_KEY` or `NEXT_PUBLIC_APP_URL`, `/billing` says billing is not set up and the billing APIs return 503. The rest of the app is unaffected.
-- Not handled yet: refund, dispute, and early-fraud-warning events (DIG-15). Sales tax is not collected. If you charge US or EU customers, set up [Stripe Tax](https://docs.stripe.com/billing/taxes/collect-taxes) with an active registration before going live.
+- Not handled yet: refund, dispute, and early-fraud-warning events (DIG-15).
+
+### Sales tax (Stripe Tax)
+
+Pro is priced **$15/month plus applicable tax**: tax is added on top. Set `STRIPE_AUTOMATIC_TAX=true` to turn it on. Checkout then sends `automatic_tax`, collects the customer's billing address and saves it to their Stripe customer, and `/billing` shows "$15/month plus applicable tax". Leave it unset and Checkout charges $15 with no tax.
+
+Turn the flag on only after this Stripe-side setup, done separately in each sandbox and in live mode:
+
+1. **Tax settings.** Dashboard → Tax → Settings: set the head office address. Until then, Stripe rejects Checkout Sessions that ask for automatic tax.
+2. **Product tax code and tax behavior.** On the Pro Product, choose the tax code that fits a digital subscription from [Stripe's tax code list](https://docs.stripe.com/tax/tax-codes) (see [tax codes for digital products](https://docs.stripe.com/tax/digital-products)), and confirm it with your tax advisor. On the Price used for `STRIPE_PRO_PRICE_ID`, set tax behavior to **Exclusive**. The inline fallback price already sends `tax_behavior: "exclusive"` and uses the account's preset tax code.
+3. **Registrations.** Dashboard → Tax → Locations: add a registration for each place where you are registered to collect tax. **Stripe collects no tax, and shows no error, in any jurisdiction without an active registration.** Adding one in Stripe only records a registration you already hold with the tax authority; it does not register you. In the US, eligible sellers can use "Register for me". Your tax advisor decides where you must register.
+4. **Monitoring.** Dashboard → Tax → Locations → "Needs attention" flags jurisdictions where your live sales may be nearing a registration threshold. Sandbox sales don't count.
+5. **Check it.** In a sandbox, run a checkout with an address in a jurisdiction you registered. On the session's line items, `taxability_reason` should not be `not_collecting`.
+
+Filing returns is separate from collecting tax; see [Stripe's filing options](https://docs.stripe.com/tax/filing).
 
 ## Storage
 

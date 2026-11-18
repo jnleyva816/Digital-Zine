@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { appOrigin, describeSubscription } from "@/lib/billing";
+import { appOrigin, automaticTaxEnabled, describeSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { isStripeConfigured } from "@/lib/stripe";
 import { StudioHeader } from "@/components/StudioHeader";
@@ -43,6 +43,7 @@ export default async function BillingPage({ searchParams }: Props) {
           paymentFailed={paymentFailed}
           configured={isStripeConfigured() && appOrigin() !== null}
           checkout={checkout === "success" || checkout === "cancelled" ? checkout : null}
+          taxExclusive={automaticTaxEnabled()}
         />
       </main>
     </>

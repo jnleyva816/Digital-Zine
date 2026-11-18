@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { appOrigin, BILLING_NOT_CONFIGURED } from "@/lib/billing";
+import { appOrigin, automaticTaxEnabled, BILLING_NOT_CONFIGURED } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient, PRO_MONTHLY_PRICE_CENTS } from "@/lib/stripe";
 
@@ -38,6 +38,15 @@ export async function POST(_req: Request) {
     }
 
     const priceId = process.env.STRIPE_PRO_PRICE_ID?.trim();
+    // Tax needs the customer's address. The customer was created without one, so Checkout
+    // collects it and saves it back to the customer.
+    const tax = automaticTaxEnabled()
+      ? ({
+          automatic_tax: { enabled: true },
+          billing_address_collection: "required",
+          customer_update: { address: "auto", name: "auto" },
+        } as const)
+      : {};
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
       customer: customerId,
@@ -53,6 +62,8 @@ export async function POST(_req: Request) {
                 currency: "usd",
                 unit_amount: PRO_MONTHLY_PRICE_CENTS,
                 recurring: { interval: "month" },
+                // $15 plus applicable tax (decided 18 Nov 2026, DIG-16).
+                tax_behavior: "exclusive",
                 product_data: {
                   name: "Digital Zine Pro",
                   description: "Export your published zines as PDFs ($15/month).",
@@ -60,6 +71,7 @@ export async function POST(_req: Request) {
               },
             },
           ],
+      ...tax,
       success_url: `${origin}/billing?checkout=success`,
       cancel_url: `${origin}/billing?checkout=cancelled`,
     });

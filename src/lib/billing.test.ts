@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { describeSubscription, tierForStatus } from "./billing";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { automaticTaxEnabled, describeSubscription, tierForStatus } from "./billing";
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+});
 
 describe("tierForStatus", () => {
   it.each(["active", "trialing", "past_due"])("%s keeps Pro", (status) => {
@@ -25,5 +29,16 @@ describe("describeSubscription", () => {
   it("describes healthy Pro and Free accounts", () => {
     expect(describeSubscription({ tier: "pro", subscriptionStatus: "active" })).toEqual({ plan: "Pro", paymentFailed: false });
     expect(describeSubscription({ tier: "free", subscriptionStatus: "canceled" })).toEqual({ plan: "Free", paymentFailed: false });
+  });
+});
+
+describe("automaticTaxEnabled", () => {
+  it('is on only when STRIPE_AUTOMATIC_TAX is "true" (ignoring case and spaces)', () => {
+    vi.stubEnv("STRIPE_AUTOMATIC_TAX", "true");
+    expect(automaticTaxEnabled()).toBe(true);
+    for (const value of ["", "false", "1", "yes", "TRUE "]) {
+      vi.stubEnv("STRIPE_AUTOMATIC_TAX", value);
+      expect(automaticTaxEnabled()).toBe(value.trim().toLowerCase() === "true");
+    }
   });
 });

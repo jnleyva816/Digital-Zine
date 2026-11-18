@@ -13,6 +13,8 @@ export interface BillingPanelProps {
   configured: boolean;
   /** Set when Stripe Checkout sends the creator back. */
   checkout: "success" | "cancelled" | null;
+  /** True when Stripe Tax adds tax on top of the $15 price. */
+  taxExclusive: boolean;
   /** Leaves the app for Stripe. Injected in tests. */
   navigate?: (url: string) => void;
 }
@@ -24,7 +26,14 @@ function goTo(url: string) {
   window.location.assign(url);
 }
 
-export function BillingPanel({ plan, paymentFailed, configured, checkout, navigate = goTo }: BillingPanelProps) {
+export function BillingPanel({
+  plan,
+  paymentFailed,
+  configured,
+  checkout,
+  taxExclusive,
+  navigate = goTo,
+}: BillingPanelProps) {
   const router = useRouter();
   const [busy, setBusy] = useState<null | "checkout" | "portal">(null);
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +149,7 @@ export function BillingPanel({ plan, paymentFailed, configured, checkout, naviga
               <Sparkles className="h-4 w-4 text-vermilion-500" aria-hidden="true" />
               Pro
             </h2>
-            <p className="font-mono text-sm text-ink-800">$15/month</p>
+            <p className="font-mono text-sm text-ink-800">{taxExclusive ? "$15/month plus applicable tax" : "$15/month"}</p>
           </div>
           <ul className="mt-3 space-y-1.5 text-sm text-ink-700">
             <li className="flex gap-2">

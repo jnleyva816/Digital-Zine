@@ -110,6 +110,37 @@ describe("POST /api/billing/checkout", () => {
     expect(params).not.toHaveProperty("payment_method_types");
   });
 
+  it("sends no tax settings when automatic tax is off", async () => {
+    vi.stubEnv("STRIPE_AUTOMATIC_TAX", "");
+    await CHECKOUT(post("/api/billing/checkout"));
+    const params = stripe.checkout.sessions.create.mock.calls[0][0];
+    expect(params).not.toHaveProperty("automatic_tax");
+    expect(params).not.toHaveProperty("customer_update");
+  });
+
+  it("turns on Stripe Tax and collects the billing address when STRIPE_AUTOMATIC_TAX=true", async () => {
+    vi.stubEnv("STRIPE_AUTOMATIC_TAX", "true");
+    await CHECKOUT(post("/api/billing/checkout"));
+    expect(stripe.checkout.sessions.create.mock.calls[0][0]).toMatchObject({
+      automatic_tax: { enabled: true },
+      billing_address_collection: "required",
+      customer_update: { address: "auto", name: "auto" },
+    });
+  });
+
+  it("prices the inline fallback as $15 plus tax", async () => {
+    vi.stubEnv("STRIPE_PRO_PRICE_ID", "");
+    vi.stubEnv("STRIPE_AUTOMATIC_TAX", "true");
+    await CHECKOUT(post("/api/billing/checkout"));
+    const params = stripe.checkout.sessions.create.mock.calls[0][0];
+    expect(params.line_items?.[0]?.price_data).toMatchObject({
+      currency: "usd",
+      unit_amount: 1500,
+      recurring: { interval: "month" },
+      tax_behavior: "exclusive",
+    });
+  });
+
   it("reuses the stored customer", async () => {
     await prisma.user.update({ where: { id: me.id }, data: { stripeCustomerId: "cus_existing" } });
     me = { ...me, stripeCustomerId: "cus_existing" };

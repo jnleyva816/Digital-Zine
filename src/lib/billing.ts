@@ -9,6 +9,15 @@ export function tierForStatus(status: string): "free" | "pro" {
   return PRO_STATUSES.has(status) ? "pro" : "free";
 }
 
+/**
+ * Stripe Tax on Checkout (DIG-16). Opt-in per environment because Stripe rejects `automatic_tax`
+ * until the account's Tax settings are active. Tax is only collected where the account has an
+ * active registration; see the README.
+ */
+export function automaticTaxEnabled(): boolean {
+  return process.env.STRIPE_AUTOMATIC_TAX?.trim().toLowerCase() === "true";
+}
+
 export function describeSubscription({ tier, subscriptionStatus }: { tier: "free" | "pro"; subscriptionStatus: string }) {
   return {
     plan: tier === "pro" ? ("Pro" as const) : ("Free" as const),

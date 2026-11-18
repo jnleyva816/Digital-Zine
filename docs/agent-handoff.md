@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 2:00 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) done in `5f931b9`; CI green (run 44339460602). DIG-11 (billing) built test-first; see the ticket table for its CI status. Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 2:00 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) done in `5f931b9`; CI green (run 44339460602). DIG-11 (billing) done in `08dbc9e`; CI green (run 44341471872). DIG-16 (Stripe Tax) built test-first; see the ticket table. Foundation checkpoint: `698c7bb`.
 
 ## Do this first
 
@@ -30,6 +30,8 @@ Do not reopen these unless the user explicitly changes them.
   - `/billing` opens Stripe's hosted Customer Portal ("Manage subscription") for cancelling, card updates, and invoices.
   - `active`, `trialing`, and `past_due` count as Pro. A failed renewal keeps Pro and shows a warning; the plan drops to Free at `unpaid` or `canceled`.
   - Refund, dispute, and fraud-warning events are out of scope and tracked in DIG-15 (Backlog). Ask the user what each should do before building it.
+- Sales tax (decided 18 Nov, DIG-16): Pro is $15/month plus applicable tax (exclusive). `STRIPE_AUTOMATIC_TAX=true` turns on Stripe Tax at Checkout for an environment. When it's unset, no tax is sent. Stripe-side setup (head office, registrations, product tax code) belongs to the account owner and is described in the README. Never enable it in code unconditionally.
+- Screenshots (decided 18 Nov, DIG-12): commit them to `docs/screenshots/` and embed them in the README and PR #1.
 - `publishedAt` means *first* published (decided 18 Nov, DIG-8): unpublishing flips only `published` and keeps `publishedAt`, which is what locks the slug. `PATCH /api/zines/[id]` returns 409 for a slug change once `publishedAt` is set, and 400 when publishing would leave zero pages.
 - Deleting a Vision Board photo (decided 18 Nov): allowed, with an inline confirm, but `DELETE /api/assets/[id]` returns 409 and names the zine when any of the user's zine pages uses the asset. Stored bytes are not deleted (asset garbage collection is out of scope).
 - `/` (decided 18 Nov): no landing page. Signed in → `/board`, signed out → `/signin`.
@@ -52,6 +54,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
   - `POST /api/billing/portal`: 401, 503, 409 when there is no customer, otherwise a Customer Portal URL.
   - `POST /api/billing/webhook`: verifies the signature. It handles checkout completion (only when `payment_status` is paid), `customer.subscription.*`, and `invoice.paid` / `invoice.payment_failed`. For each, it re-reads the subscription from Stripe and finds the user only by `stripeCustomerId`, never by metadata. Processing errors return 500 so Stripe retries.
   - `/billing` page: `src/app/billing/{layout,page,loading,error}.tsx` and `src/components/billing/BillingPanel.tsx`. After checkout it refreshes every 3s, up to 10 times, until the webhook marks the user Pro.
+  - Tax (DIG-16): `automaticTaxEnabled()` in `src/lib/billing.ts`. When it's on, checkout adds `automatic_tax`, `billing_address_collection: "required"`, and `customer_update: { address: "auto", name: "auto" }`. The inline price always sets `tax_behavior: "exclusive"`.
   - API tests mock `getStripeClient` but use the real SDK's `webhooks` with `generateTestHeaderString`. E2E runs without keys, so it covers the not-configured path and the plan states.
 - Sign-in page `src/app/signin/page.tsx` (SSR, noindex, signed-in users redirect to `/board`). `SignInForm` only accepts same-origin relative `callbackUrl`s and shows the seeded account only when `NODE_ENV !== "production"`.
 - README: setup, env vars, storage, CDN loader swap, NixOS notes.
@@ -84,8 +87,9 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-8](https://linear.app/digital-zine/issue/DIG-8/editor-one-template-ordered-pages-and-publish) | Done | `/editor` list and `/editor/[id]`: captions, per-page flip, reorder, add or remove pages, explicit save, publish and unpublish, slug lock, typed-title delete. Built test-first. |
 | [DIG-9](https://linear.app/digital-zine/issue/DIG-9/public-flip-viewer-with-open-graph-previews) | Done | SSR `/z/[slug]` with Open Graph and Twitter tags, a canonical URL, byline, phone layout, and an accessible flip. 12 viewer e2e tests. |
 | [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | Done (pending CI) | Owner-only route hardened and tested against Postgres; "Download PDF" in the editor, with an upgrade prompt for Free creators. |
-| [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | Done (pending CI) | `/billing` with Checkout, Customer Portal, failed-payment warning, and not-configured state. Webhook hardened and tested with signed events. |
+| [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | Done | `/billing` with Checkout, Customer Portal, failed-payment warning, and not-configured state. Webhook hardened and tested with signed events. |
 | [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Backlog | Refund, dispute, and fraud-warning webhooks. Product response not decided; ask first. |
+| [DIG-16](https://linear.app/digital-zine/issue/DIG-16/collect-sales-tax-on-pro-with-stripe-tax) | Done (pending CI) | Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, exclusive pricing, README setup guide. Registrations are the account owner's job. |
 | [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Todo | Build, smoke checks, screenshots, mark PR #1 ready. |
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
@@ -94,7 +98,7 @@ Next ticket to resume: DIG-12, final verification. It gates marking PR #1 ready.
 - `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green.
 - The README covers env vars, local Postgres, the seeded user, and how to run. Check this; it mostly does already.
 - Smoke check against local Postgres (dev DB, `next dev` on 3420): sign-in, board, editor, public flip viewer, PDF gate, and the Stripe unconfigured path.
-- Screenshots of the Vision Board, editor, and public flip viewer. Where they go (repo `docs/screenshots/` or only the PR) is not settled; ask the user.
+- Screenshots of the Vision Board, editor, and public flip viewer go in `docs/screenshots/` (decided), embedded in the README and PR #1.
 - Rewrite the PR #1 description: what is in, and what is deferred (print, payouts, extra templates, asset garbage collection, audio and video, DIG-15). Mark it ready for review only after all of the above. Do not merge.
 
 ## Session log
@@ -105,6 +109,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 2:20 PM | Claude Code (local) | DIG-16: Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, with exclusive pricing and a "plus applicable tax" label. 5 new tests (unit, API, component), all seen red first. The README has a Stripe Tax setup guide. | DIG-12. |
 | 18 Nov 2026, 2:00 PM | Claude Code (local) | Built DIG-11, billing, test-first: 33 billing unit and API tests, 10 `BillingPanel` component tests, 8 billing e2e tests. Added the Customer Portal route and `/billing`. Webhook: re-reads subscriptions, maps users only by customer, gates on payment, keeps Pro while `past_due`, returns 500 for retries. Checkout: 409 for Pro, idempotent customer creation, no Host-derived URLs. Filed DIG-15. README now has a Billing section. | DIG-12 next. |
 | 18 Nov 2026, 1:10 PM | Claude Code (local) | CI speedups: `node_modules` and Next build caches, headless-shell Chromium without `--with-deps`, alpine Postgres; a typical run is about 1:34. Built DIG-10, PDF export, test-first: 10 API tests, 5 `PdfExport` component tests, 5 PDF e2e tests. Fixes: export is owner-only, no email in the PDF, no fetching from the request host, missing images no longer crash the export, and the leave warning no longer blocks downloads. | DIG-11 next. |
 | 18 Nov 2026, 12:20 PM | Claude Code (local) | Built DIG-9, the public viewer, test-first: 12 viewer e2e tests (OG tags, share crawlers, 404s, signed-out reading, flip by click/Enter/Space, phone width), `FlipCard` component tests, and `shareDescription` unit tests. Mutation-checked the crawler and 404 tests by adding a `loading.tsx`. | DIG-10 next. |
