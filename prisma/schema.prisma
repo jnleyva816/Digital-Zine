@@ -18,6 +18,14 @@ enum Role {
   admin
 }
 
+/// DIG-26: a new upload is `processing` until the worker has stored its AVIF copies.
+/// Photos from before DIG-26 are `ready` and keep their original file.
+enum AssetStatus {
+  processing
+  ready
+  failed
+}
+
 enum AssetKind {
   photo
   recipe
@@ -40,22 +48,30 @@ model User {
 }
 
 model MediaAsset {
-  id           String    @id @default(cuid())
-  ownerId      String
-  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  storageKey   String    @unique
-  publicUrl    String
-  originalName String?
-  mimeType     String    @default("image/jpeg")
+  id              String      @id @default(cuid())
+  ownerId         String
+  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  storageKey      String      @unique
+  publicUrl       String
+  originalName    String?
+  mimeType        String      @default("image/jpeg")
   /// Bytes in storage, read from the storage driver at create time, never from the client (DIG-32).
   /// Rows from before DIG-32 are 0.
-  sizeBytes    Int       @default(0)
-  kind         AssetKind @default(photo)
-  exif         Json?     @db.JsonB
-  recipe       Json?     @db.JsonB
-  sortOrder    Int       @default(0)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  sizeBytes       Int         @default(0)
+  status          AssetStatus @default(ready)
+  /// Why processing failed, shown to the owner with a Retry button.
+  processingError String?
+  /// Pixel size after the camera's rotation is applied. Null until processed.
+  width           Int?
+  height          Int?
+  /// A tiny inline WebP shown while the photo loads.
+  blurDataUrl     String?
+  kind            AssetKind   @default(photo)
+  exif            Json?       @db.JsonB
+  recipe          Json?       @db.JsonB
+  sortOrder       Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   @@index([ownerId, sortOrder])
 }

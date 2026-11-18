@@ -41,6 +41,14 @@ export class LocalStorageDriver implements StorageDriver {
     }
   }
 
+  async getObject(storageKey: string): Promise<Buffer | null> {
+    return (await readLocalObject(storageKey))?.bytes ?? null;
+  }
+
+  async putObject(storageKey: string, bytes: Buffer, contentType: string): Promise<void> {
+    await writeLocalObject(storageKey, bytes, contentType);
+  }
+
   async deleteObject(storageKey: string): Promise<void> {
     const filePath = resolveSafePath(storageKey);
     await fs.rm(filePath, { force: true });

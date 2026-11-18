@@ -20,4 +20,21 @@ describe("zineImageLoader", () => {
       "https://cdn.example.com/img?url=%2Fapi%2Fmedia%2Fa%20b.jpg&w=640&q=75"
     );
   });
+
+  it("loads the smallest processed copy wide enough, instead of the full-resolution one (DIG-26)", () => {
+    vi.stubEnv("NEXT_PUBLIC_IMAGE_CDN_URL", "");
+    expect(zineImageLoader({ src: "/api/media/users/u/x/full.avif", width: 640 })).toBe(
+      "/api/media/users/u/x/w960.avif?w=640&q=82"
+    );
+    expect(zineImageLoader({ src: "https://b.s3.example/users/u/x/full.avif", width: 3840 })).toBe(
+      "https://b.s3.example/users/u/x/full.avif?w=3840&q=82"
+    );
+  });
+
+  it("sends the chosen processed copy through the CDN when one is configured (DIG-26)", () => {
+    vi.stubEnv("NEXT_PUBLIC_IMAGE_CDN_URL", "https://cdn.example.com/img");
+    expect(zineImageLoader({ src: "/api/media/u/x/full.avif", width: 400, quality: 75 })).toBe(
+      "https://cdn.example.com/img?url=%2Fapi%2Fmedia%2Fu%2Fx%2Fw480.avif&w=400&q=75"
+    );
+  });
 });

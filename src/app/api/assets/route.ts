@@ -6,6 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
+import { enqueueProcessing } from "@/lib/media/queue";
 import { getStorageDriver } from "@/lib/storage";
 import { getBoardUsageBytes, withUserLock } from "@/lib/usage";
 
@@ -99,6 +100,8 @@ export async function POST(req: Request) {
         originalName: parsed.data.originalName ?? null,
         mimeType: parsed.data.mimeType ?? "image/jpeg",
         sizeBytes,
+        // The worker turns it into AVIF copies and deletes the original (DIG-26).
+        status: "processing",
         kind: parsed.data.kind,
         exif: parsed.data.exif ? (parsed.data.exif as Prisma.InputJsonValue) : Prisma.DbNull,
         recipe: parsed.data.recipe
@@ -115,7 +118,17 @@ export async function POST(req: Request) {
     await driver.deleteObject(storageKey);
     return uploadLimitResponse(result.rejected);
   }
-  const { asset } = result;
+  let { asset } = result;
+
+  try {
+    await enqueueProcessing(asset.id);
+  } catch (error) {
+    console.error(`Could not queue processing for ${asset.id}`, error);
+    asset = await prisma.mediaAsset.update({
+      where: { id: asset.id },
+      data: { status: "failed", processingError: "Processing could not start. Try again." },
+    });
+  }
 
   return NextResponse.json({ asset }, { status: 201 });
 }

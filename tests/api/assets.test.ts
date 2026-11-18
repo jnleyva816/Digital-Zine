@@ -7,6 +7,8 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { GET, POST } from "@/app/api/assets/route";
 import { DELETE, PATCH } from "@/app/api/assets/[id]/route";
 import { POST as REORDER } from "@/app/api/assets/reorder/route";
+import { POST as PROCESS } from "@/app/api/assets/[id]/process/route";
+import { enqueueProcessing } from "@/lib/media/queue";
 import { BOARD_STORAGE_BYTES } from "@/lib/limits";
 import { writeLocalObject } from "@/lib/storage/local";
 import {
@@ -20,6 +22,9 @@ import {
 } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+// The real queue is pg-boss; these tests check what is sent to it (DIG-26).
+vi.mock("@/lib/media/queue", () => ({ enqueueProcessing: vi.fn() }));
+const enqueue = vi.mocked(enqueueProcessing);
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
@@ -175,6 +180,63 @@ describe("PATCH /api/assets/[id]", () => {
     res = await PATCH(jsonRequest("/", "PATCH", { kind: "photo", recipe: null }), params({ id: mine.id }));
     expect(res.status).toBe(200);
     expect(await prisma.mediaAsset.findUnique({ where: { id: mine.id } })).toMatchObject({ kind: "photo", recipe: null });
+  });
+});
+
+describe("processing after upload (DIG-26)", () => {
+  it("saves a new upload as processing and queues it for the worker", async () => {
+    enqueue.mockResolvedValue(undefined);
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/queued.jpg`) }));
+    expect(res.status).toBe(201);
+    const { asset } = (await res.json()) as { asset: { id: string; status: string } };
+    expect(asset.status).toBe("processing");
+    expect(enqueue).toHaveBeenCalledWith(asset.id);
+  });
+
+  it("marks the upload failed, so the owner can retry, when the queue is unavailable", async () => {
+    enqueue.mockRejectedValue(new Error("queue down"));
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/stuck.jpg`) }));
+    expect(res.status).toBe(201);
+    const { asset } = (await res.json()) as { asset: { id: string; status: string; processingError: string } };
+    expect(asset).toMatchObject({ status: "failed", processingError: "Processing could not start. Try again." });
+  });
+});
+
+describe("POST /api/assets/[id]/process (DIG-26)", () => {
+  const retry = (id: string) => PROCESS(jsonRequest("/", "POST"), params({ id }));
+  const failed = async (ownerId: string) => {
+    const asset = await createAsset(ownerId, 0);
+    return prisma.mediaAsset.update({
+      where: { id: asset.id },
+      data: { status: "failed", processingError: "This file could not be read as an image." },
+    });
+  };
+
+  it("returns 401 without a session", async () => {
+    mockedUser.mockResolvedValue(null);
+    expect((await retry("anything")).status).toBe(401);
+  });
+
+  it("returns 404 for another user's photo and does not queue it", async () => {
+    const theirs = await failed(other.id);
+    expect((await retry(theirs.id)).status).toBe(404);
+    expect(enqueue).not.toHaveBeenCalled();
+  });
+
+  it("refuses with 409 unless processing failed", async () => {
+    const ready = await createAsset(me.id, 0);
+    const res = await retry(ready.id);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "Only a photo whose processing failed can be retried." });
+  });
+
+  it("queues a failed photo again and clears its error", async () => {
+    enqueue.mockResolvedValue(undefined);
+    const mine = await failed(me.id);
+    const res = await retry(mine.id);
+    expect(res.status).toBe(202);
+    expect(await res.json()).toMatchObject({ asset: { id: mine.id, status: "processing", processingError: null } });
+    expect(enqueue).toHaveBeenCalledWith(mine.id);
   });
 });
 

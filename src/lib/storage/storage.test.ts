@@ -137,3 +137,44 @@ describe("S3StorageDriver (DIG-32)", () => {
     expect(command.input).toEqual({ Bucket: "b", Key: "users/u1/a.jpg" });
   });
 });
+
+describe("server-side read and write (DIG-26)", () => {
+  let dir: string;
+
+  beforeEach(async () => {
+    dir = await fs.mkdtemp(path.join(os.tmpdir(), "dz-storage-"));
+    vi.stubEnv("LOCAL_STORAGE_DIR", dir);
+  });
+
+  afterEach(async () => {
+    vi.unstubAllEnvs();
+    await fs.rm(dir, { recursive: true, force: true });
+  });
+
+  it("local: writes an object with its content type and reads it back", async () => {
+    const driver = new LocalStorageDriver();
+    await driver.putObject("users/u1/x/full.avif", Buffer.from("avif-bytes"), "image/avif");
+    await expect(driver.getObject("users/u1/x/full.avif")).resolves.toEqual(Buffer.from("avif-bytes"));
+    await expect(driver.getObject("users/u1/missing.jpg")).resolves.toBeNull();
+  });
+
+  it("s3: puts with the content type and a long cache lifetime, and reads with GetObject", async () => {
+    const d = new S3StorageDriver({ bucket: "b", region: "us-east-1", accessKeyId: "AKIDTEST", secretAccessKey: "secret" });
+    const send = vi.spyOn(S3Client.prototype, "send");
+    send.mockResolvedValueOnce({} as never);
+    await d.putObject("users/u1/x/w480.avif", Buffer.from("a"), "image/avif");
+    const put = send.mock.calls[0]?.[0] as unknown as { constructor: { name: string }; input: Record<string, unknown> };
+    expect(put.constructor.name).toBe("PutObjectCommand");
+    expect(put.input).toMatchObject({
+      Bucket: "b",
+      Key: "users/u1/x/w480.avif",
+      ContentType: "image/avif",
+      CacheControl: "public, max-age=31536000, immutable",
+    });
+
+    send.mockResolvedValueOnce({ Body: { transformToByteArray: async () => new Uint8Array([1, 2, 3]) } } as never);
+    await expect(d.getObject("users/u1/x.jpg")).resolves.toEqual(Buffer.from([1, 2, 3]));
+    send.mockRejectedValueOnce(Object.assign(new Error("NoSuchKey"), { $metadata: { httpStatusCode: 404 } }));
+    await expect(d.getObject("users/u1/missing.jpg")).resolves.toBeNull();
+  });
+});
