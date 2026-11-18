@@ -4,13 +4,13 @@ You are the principal engineer on this repository. The same rules live in `.curs
 
 ## Start of every session
 
-Read `docs/agent-handoff.md` and the open issues in the active Linear project (the handoff names it) before you edit anything. The handoff lists work that already exists. Do not rebuild it. Follow "How work is organized" below for branches and pull requests.
+Review the Linear page [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) before you edit anything. Then read the open issues in the active Linear project (that page names it). The page lists work that already exists. Do not rebuild it. Do not recreate `docs/agent-handoff.md`. Follow "How work is organized" below for branches and pull requests.
 
 ## How work is organized
 
 The MVP shipped: PR #1 was merged into `main` on 18 Nov 2026. Work now runs ticket by ticket in the Linear team **Digital-Zine**.
 
-- **Projects are goals.** The current one is [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). The handoff names the active project.
+- **Projects are goals.** The current one is [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). The [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page names the active project.
 - **Labels describe the work.** Every ticket gets exactly one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) for the main part of the product it changes, and one **Type** label (Bug, Feature, Improvement). Label tickets you create. If cross-cutting work is large, split it into sub-issues with their own Areas.
 - **Security belongs to every ticket.** Anything touching auth, permissions, payments, uploads, or user data gets tests for its abuse cases, whatever its Area. The Security label is for work whose main purpose is security.
 - **One branch and one PR per ticket.** Branch off an up-to-date `main` using the ticket's Linear branch name (`gitBranchName`), and open one PR into `main` with the ticket ID in the title. Never commit to `main` directly.
@@ -18,11 +18,11 @@ The MVP shipped: PR #1 was merged into `main` on 18 Nov 2026. Work now runs tick
 
 ## Ask when it is not settled
 
-If the handoff, the tickets, and the code do not already answer a product, schema, dependency, or architecture question, stop and ask the user. Do not guess, and do not pick a "reasonable default" and keep going.
+If the handoff page, the tickets, and the code do not already answer a product, schema, dependency, or architecture question, stop and ask the user. Do not guess, and do not pick a "reasonable default" and keep going.
 
-Do not ask for facts you can read from the repo, the handoff, or Linear. Do not re-ask decisions listed under "Already decided" in the handoff.
+Do not ask for facts you can read from the repo, the handoff page, or Linear. Do not re-ask decisions listed under "Already decided" on the handoff page.
 
-Ask before you: change the Prisma schema, add a dependency, delete or rewrite a module that the handoff says is done, expand past the ticket's scope, force-push, or merge.
+Ask before you: change the Prisma schema, add a dependency, delete or rewrite a module that the handoff page says is done, expand past the ticket's scope, force-push, or merge.
 
 ## Build to a production bar
 
@@ -34,7 +34,7 @@ Do not add print, payouts, extra templates, or other deferred scope because it w
 
 ## Test-driven development
 
-Work test-first. The tooling and test database were decided on 18 Nov 2026; see "Already decided" in the handoff.
+Work test-first. The tooling and test database were decided on 18 Nov 2026; see "Already decided" on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page.
 
 For each behavior in the ticket's acceptance:
 
@@ -68,13 +68,13 @@ Rules:
 - When you start an issue, set it to In Progress and create its branch.
 - When its acceptance is met, its tests are committed, `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green on its PR, set it to **In Review**. It becomes **Done** when the owner merges the PR.
 - Comment on the issue with what changed, which tests you wrote (and that you saw them fail first), how you verified it, and what is left.
-- Keep `docs/agent-handoff.md` in sync in the same change: done, not done, ticket table, session log.
+- Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page in the same session: done, not done, ticket table, session log. Do not put that status back in the repo.
 
 ## Never leave a session unfinished
 
 Before you stop, including when the user interrupts you or the context is about to end:
 
-1. Update `docs/agent-handoff.md` so the next agent can continue without rereading the whole chat.
+1. Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page so the next agent can continue without rereading the whole chat.
 2. Update the Linear issue you were on. Name the next file and the next command.
 3. Commit and push any work that would otherwise exist only in the working tree. Say in the commit message that it is a checkpoint if the ticket is not done.
 4. Open or update the ticket's pull request. Leave it as a draft until the ticket is In Review. Do not merge it.

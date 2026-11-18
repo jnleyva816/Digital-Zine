@@ -1,0 +1,14 @@
+---
+description: Review the Linear agent handoff page at the start of every session, before editing.
+alwaysApply: true
+---
+
+# Review the handoff
+
+Before any edit, review the Linear page [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71).
+
+- It lists work already in the tree. Do not rebuild that work.
+- It names the active Linear project. Read the open issues there before starting a second ticket.
+- If this page and the code disagree, trust the code, then correct the page.
+- Before you stop, including an interruption, update that page: "Already in the tree", "Not built yet", the ticket table, and a session-log row. Times are America/New_York.
+- Do not recreate `docs/agent-handoff.md`. Status does not belong in the repository.
