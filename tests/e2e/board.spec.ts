@@ -1,7 +1,9 @@
 import path from "node:path";
+import sharp from "sharp";
 import { expect, test } from "@playwright/test";
 import { loadTestEnv } from "../../scripts/test-db";
-import { boardCards, createUser, signIn, testDb, waitForReorder } from "./helpers";
+import { CLASSIC_CHROME_TAGS, buildFujiMakerNote, withMakerNote } from "../fixtures/fuji-jpeg";
+import { boardCards, createUser, deleteUser, signIn, testDb, waitForReorder } from "./helpers";
 
 // The seed writes real-EXIF JPEGs into the test storage directory.
 const FIXTURE = path.resolve(loadTestEnv().LOCAL_STORAGE_DIR, "seed/plate-02-morning-fog.jpg");
@@ -121,6 +123,62 @@ test.describe("Vision Board, seeded creator", () => {
     const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflows).toBe(false);
     await expect(page.getByRole("link", { name: "Vision Board" })).toBeVisible();
+  });
+});
+
+test.describe("Vision Board, recipe found in a Fujifilm photo", () => {
+  test("asks the creator to name a recipe found in the photo, and does not save it on upload", async ({ page }) => {
+    const user = await createUser();
+    try {
+      const jpeg = withMakerNote(
+        await sharp({ create: { width: 32, height: 32, channels: 3, background: { r: 180, g: 90, b: 40 } } }).jpeg().toBuffer(),
+        buildFujiMakerNote(CLASSIC_CHROME_TAGS),
+      );
+      await signIn(page, user.email, user.password);
+
+      const created = page.waitForResponse((r) => r.url().endsWith("/api/assets") && r.request().method() === "POST");
+      await page.getByLabel("choose files").setInputFiles({
+        name: "DSCF0412.jpg",
+        mimeType: "image/jpeg",
+        buffer: Buffer.from(jpeg),
+      });
+      const response = await created;
+      expect(response.ok()).toBe(true);
+      const posted = response.request().postDataJSON() as { kind?: string; recipe?: unknown };
+      expect(posted.kind).toBe("photo");
+      expect(posted.recipe).toBeUndefined();
+
+      const card = boardCards(page);
+      await expect(card).toHaveCount(1);
+      await expect(card).toContainText("DSCF0412.jpg");
+      await expect(card).not.toContainText("Classic Chrome");
+
+      await card.getByRole("button", { name: "Review recipe found in photo for DSCF0412.jpg" }).click();
+      const dialog = page.getByRole("dialog", { name: "Add a film recipe" });
+      await expect(dialog.getByText(/found in this photo/i)).toBeVisible();
+      await expect(dialog.getByLabel("Recipe name")).toHaveValue("");
+      await expect(dialog.getByLabel("Film simulation")).toHaveValue("Classic Chrome");
+      await expect(dialog.getByLabel("Dynamic range")).toHaveValue("DR200");
+      await expect(dialog.getByLabel("Grain effect")).toHaveValue("Weak, Large");
+      await expect(dialog.getByLabel("Kelvin")).toHaveValue("5200");
+      await expect(dialog.getByLabel("Highlight")).toHaveValue("0.5");
+      await expect(dialog.getByLabel("Shadow")).toHaveValue("-2");
+
+      await dialog.getByRole("button", { name: "Save recipe" }).click();
+      await expect(dialog.getByRole("alert")).toContainText("Give the recipe a name.");
+      await dialog.getByLabel("Recipe name").fill("Sunday Chrome");
+      await dialog.getByRole("button", { name: "Save recipe" }).click();
+      await expect(dialog).toBeHidden();
+      await expect(card).toContainText("Sunday Chrome");
+      await expect(card).toContainText("Classic Chrome");
+      await expect(card.getByRole("button", { name: "Edit recipe for DSCF0412.jpg" })).toBeVisible();
+
+      await page.reload();
+      await expect(boardCards(page)).toContainText("Sunday Chrome");
+      await expect(boardCards(page).getByRole("button", { name: "Edit recipe for DSCF0412.jpg" })).toBeVisible();
+    } finally {
+      await deleteUser(user.id);
+    }
   });
 });
 

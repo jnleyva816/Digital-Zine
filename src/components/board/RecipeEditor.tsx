@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
+import type { FoundRecipe } from "@/lib/fuji-makernote";
 import {
   COLOR_CHROME_LEVELS,
   DYNAMIC_RANGES,
@@ -25,6 +26,8 @@ interface RecipeEditorProps {
   /** Asset label used in the dialog heading. */
   assetLabel: string;
   initial: FujiRecipe | null;
+  /** Settings read from the photo. The name stays empty until the creator saves. */
+  prefill?: FoundRecipe | null;
   open: boolean;
   onClose: () => void;
   /** Persist the recipe. `null` removes it. Resolve with an error message to keep the dialog open. */
@@ -51,7 +54,7 @@ interface FormState {
 
 const TONE_KEYS = Object.keys(TONE_SETTINGS) as ToneKey[];
 
-function toForm(recipe: FujiRecipe | null): FormState {
+function toForm(recipe: (FoundRecipe & { name?: string }) | null): FormState {
   const [evFrom = "", evTo = ""] = recipe?.exposureCompensation?.split(" to ") ?? [];
   const wb = recipe?.whiteBalance;
   return {
@@ -164,25 +167,26 @@ function Select({
   );
 }
 
-export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: RecipeEditorProps) {
+export function RecipeEditor({ assetLabel, initial, prefill = null, open, onClose, onSave }: RecipeEditorProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const id = useId();
-  const [form, setForm] = useState<FormState>(() => toForm(initial));
+  const [form, setForm] = useState<FormState>(() => toForm(initial ?? (prefill ? { ...prefill, name: "" } : null)));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const reviewingFound = prefill !== null && initial === null;
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open) {
-      setForm(toForm(initial));
+      setForm(toForm(initial ?? (prefill ? { ...prefill, name: "" } : null)));
       setError(null);
       setSaving(false);
       if (!dialog.open) dialog.showModal();
     } else if (dialog.open) {
       dialog.close();
     }
-  }, [open, initial]);
+  }, [open, initial, prefill]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
 
@@ -244,6 +248,11 @@ export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: Rec
             The in-camera settings behind this photo. They&apos;re shown on the back of its card when the zine is
             published. Leave anything you didn&apos;t set as &ldquo;Not set&rdquo;.
           </p>
+          {reviewingFound ? (
+            <p className="rounded-xl border border-paper-300 bg-paper-100 px-3.5 py-2.5 text-xs text-ink-700">
+              Found in this photo. Give it a name and save it. Nothing is kept until you do.
+            </p>
+          ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div>

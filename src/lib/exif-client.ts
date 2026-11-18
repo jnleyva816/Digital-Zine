@@ -1,5 +1,12 @@
 import ExifReader from "exifreader";
+import { readFujiRecipe, type FoundRecipe } from "@/lib/fuji-makernote";
 import type { ExifData } from "@/lib/types";
+
+/** What the browser reads from a photo before upload. The recipe is not saved until the creator confirms it. */
+export interface ExtractedPhoto {
+  exif: ExifData | null;
+  foundRecipe: FoundRecipe | null;
+}
 
 function tagText(tag: unknown): string | null {
   if (!tag || typeof tag !== "object") return null;
@@ -48,14 +55,24 @@ function normalizeFocalLength(raw: string | null): string | null {
 }
 
 /**
- * Extracts camera EXIF metadata directly in the browser before upload
+ * Reads camera EXIF and any Fujifilm recipe in the browser before upload,
  * so the original file can stream straight to storage without server buffering.
+ * The recipe is returned for the creator to review. This function does not save it.
  */
-export async function extractExifFromFile(
-  file: File
-): Promise<ExifData | null> {
+export async function extractExifFromFile(file: File): Promise<ExtractedPhoto> {
+  let buffer: ArrayBuffer;
   try {
-    const buffer = await file.arrayBuffer();
+    buffer = await file.arrayBuffer();
+  } catch {
+    return { exif: null, foundRecipe: null };
+  }
+  // Copy first: ExifReader may detach the buffer it is given.
+  const foundRecipe = readFujiRecipe(buffer.slice(0));
+  return { exif: readStandardExif(buffer), foundRecipe };
+}
+
+function readStandardExif(buffer: ArrayBuffer): ExifData | null {
+  try {
     const tags = ExifReader.load(buffer);
 
     const isoRaw =
