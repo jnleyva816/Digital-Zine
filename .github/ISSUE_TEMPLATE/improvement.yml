@@ -1,0 +1,56 @@
+name: Improvement
+description: Something that works, but should be clearer, faster, or safer.
+labels:
+  - "type:improvement"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Linear is the source of truth for what to build. Open the ticket there too, and paste its URL under Links. One Area label and one Type label. This form is an Improvement. Docs-only work still names how it will be checked.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What is slow, unclear, or costly, and who feels it.
+      placeholder: Agents read a handoff that still names a finished project, so they start the wrong ticket.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: What must be true when this is done.
+      placeholder: |
+        - The handoff matches Linear and the merged pull requests.
+        - The rules point at the handoff for the active project instead of naming it themselves.
+    validations:
+      required: true
+
+  - type: textarea
+    id: not-decided
+    attributes:
+      label: Not decided (ask the owner)
+      description: Product, schema, dependency, or architecture questions that are not already settled. Leave this empty when nothing is unsettled. Say explicitly when the owner must not have a setting changed in this ticket.
+      placeholder: Whether merged branches are deleted. Do not change that setting here.
+    validations:
+      required: false
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests
+      description: Which layers prove this. For a docs or config change with no product behavior, say that CI stays green and name the workflow.
+      placeholder: No product behavior. CI (`.github/workflows/ci.yml`) stays green.
+    validations:
+      required: true
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: The Linear issue, related DIG tickets, and screenshots.
+      placeholder: https://linear.app/digital-zine/issue/DIG-00
+    validations:
+      required: false

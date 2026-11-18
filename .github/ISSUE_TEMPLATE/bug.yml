@@ -1,0 +1,56 @@
+name: Bug
+description: Something that already shipped behaves wrong.
+labels:
+  - "type:bug"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Linear is the source of truth for what to build. Open the ticket there too, and paste its URL under Links. One Area label and one Type label. This form is a Bug.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What broke, where, and who hits it.
+      placeholder: Signed-in creators on /board see the wrong film simulation after upload.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: What must be true when this is done. Write the observable outcome, not the implementation.
+      placeholder: |
+        - The board shows the film simulation stored on the photo.
+        - A photo with no recipe still shows its EXIF badges.
+    validations:
+      required: true
+
+  - type: textarea
+    id: not-decided
+    attributes:
+      label: Not decided (ask the owner)
+      description: Product, schema, dependency, or architecture questions that are not already settled in the handoff or the tickets. Leave this empty when nothing is unsettled.
+      placeholder: Whether to drop the bad value or block the save.
+    validations:
+      required: false
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests
+      description: The test that reproduces the bug, and which layers cover the fix (unit, component, API, end to end). Abuse cases belong here when the bug touches auth, permissions, payments, uploads, or user data.
+      placeholder: An API test that saves a recipe the camera cannot set and expects 400. Seen red before the fix.
+    validations:
+      required: true
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: The Linear issue, related DIG tickets, and screenshots.
+      placeholder: https://linear.app/digital-zine/issue/DIG-00
+    validations:
+      required: false
