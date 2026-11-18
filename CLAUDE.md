@@ -68,13 +68,13 @@ Rules:
 - When you start an issue, set it to In Progress and create its branch.
 - When its acceptance is met, its tests are committed, `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green on its PR, set it to **In Review**. It becomes **Done** when the owner merges the PR.
 - Comment on the issue with what changed, which tests you wrote (and that you saw them fail first), how you verified it, and what is left.
-- Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page in the same session: done, not done, ticket table, session log. Do not put that status back in the repo.
+- Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page in the same session: "Now", open tickets, and "Latest session". Append the session row to the [log](https://linear.app/digital-zine/document/agent-handoff-log-b0673a41c909) only. Delete a ticket row when it is Done. Do not put that status back in the repo.
 
 ## Never leave a session unfinished
 
 Before you stop, including when the user interrupts you or the context is about to end:
 
-1. Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page so the next agent can continue without rereading the whole chat.
+1. Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page ("Now", open tickets, "Latest session") and append one row to the [log](https://linear.app/digital-zine/document/agent-handoff-log-b0673a41c909). Do not copy the log back onto the page.
 2. Update the Linear issue you were on. Name the next file and the next command.
 3. Commit and push any work that would otherwise exist only in the working tree. Say in the commit message that it is a checkpoint if the ticket is not done.
 4. Open or update the ticket's pull request. Leave it as a draft until the ticket is In Review. Do not merge it.

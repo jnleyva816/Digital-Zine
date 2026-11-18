@@ -25,7 +25,7 @@ Seen red first, then green. Name the assertion that failed and the command that 
 
 ## Handoff
 
-- [ ] The [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page is updated: already in the tree, not built yet, the ticket table, and a session-log row. Do not add `docs/agent-handoff.md`.
+- [ ] The [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page is updated ("Now", open tickets, "Latest session") and one row was appended to the [log](https://linear.app/digital-zine/document/agent-handoff-log-b0673a41c909). Done tickets were removed from the page. Do not add `docs/agent-handoff.md`.
 
 ## Not decided
 
