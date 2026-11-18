@@ -36,7 +36,7 @@ export function StudioHeader({
             </span>
           </Link>
 
-          <nav className="flex items-center gap-1 rounded-full border border-paper-300 bg-paper-100 p-1 text-sm">
+          <nav aria-label="Studio" className="flex items-center gap-1 rounded-full border border-paper-300 bg-paper-100 p-1 text-sm">
             <Link
               href="/board"
               className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition ${
@@ -45,8 +45,8 @@ export function StudioHeader({
                   : "text-ink-700 hover:text-ink-900"
               }`}
             >
-              <Layers className="h-3.5 w-3.5" />
-              Vision Board
+              <Layers className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Vision Board</span>
             </Link>
             <Link
               href={editorHref}
@@ -56,8 +56,8 @@ export function StudioHeader({
                   : "text-ink-700 hover:text-ink-900"
               }`}
             >
-              <BookOpen className="h-3.5 w-3.5" />
-              Zine Editor
+              <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Zine Editor</span>
             </Link>
             <Link
               href="/billing"
@@ -67,8 +67,8 @@ export function StudioHeader({
                   : "text-ink-700 hover:text-ink-900"
               }`}
             >
-              <CreditCard className="h-3.5 w-3.5" />
-              Billing
+              <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Billing</span>
             </Link>
           </nav>
         </div>
@@ -104,7 +104,7 @@ export function StudioHeader({
             type="button"
             onClick={() => signOut({ callbackUrl: "/signin" })}
             className="inline-flex items-center gap-1.5 rounded-full border border-paper-300 px-3 py-1.5 text-xs font-medium text-ink-700 transition hover:bg-paper-200 hover:text-ink-900"
-            title="Sign out"
+            aria-label="Sign out"
           >
             <LogOut className="h-3.5 w-3.5" />
             <span className="hidden sm:inline">Sign out</span>

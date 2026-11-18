@@ -79,6 +79,25 @@ export async function DELETE(
     return NextResponse.json({ error: "Asset not found" }, { status: 404 });
   }
 
+  // Zine pages reference assets by `content.assetId` (JSON, no foreign key),
+  // so refuse to delete a photo that any of this user's zines still uses.
+  const usedBy = await prisma.zinePage.findFirst({
+    where: {
+      zine: { ownerId: user.id },
+      content: { path: ["assetId"], equals: existing.id },
+    },
+    select: { zine: { select: { id: true, title: true } } },
+  });
+  if (usedBy) {
+    return NextResponse.json(
+      {
+        error: `This photo is used in “${usedBy.zine.title}”. Remove it from that zine before deleting it.`,
+        zineId: usedBy.zine.id,
+      },
+      { status: 409 }
+    );
+  }
+
   await prisma.mediaAsset.delete({
     where: { id: existing.id },
   });
