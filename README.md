@@ -4,7 +4,7 @@ Creators collect photos on a private Vision Board, sequence them into a full-ble
 
 Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js credentials, `@react-pdf/renderer`, and Stripe subscriptions.
 
-> Status: the MVP is merged into `main` (PR #1). Launch work is tracked in the Linear project Launch readiness. Current status and what is deferred live on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page.
+> Status: the MVP is merged into `main` (PR #1). Current work, including which Linear project is active, is on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page.
 
 | Vision Board | Zine editor |
 | --- | --- |

@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Project management
 
-Track work in the Linear team **Digital-Zine**. Projects are goals; the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page names the active one (currently [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af)). The issue map is on that page. These rules match `CLAUDE.md`; change both in the same commit.
+Track work in the Linear team **Digital-Zine**. Projects are goals. The active project is named on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page, which is also the issue map. These rules match `CLAUDE.md`; change both in the same commit.
 
 - Every ticket gets exactly one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) and one **Type** label (Bug, Feature, Improvement). Label tickets you create. Split large cross-cutting work into sub-issues with their own Areas.
 - Security belongs to every ticket: anything touching auth, permissions, payments, uploads, or user data gets abuse-case tests. The Security label is for work whose main purpose is security.
