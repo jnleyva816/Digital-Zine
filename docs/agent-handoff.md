@@ -2,12 +2,12 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 1:42 PM America/New_York (Cursor, local). The MVP is merged (`c70f82a`), and so are DIG-21 (`b3e7e09`), DIG-22 (`9528683`, PR #3), and DIG-23 (PR #4). DIG-23 reads a recipe from a Fujifilm photo and lets the creator name it. The active Linear project is still [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). DIG-23 lives in [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-dcaac18e-a36e-4238-87b3-d8e036afef5f).
+Last updated: 18 Nov 2026, 1:46 PM America/New_York (Cursor cloud agent). The MVP is merged (`c70f82a`). DIG-21 is merged (`b3e7e09`, PR #2). DIG-22 is Done: PR #3 merged as `9528683`. DIG-23 is Done: PR #4 merged as `297a1b0`. It reads a recipe from a Fujifilm photo and lets the creator name it. The active Linear project is [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-60bb4ca990fd) (P-DIG-3). [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af) (P-DIG-2) is Planned, not active. DIG-30 is In Review on PR #5.
 
 ## Do this first
 
 1. Read this file.
-2. Read the open Linear issues in the active project, [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). Do not start a second issue while one is already in progress unless the user says to.
+2. Read the open Linear issues in the active project named below. Do not start a second issue while one is already in progress unless the user says to.
 3. Branch off an up-to-date `main` using the ticket's Linear branch name, and open one PR per ticket. Never commit to `main`, and never merge unless the user says so. Branch `cursor/digital-zine-mvp-8439` and PR #1 are finished history.
 4. Do not rebuild anything listed under "Already in the tree".
 
@@ -20,7 +20,7 @@ Do not reopen these unless the user explicitly changes them.
 - **"Recipe" means a Fujifilm film-simulation recipe, never a food recipe** (owner, 18 Nov, DIG-22). A recipe is the in-camera settings: film simulation, dynamic range, grain, Color Chrome and FX Blue, white balance with red/blue shift, highlight, shadow, color, sharpness, clarity, noise reduction, ISO, and exposure compensation.
   - Fields use the camera's real options (selects and steps), defined in `src/lib/fuji-recipe.ts`.
   - Each photo has its own recipe, stored in `MediaAsset.recipe` (JSON). There is no schema change and no saved recipe library yet; that's DIG-24.
-  - Recipes are not read automatically from the photo's Fujifilm maker notes; that's DIG-23.
+  - A Fujifilm photo's maker notes can prefill a recipe (DIG-23, merged in PR #4). The reader is our own code in `src/lib/`, with no new dependency. The creator names it and clicks Save before anything is stored. Fluorescent white-balance codes `0x301` and `0x302` are still unconfirmed.
   - Old food recipes are dropped. `parseRecipe` returns null for them, and the API rejects them.
 - EXIF and recipe text on a published zine are public. No account is required to read them.
 - Stack: Next.js App Router, React, PostgreSQL, Prisma, Auth.js credentials (no OAuth required), `exifreader` in the browser before upload, storage interface with a local filesystem driver and an S3 presigned PUT, `@react-pdf/renderer`, `next/image` with `src/lib/image-loader.ts`.
@@ -92,14 +92,15 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
   - Tax (DIG-16): `automaticTaxEnabled()` in `src/lib/billing.ts`. When it's on, checkout adds `automatic_tax`, `billing_address_collection: "required"`, and `customer_update: { address: "auto", name: "auto" }`. The inline price always sets `tax_behavior: "exclusive"`.
   - API tests mock `getStripeClient` but use the real SDK's `webhooks` with `generateTestHeaderString`. E2E runs without keys, so it covers the not-configured path and the plan states.
 - Sign-in page `src/app/signin/page.tsx` (SSR, noindex, signed-in users redirect to `/board`). `SignInForm` only accepts same-origin relative `callbackUrl`s and shows the seeded account only when `NODE_ENV !== "production"`.
-- README: setup, env vars, storage, CDN loader swap, NixOS notes.
+- README: setup, env vars, storage, CDN loader swap, NixOS notes. Its status line points here for what is current.
+- How we work (DIG-30): `AGENTS.md` points at `CLAUDE.md`, `.cursor/rules/`, and this file, and does not repeat the rules. `.github/PULL_REQUEST_TEMPLATE.md`, `.github/ISSUE_TEMPLATE/` (Bug, Feature, Improvement), `.github/CODEOWNERS` (`* @jnleyva816`), and `.github/labels.yml` live under `.github/`. The label file defines `area:*` and `type:*` names that mirror Linear. It does not create them on GitHub.
 - `/` redirect in `src/app/page.tsx`.
 - Vision Board `/board` (DIG-7): `src/app/board/{layout,page,loading,error}.tsx` and `src/components/board/{VisionBoard,RecipeEditor,types}.ts(x)`. The auth gate is in `layout.tsx` so signed-out visitors get a real 307; it sits outside the `loading.tsx` Suspense boundary on purpose. Uploads run one at a time: EXIF is read in the browser (lazy-loaded `exifreader`), then presign, PUT, and `POST /api/assets`. EXIF badges; recipe editor in a native `<dialog>`; reorder by drag and drop or arrow buttons, announced in a live region; delete with an inline confirm.
 - `StudioHeader`: nav labels are screen-reader-only below `sm` so the header fits at 390px.
 - Test harness (DIG-14): `vitest.config.mts`, `playwright.config.ts`, `.env.test`, `scripts/test-db.ts` (guarded reset; refuses non-`_test` databases; truncates rather than `--force-reset`), `tests/setup/`, `tests/api/` (assets, uploads), `tests/e2e/` (auth, board), and unit/component tests next to the code. Helpers extracted for testing: `src/lib/safe-callback-url.ts`, `src/components/board/board-utils.ts`. CI is in `.github/workflows/ci.yml`. It runs on pull requests and on pushes to `main`.
 - Editor (DIG-8): `src/app/editor/layout.tsx` (auth gate), `src/app/editor/not-found.tsx`, `src/app/editor/(list)/{page,loading,error}.tsx`, `src/app/editor/[id]/{layout,page,loading,error}.tsx`. The `[id]/layout.tsx` checks ownership outside the loading boundary so foreign or missing zines return a real 404. Components are in `src/components/editor/`: `ZineEditor`, `NewZineForm`, `DeleteZineDialog`, `EditorSkeleton`, `EditorError`, plus `editor-state.ts` (pure draft logic, unit-tested).
 - When Playwright builds the app itself, it builds into `.next-e2e/` (`NEXT_DIST_DIR` in `next.config.mjs`), so test runs do not break a running `next dev`. CI builds into `.next` and sets `E2E_SKIP_BUILD`.
-- Totals on this branch: 218 Vitest tests and 51 Playwright tests. Mutation-checked: removing the in-use delete guard, or allowing `//` callback URLs, turns the matching tests red.
+- Totals on `main` after DIG-23: 218 Vitest tests and 51 Playwright tests. DIG-23's pull request reported those numbers from a run (`npm test` 218/218, `npm run test:e2e` 51/51). DIG-14 alone had 64 and 13. Mutation-checked: removing the in-use delete guard, or allowing `//` callback URLs, turns the matching tests red.
 - UI pieces only, not pages: `src/components/FlipCard.tsx`, `src/app/layout.tsx`, `src/app/globals.css`.
 - Client EXIF: `src/lib/exif-client.ts`.
 
@@ -109,7 +110,8 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 
 - Deploy setup for Stripe (portal on, webhook events, price ID) is in the README's "Billing (Stripe)" section. Sales tax is not collected.
 - On this NixOS machine, run e2e with `PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(nix build --no-link --print-out-paths nixpkgs#chromium)/bin/chromium` (see the README's NixOS section).
-- Pull request #1 is a draft checkpoint, not a finished review.
+- GitHub still has only its default labels (`bug`, `documentation`, `enhancement`, and the rest). `.github/labels.yml` is the list to apply. Applying it, and removing the defaults, waits for the owner.
+- Repo settings are unchanged: merge method, deleting merged branches, a license, and stale branches (`cursor/digital-zine-mvp-8439`, and the merged DIG-21, DIG-22, and DIG-23 branches) are owner decisions. Do not change them from a ticket unless the owner says so.
 - CI caches `node_modules` (keyed on the lockfile; a hit skips `npm ci`) and `.next/cache` plus `tsconfig.tsbuildinfo`. It installs only Playwright's headless Chromium shell, without `--with-deps` (the runner already has the libraries; add the flag back if Chromium fails to launch) and uses `postgres:17-alpine`. Commit the handoff together with the code it describes, so a docs-only follow-up doesn't trigger a second full CI run.
 
 ## Tickets
@@ -129,30 +131,42 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
 
-### Launch readiness (active)
+### Boards, recipes, and scale (active)
+
+[P-DIG-3](https://linear.app/digital-zine/project/boards-recipes-and-scale-60bb4ca990fd), In Progress. This is the only place that names the active project. `CLAUDE.md` and `.cursor/rules/project-management.mdc` point here.
+
+Multiple Vision Boards, Fujifilm recipe auto-fill and a saved library, an image pipeline, public-page caching, rate limits, and large-board performance. Production deploy, migrations, and monitoring stay in Launch readiness.
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-22](https://linear.app/digital-zine/issue/DIG-22/recipes-are-fujifilm-film-simulation-recipes-not-food-recipes) | UI/UX | Done | Merged in `9528683` (PR #3). Fujifilm film recipes replace food recipes everywhere. |
-| [DIG-21](https://linear.app/digital-zine/issue/DIG-21/update-agent-rules-and-handoff-for-post-mvp-work) | Docs | Done | Merged in `b3e7e09`. |
+| [DIG-23](https://linear.app/digital-zine/issue/DIG-23/fill-in-fujifilm-recipes-from-the-photos-maker-notes) | UI/UX | Done | Merged in [PR #4](https://github.com/jnleyva816/Digital-Zine/pull/4) (`297a1b0`). Fluorescent codes `0x301` and `0x302` are mapped to Fluorescent 2 and 3. That numbering is still unconfirmed. |
+| [DIG-25](https://linear.app/digital-zine/issue/DIG-25/multiple-vision-boards-each-zine-linked-to-one-board) | Data | Backlog | Several boards; each zine links to one. The `Board` table is approved. Deleting a board, changing a zine's board, and the URLs are not decided; ask. |
+| [DIG-24](https://linear.app/digital-zine/issue/DIG-24/saved-reusable-fujifilm-recipes) | Data | Backlog | A saved recipe library. Needs a new `Recipe` table. Edit and delete behavior, and public sharing, are not decided; ask. |
+| [DIG-26](https://linear.app/digital-zine/issue/DIG-26/image-pipeline-resized-webpavif-variants-and-blur-placeholders) | Backend | Backlog | Width variants and blur placeholders. Sync vs. a background job, and backfill, are not decided; ask. |
+| [DIG-27](https://linear.app/digital-zine/issue/DIG-27/cache-public-zine-pages-with-on-demand-revalidation) | Backend | Backlog | Cache `/z/[slug]` and revalidate on publish, edit, and delete. An unpublished zine must 404 immediately. |
+| [DIG-28](https://linear.app/digital-zine/issue/DIG-28/rate-limit-sign-in-uploads-and-api-writes) | Security | Backlog | Rate limits on sign-in, uploads, writes, and PDF export. The store and the numbers are not decided; ask. Ties to DIG-20. |
+| [DIG-29](https://linear.app/digital-zine/issue/DIG-29/keep-large-boards-fast-pagination-and-virtualization) | UI/UX | Backlog | Cursor pagination and a virtualized grid. A library vs. an in-house window is not decided; ask. |
+
+### Launch readiness (Planned)
+
+[P-DIG-2](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). Not the active project. Deploy, migrations, a real Stripe sandbox round trip, and refund handling.
+
+| Issue | Area | State | Remaining work |
+| --- | --- | --- | --- |
+| [DIG-22](https://linear.app/digital-zine/issue/DIG-22/recipes-are-fujifilm-film-simulation-recipes-not-food-recipes) | UI/UX | Done | Merged in PR #3 (`9528683`). Fujifilm film recipes replace food recipes everywhere. |
+| [DIG-21](https://linear.app/digital-zine/issue/DIG-21/update-agent-rules-and-handoff-for-post-mvp-work) | Docs | Done | Merged in `b3e7e09` (PR #2). |
 | [DIG-18](https://linear.app/digital-zine/issue/DIG-18/verify-billing-end-to-end-in-a-stripe-sandbox) | Payments | Backlog | Real Stripe sandbox round trip. Needs sandbox keys from the owner in a local `.env`. |
 | [DIG-19](https://linear.app/digital-zine/issue/DIG-19/switch-production-schema-changes-to-prisma-migrations) | Data | Backlog | Baseline Prisma migration and `migrate deploy`. Whether the test reset keeps `db push` is not decided; ask. |
 | [DIG-20](https://linear.app/digital-zine/issue/DIG-20/deploy-to-production-with-secrets-storage-and-monitoring) | Infra | Backlog | Production deploy. Hosting, database, storage, domain, and monitoring are not decided; ask. |
 | [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Payments | Backlog | Refund, dispute, and fraud-warning webhooks. The product response is not decided; ask first. |
 
-### Boards, recipes, and scale
+### Not in a project
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-23](https://linear.app/digital-zine/issue/DIG-23/fill-in-fujifilm-recipes-from-the-photos-maker-notes) | UI/UX | Done | Merged in [PR #4](https://github.com/jnleyva816/Digital-Zine/pull/4). Fluorescent 2/3 mapping (`0x301` / `0x302`) is still unconfirmed. |
-| [DIG-24](https://linear.app/digital-zine/issue/DIG-24/saved-reusable-fujifilm-recipes) | Data | Backlog | Saved recipe library. Schema change; ask first. |
-| [DIG-25](https://linear.app/digital-zine/issue/DIG-25) | UI/UX | Backlog | Multiple Vision Boards. Ask before building: what happens when a board is deleted, whether a zine can switch boards, and the board URLs. |
-| [DIG-26](https://linear.app/digital-zine/issue/DIG-26) | Infra | Backlog | Image pipeline. |
-| [DIG-27](https://linear.app/digital-zine/issue/DIG-27) | Infra | Backlog | Caching of public zine pages. |
-| [DIG-28](https://linear.app/digital-zine/issue/DIG-28) | Security | Backlog | Rate limiting. |
-| [DIG-29](https://linear.app/digital-zine/issue/DIG-29) | Backend | Backlog | Large-board performance. |
+| [DIG-30](https://linear.app/digital-zine/issue/DIG-30/repo-pm-hygiene-fix-agent-handoff-drift-add-agentsmd-prissue-templates) | Docs | In Review | [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) is ready. CI on `a9bfd75` is green. This merge of `main` (PR #4) will re-run CI. The owner merges. This ticket is not in a Linear project. |
 
-Next: DIG-23 is merged. Do not start DIG-25 until the three board decisions are answered. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys. Fluorescent 2/3 (`0x301` / `0x302`) is still unconfirmed.
+Next: the owner merges [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) (DIG-30). DIG-23 is Done. No product issue is In Progress. Do not start DIG-25 until the three board decisions are answered. Fluorescent 2/3 (`0x301` / `0x302`) is still unconfirmed. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
 
 To re-verify a running server: `SMOKE_BASE_URL=<url> npm run smoke`. It creates and deletes its own `@smoke.digitalzine.local` user and rewrites `docs/screenshots/`.
 
@@ -162,7 +176,10 @@ Append a row when you stop. Do not delete earlier rows.
 
 | When (America/New_York) | Tool | What changed | Left unfinished |
 | --- | --- | --- | --- |
+| 18 Nov 2026, 1:46 PM | Cursor cloud agent | Merged `main` (`297a1b0`, PR #4) into the DIG-30 branch. The only conflict was this file. DIG-23 is Done. Kept Boards, recipes, and scale as the active project. | Owner merges PR #5. Fluorescent 2/3 is still unconfirmed. |
+| 18 Nov 2026, 1:43 PM | Cursor cloud agent | DIG-30 CI is green on `a9bfd75` (Build and test, including `npm run build`, `npm test`, and `npm run test:e2e`, 50 Playwright tests). Set the issue to In Review and marked PR #5 ready. | Owner merges PR #5. DIG-23 stays In Progress on draft PR #4. |
 | 18 Nov 2026, 1:42 PM | Cursor (local) | Owner asked to merge DIG-23. Marked PR #4 ready and merged it into `main`. CI on `3316370` was already green. | Fluorescent 2/3 (`0x301` / `0x302`) is still unconfirmed. Nothing else is in progress. |
+| 18 Nov 2026, 1:40 PM | Cursor cloud agent | DIG-30: rewrote this handoff against Linear and `main` at `9528683` (PR #3 merged, DIG-22 Done, active project P-DIG-3, DIG-23 In Progress on draft PR #4). "Before you stop" now follows one ticket, one branch, one PR. `CLAUDE.md` and `project-management.mdc` no longer name Launch readiness; the active project is only in this file. Added `AGENTS.md`, the pull request template, Bug/Feature/Improvement issue forms, `CODEOWNERS`, and `.github/labels.yml` (defined, not applied). README status line points here. No product code. Draft [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5). | CI on PR #5, then set DIG-30 to In Review. DIG-23 stays In Progress. |
 | 18 Nov 2026, 1:35 PM | Cursor (local) | Merged `origin/main` (`9528683`) into the DIG-23 branch at `08cb15b`. No conflicts. Opened draft PR #4. | DIG-23 stays In Progress until CI on PR #4 is green, then In Review. Fluorescent 2/3 is still unconfirmed. |
 | 18 Nov 2026, 1:00 PM | Cursor (local) | Merged PR #3 (`9528683`) after CI passed. DIG-22 is Done. | DIG-23 is still only on its branch. Next file is this handoff; next command is `git merge origin/main` on the DIG-23 branch, then open its PR. |
 | 18 Nov 2026, 12:55 PM | Cursor (local) | Wired DIG-23 into upload, test-first. `RecipeEditor` takes `prefill` (hint missing in the red run). `extractExifFromFile` returns `foundRecipe` (it was undefined in the red run). The board shows "Review recipe found in photo" and does not POST the recipe; the e2e timed out on that button before the wiring. After: `npm test` 218/218, `npm run test:e2e` 51/51. One admin API test failed once with a missing user row and passed on rerun. | Rebase onto `main` after PR #3 merges, then open the DIG-23 PR. Confirm Fluorescent 2/3 with the owner. |
@@ -186,7 +203,7 @@ Append a row when you stop. Do not delete earlier rows.
 
 Even if the session is interrupted, do these before you end. A dirty tree and a stale ticket count as unfinished.
 
-1. Update "Already in the tree", "Not built yet", the ticket table, and the session log in this file.
+1. Update "Already in the tree", "Not built yet", the ticket table, and the session log in this file. The active project is named in this file; keep it accurate.
 2. Move the Linear issue you touched. Say what changed, how you checked it, and the exact next step. Leave it In Progress if it is not actually done.
-3. Commit on the ticket's branch, push, and update that ticket's pull request. Do not open a second PR, and do not commit to `main`.
+3. Commit and push on that ticket's branch (its Linear `gitBranchName`, branched from an up-to-date `main`). Open or update that ticket's one pull request into `main`, with the ticket ID in the title. Do not commit to `main`. Leave the pull request as a draft until the ticket is In Review. Do not merge it, and do not update a different ticket's pull request. Branch `cursor/digital-zine-mvp-8439` and PR #1 are finished history.
 4. If you did not finish, name the next file to edit and the command to run. "Continue later" is not a status.

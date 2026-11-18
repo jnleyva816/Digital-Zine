@@ -1,0 +1,51 @@
+# Label definitions that mirror Linear's Area and Type groups for Digital-Zine.
+# Names use an `area:` or `type:` prefix and no space. Linear "UI/UX" is `area:ui-ux`.
+#
+# This file only defines the labels. Nothing in CI applies it, and this ticket
+# does not create, edit, or delete labels on GitHub. That is an owner step.
+#
+# Shape: a list of {name, color, description}, the format used by
+# crazy-max/ghaction-github-labeler and EndBug/label-sync. Color is RRGGBB,
+# copied from the Linear label.
+
+# Area — pick exactly one. The main part of the product a ticket changes.
+- name: "area:docs"
+  color: "bec2c8"
+  description: README, the agent handoff, and the Claude and Cursor rules.
+
+- name: "area:infra"
+  color: "95a2b3"
+  description: CI, deployment, environments, and monitoring.
+
+- name: "area:data"
+  color: "26b5ce"
+  description: Prisma schema, migrations, storage, and uploads.
+
+- name: "area:payments"
+  color: "5e6ad2"
+  description: Stripe, billing, subscriptions, and tax.
+
+- name: "area:security"
+  color: "eb5757"
+  description: Work whose main purpose is security. Auth, permissions, validation, secrets, and abuse cases.
+
+- name: "area:backend"
+  color: "4cb782"
+  description: API routes, server logic, and PDF rendering.
+
+- name: "area:ui-ux"
+  color: "f2994a"
+  description: Pages, components, accessibility, layout, and copy.
+
+# Type — pick exactly one.
+- name: "type:bug"
+  color: "eb5757"
+  description: Something that already shipped behaves wrong.
+
+- name: "type:feature"
+  color: "bb87fc"
+  description: Something creators or readers cannot do yet.
+
+- name: "type:improvement"
+  color: "4ea7fc"
+  description: Something that works, but should be clearer, faster, or safer.

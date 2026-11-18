@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Linear (Digital-Zine)
+    url: https://linear.app/digital-zine
+    about: Linear is the source of truth for what to build. Open the ticket there. Use a GitHub issue when the repo also needs one, and match that ticket's sections.

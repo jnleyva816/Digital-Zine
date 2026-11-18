@@ -1,0 +1,56 @@
+name: Feature
+description: Something creators or readers cannot do yet.
+labels:
+  - "type:feature"
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Linear is the source of truth for what to build. Open the ticket there too, and paste its URL under Links. One Area label and one Type label. This form is a Feature. Do not add print, payouts, extra templates, audio, or video unless the owner already asked.
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Context
+      description: What the creator or reader can do after this that they cannot do now.
+      placeholder: A creator can keep several Vision Boards and build each zine from one of them.
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance
+      description: What must be true when this is done. Include empty, loading, and error states when a page changes, and the auth and ownership rules when an API route changes.
+      placeholder: |
+        - Create, rename, reorder, and delete boards.
+        - Ownership is enforced on every board route.
+    validations:
+      required: true
+
+  - type: textarea
+    id: not-decided
+    attributes:
+      label: Not decided (ask the owner)
+      description: Product, schema, dependency, or architecture questions that are not already settled. A new table, a new dependency, or a behavior the handoff does not decide belongs here. Leave this empty when nothing is unsettled.
+      placeholder: What happens to a board's photos when the board is deleted.
+    validations:
+      required: false
+
+  - type: textarea
+    id: tests
+    attributes:
+      label: Tests
+      description: Which layers prove this (unit, component, API, end to end). Every user-visible flow needs an end-to-end test. Every new or changed API route needs auth, validation, and success tests.
+      placeholder: API tests for 401, 404, and 400, plus an end-to-end test that creates a board and a zine from it.
+    validations:
+      required: true
+
+  - type: textarea
+    id: links
+    attributes:
+      label: Links
+      description: The Linear issue, related DIG tickets, and screenshots.
+      placeholder: https://linear.app/digital-zine/issue/DIG-00
+    validations:
+      required: false

@@ -10,7 +10,7 @@ Read `docs/agent-handoff.md` and the open issues in the active Linear project (t
 
 The MVP shipped: PR #1 was merged into `main` on 18 Nov 2026. Work now runs ticket by ticket in the Linear team **Digital-Zine**.
 
-- **Projects are goals.** The current one is [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). The handoff names the active project.
+- **Projects are goals.** The active project is named in `docs/agent-handoff.md`. Read that file for which project is current. Do not hard-code a project name in these rules.
 - **Labels describe the work.** Every ticket gets exactly one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) for the main part of the product it changes, and one **Type** label (Bug, Feature, Improvement). Label tickets you create. If cross-cutting work is large, split it into sub-issues with their own Areas.
 - **Security belongs to every ticket.** Anything touching auth, permissions, payments, uploads, or user data gets tests for its abuse cases, whatever its Area. The Security label is for work whose main purpose is security.
 - **One branch and one PR per ticket.** Branch off an up-to-date `main` using the ticket's Linear branch name (`gitBranchName`), and open one PR into `main` with the ticket ID in the title. Never commit to `main` directly.
