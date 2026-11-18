@@ -50,6 +50,18 @@ jobs:
 
       - run: npm ci
 
+      # Reuse Next's compiler, ESLint, and TypeScript caches between runs. The key moves with the
+      # source so each run saves a fresh cache; restore-keys falls back to the newest one.
+      - name: Restore Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            .next/cache
+            tsconfig.tsbuildinfo
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'next.config.mjs', 'tailwind.config.*', 'tsconfig.json') }}
+          restore-keys: |
+            nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
+
       - name: Build (type check and lint included)
         run: npm run build
 
