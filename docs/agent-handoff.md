@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 1:46 PM America/New_York (Cursor cloud agent). The MVP is merged (`c70f82a`). DIG-21 is merged (`b3e7e09`, PR #2). DIG-22 is Done: PR #3 merged as `9528683`. DIG-23 is Done: PR #4 merged as `297a1b0`. It reads a recipe from a Fujifilm photo and lets the creator name it. The active Linear project is [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-60bb4ca990fd) (P-DIG-3). [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af) (P-DIG-2) is Planned, not active. DIG-30 is In Review on PR #5.
+Last updated: 18 Nov 2026, 1:51 PM America/New_York (Cursor cloud agent). The MVP is merged (`c70f82a`). DIG-21 is merged (`b3e7e09`, PR #2). DIG-22 is Done: PR #3 merged as `9528683`. DIG-23 is Done: PR #4 merged as `297a1b0`. It reads a recipe from a Fujifilm photo and lets the creator name it. DIG-30 is Done: PR #5 merged as `2defc75`. The active Linear project is [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-60bb4ca990fd) (P-DIG-3). [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af) (P-DIG-2) is Planned, not active.
 
 ## Do this first
 
@@ -164,9 +164,9 @@ Multiple Vision Boards, Fujifilm recipe auto-fill and a saved library, an image 
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-30](https://linear.app/digital-zine/issue/DIG-30/repo-pm-hygiene-fix-agent-handoff-drift-add-agentsmd-prissue-templates) | Docs | In Review | [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) is ready. CI on `a9bfd75` is green. This merge of `main` (PR #4) will re-run CI. The owner merges. This ticket is not in a Linear project. |
+| [DIG-30](https://linear.app/digital-zine/issue/DIG-30/repo-pm-hygiene-fix-agent-handoff-drift-add-agentsmd-prissue-templates) | Docs | Done | Merged in [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) (`2defc75`). Not in a Linear project. GitHub labels in `.github/labels.yml` are defined only; applying them is still an owner step. |
 
-Next: the owner merges [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) (DIG-30). DIG-23 is Done. No product issue is In Progress. Do not start DIG-25 until the three board decisions are answered. Fluorescent 2/3 (`0x301` / `0x302`) is still unconfirmed. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
+Next: no product issue is In Progress. Do not start DIG-25 until the three board decisions are answered. Fluorescent 2/3 (`0x301` / `0x302`) is still unconfirmed. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
 
 To re-verify a running server: `SMOKE_BASE_URL=<url> npm run smoke`. It creates and deletes its own `@smoke.digitalzine.local` user and rewrites `docs/screenshots/`.
 
@@ -176,6 +176,7 @@ Append a row when you stop. Do not delete earlier rows.
 
 | When (America/New_York) | Tool | What changed | Left unfinished |
 | --- | --- | --- | --- |
+| 18 Nov 2026, 1:51 PM | Cursor cloud agent | The owner merged PR #5 (`2defc75`). DIG-30 is Done. This file now says so. | No product issue is In Progress. Fluorescent 2/3 is still unconfirmed. |
 | 18 Nov 2026, 1:46 PM | Cursor cloud agent | Merged `main` (`297a1b0`, PR #4) into the DIG-30 branch. The only conflict was this file. DIG-23 is Done. Kept Boards, recipes, and scale as the active project. | Owner merges PR #5. Fluorescent 2/3 is still unconfirmed. |
 | 18 Nov 2026, 1:43 PM | Cursor cloud agent | DIG-30 CI is green on `a9bfd75` (Build and test, including `npm run build`, `npm test`, and `npm run test:e2e`, 50 Playwright tests). Set the issue to In Review and marked PR #5 ready. | Owner merges PR #5. DIG-23 stays In Progress on draft PR #4. |
 | 18 Nov 2026, 1:42 PM | Cursor (local) | Owner asked to merge DIG-23. Marked PR #4 ready and merged it into `main`. CI on `3316370` was already green. | Fluorescent 2/3 (`0x301` / `0x302`) is still unconfirmed. Nothing else is in progress. |
