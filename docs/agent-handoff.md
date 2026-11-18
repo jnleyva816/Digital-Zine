@@ -58,7 +58,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | In Progress | Route exists. Prove it against Postgres and add the download control for Pro. |
 | [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | In Progress | Routes exist. Build `/billing`. Missing Stripe keys must stay non-fatal. |
 | [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Todo | Build, smoke checks, screenshots, mark PR #1 ready. |
-| [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | In Progress | This handoff and the Claude/Cursor rules. Mark Done once they are on the branch. |
+| [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 
 Next ticket to resume: finish the missing pages, starting with sign-in and `/board` (DIG-6 and DIG-7). Do not jump to PDF screenshots before those pages exist.
 
@@ -69,7 +69,7 @@ Append a row when you stop. Do not delete earlier rows.
 | When (America/New_York) | Tool | What changed | Left unfinished |
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
-| 18 Nov 2026, 9:13 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/`. | Same product work as above. |
+| 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
 
 ## Before you stop
 
