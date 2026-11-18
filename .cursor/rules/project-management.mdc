@@ -8,8 +8,8 @@ alwaysApply: true
 Track work in Linear project [Digital Zine MVP](https://linear.app/digital-zine/project/digital-zine-mvp-3317748153f6). The issue map is in `docs/agent-handoff.md`.
 
 - One implementation issue in progress at a time.
-- Set the issue to In Progress when you start it. Set it to Done only after its acceptance is met and you have checked it.
-- On that issue, record what changed, how you verified it, and the exact next step.
+- Set the issue to In Progress when you start it. Set it to Done only after its acceptance is met, its tests are committed, and `npm run build`, `npm test`, and `npm run test:e2e` pass.
+- On that issue, record what changed, which tests you wrote (and that you saw them fail first), how you verified it, and the exact next step.
 - Update `docs/agent-handoff.md` in the same change: "Already in the tree", "Not built yet", the ticket table, and a new session-log row. Times are America/New_York.
 
 Before you stop, including an interruption or a context limit:

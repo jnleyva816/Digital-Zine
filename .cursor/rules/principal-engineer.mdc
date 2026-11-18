@@ -13,4 +13,4 @@ If the handoff, the Linear tickets, and the code do not settle a product, schema
 
 Ask before changing the Prisma schema, adding a dependency, rewriting a finished module, expanding past the MVP, force-pushing, or merging.
 
-Build the current ticket to a production bar: strict TypeScript, real empty, loading, and error states, accessible controls, and a check that proves the path (`npm run build`, plus a smoke check when the path is user-visible). No fake success and no placeholder flows. Do not add deferred scope (print, payouts, extra templates, audio, video) because it would look more complete.
+Build the current ticket to a production bar: strict TypeScript, real empty, loading, and error states, accessible controls, and committed tests written first that prove the path (see `test-driven.mdc`), plus a green `npm run build`. No fake success and no placeholder flows. Do not add deferred scope (print, payouts, extra templates, audio, video) because it would look more complete.

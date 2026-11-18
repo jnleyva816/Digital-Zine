@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 10:20 AM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`; DIG-7 done in the commit that carries this line. Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 10:50 AM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) is in the commit that carries this line. Foundation checkpoint: `698c7bb`.
 
 ## Do this first
 
@@ -22,6 +22,7 @@ Do not reopen these unless the user explicitly changes them.
 - Stripe is subscriptions only: Free, and Pro at $15/month. PDF export is Pro-only. The board, the one template, and the public viewer stay on Free. Missing `STRIPE_SECRET_KEY` must explain that billing is not configured and must not crash.
 - Out of this version: print-on-demand, proof copies, cover QR codes, Stripe Connect, payouts, extra templates, asset garbage collection, audio and video.
 - Seeded dev user: `creator@digitalzine.local` / `zine1234`. Sample slug in the local database: `sunday-ferments-issue-01`.
+- Test-driven development (decided 18 Nov): red, green, refactor for each acceptance behavior. Tooling is Vitest, Testing Library, and jsdom for unit, component, and API tests, and `@playwright/test` for end-to-end tests. Tests run against the separate `digital_zine_test` database from `.env.test`, which is reset before each run. Earlier work was backfilled with tests (DIG-14), and GitHub Actions CI runs the build and both suites. A ticket is Done only when `npm run build`, `npm test`, and `npm run test:e2e` pass and CI is green. The rules are in `CLAUDE.md` and `.cursor/rules/test-driven.mdc`.
 - Deleting a Vision Board photo (decided 18 Nov): allowed, with an inline confirm, but `DELETE /api/assets/[id]` returns 409 and names the zine when any of the user's zine pages uses the asset. Stored bytes are not deleted (asset garbage collection is out of scope).
 - `/` (decided 18 Nov): no landing page. Signed in → `/board`, signed out → `/signin`.
 - Local Postgres: database `digital_zine` at `127.0.0.1:5432`, user `zine`, password `zine`. Copy `.env.example` to `.env`. Never commit `.env`.
@@ -43,15 +44,15 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 - `/` redirect in `src/app/page.tsx`.
 - Vision Board `/board` (DIG-7): `src/app/board/{layout,page,loading,error}.tsx` and `src/components/board/{VisionBoard,RecipeEditor,types}.ts(x)`. The auth gate is in `layout.tsx` so signed-out visitors get a real 307; it sits outside the `loading.tsx` Suspense boundary on purpose. Uploads run one at a time: EXIF is read in the browser (lazy-loaded `exifreader`), then presign, PUT, and `POST /api/assets`. EXIF badges; recipe editor in a native `<dialog>`; reorder by drag and drop or arrow buttons, announced in a live region; delete with an inline confirm.
 - `StudioHeader`: nav labels are screen-reader-only below `sm` so the header fits at 390px.
+- Test harness (DIG-14): `vitest.config.mts`, `playwright.config.ts`, `.env.test`, `scripts/test-db.ts` (guarded reset; refuses non-`_test` databases; truncates rather than `--force-reset`), `tests/setup/`, `tests/api/` (assets, uploads), `tests/e2e/` (auth, board), and unit/component tests next to the code. Helpers extracted for testing: `src/lib/safe-callback-url.ts`, `src/components/board/board-utils.ts`. CI is in `.github/workflows/ci.yml`.
+- Totals: 64 Vitest tests and 13 Playwright tests. Mutation-checked: removing the in-use delete guard, or allowing `//` callback URLs, turns the matching tests red.
 - UI pieces only, not pages: `src/components/FlipCard.tsx`, `src/app/layout.tsx`, `src/app/globals.css`.
 - Client EXIF: `src/lib/exif-client.ts`.
 
 ## Not built yet
 
 - Pages: `/editor`, `/editor/[id]`, `/z/[slug]`, `/billing`. Until they exist, `StudioHeader` link prefetches return 404 on `/board`. That is expected and stops once those pages land.
-- `npm run smoke` points at `scripts/smoke-test.ts`, which does not exist. DIG-12 must write it or remove the script.
-- No smoke script in the repo yet. The DIG-7 browser smoke check (headless Nix Chromium plus the repo's `playwright-core`, 20 checks) is described in the DIG-7 Linear comment. DIG-12 should turn it into `scripts/smoke-test.ts`. Use `executablePath` from `nix build --print-out-paths nixpkgs#chromium` on this machine.
-- The board's empty state has not been seen in a browser, because the seeded user always has photos.
+- On this NixOS machine, run e2e with `PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(nix build --no-link --print-out-paths nixpkgs#chromium)/bin/chromium` (see the README's NixOS section).
 - Pull request #1 is a draft checkpoint, not a finished review.
 
 ## Tickets
@@ -67,8 +68,9 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | In Progress | Routes exist. Build `/billing`. Missing Stripe keys must stay non-fatal. |
 | [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Todo | Build, smoke checks, screenshots, mark PR #1 ready. |
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
+| [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | In Progress | Harness, TDD rules, backfilled tests, and CI are committed. Done when CI is green on PR #1. Blocks DIG-8. |
 
-Next ticket to resume: DIG-8, the editor. Read `src/app/api/zines/route.ts` and `src/app/api/zines/[id]/route.ts` first, then add `src/app/editor/` with a `layout.tsx` auth gate like `src/app/board/layout.tsx`. Reuse `BoardAsset`/`toBoardAsset` from `src/components/board/types.ts` for the asset picker. Verify with `npm run build` and a browser smoke check on port 3417.
+Next ticket to resume: confirm CI is green for DIG-14 (`gh run list --branch cursor/digital-zine-mvp-8439`), then DIG-8, the editor, test-first: write `tests/api/zines.test.ts` and `tests/e2e/editor.spec.ts` before any editor UI. Read `src/app/api/zines/route.ts` and `src/app/api/zines/[id]/route.ts` first, then add `src/app/editor/` with a `layout.tsx` auth gate like `src/app/board/layout.tsx`. Reuse `BoardAsset`/`toBoardAsset` from `src/components/board/types.ts` for the asset picker. Done means `npm run build`, `npm test`, and `npm run test:e2e` pass and CI is green.
 
 ## Session log
 
@@ -78,6 +80,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 10:50 AM | Claude Code (local) | Adopted TDD at the user's request: added rules in `CLAUDE.md` and `.cursor/rules/`, the Vitest and Playwright harness, the guarded test-database reset, 64 Vitest and 13 Playwright tests backfilled for DIG-6 and DIG-7, and CI. Named the board grid for accessibility. | Confirm CI is green, close DIG-14, then DIG-8. |
 | 18 Nov 2026, 10:20 AM | Claude Code (local) | Built `/board` (DIG-7) and the `/` redirect. Added the in-use guard to asset delete. Fixed `StudioHeader` overflow on phones. Build is green, and a 20-check headless Chromium smoke check passed. DIG-7 is Done. | DIG-8 onward. |
 | 18 Nov 2026, 9:35 AM | Claude Code (local) | Set up the local env (Docker Postgres, Nix Node, NixOS Prisma engines). Added `/signin`, hardened `SignInForm`, wrote the README. First green `npm run build`. DIG-6 is Done. | DIG-7 onward. |
 

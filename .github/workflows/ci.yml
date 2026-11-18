@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "cursor/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build and test
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: zine
+          POSTGRES_PASSWORD: zine
+          POSTGRES_DB: digital_zine_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U zine"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    # Same values as .env.test, so the build bakes in the URL the e2e server uses.
+    env:
+      DATABASE_URL: postgresql://zine:zine@127.0.0.1:5432/digital_zine_test?schema=public
+      AUTH_SECRET: test-digital-zine-secret-not-for-production-32chars
+      AUTH_TRUST_HOST: "true"
+      NEXT_PUBLIC_APP_URL: http://localhost:3417
+      LOCAL_STORAGE_DIR: .data/test-uploads
+      NEXT_TELEMETRY_DISABLED: "1"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build (type check and lint included)
+        run: npm run build
+
+      - name: Unit, component, and API tests
+        run: npm test
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: End-to-end tests
+        run: npm run test:e2e
+        env:
+          E2E_SKIP_BUILD: "1"
+
+      - name: Upload Playwright report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7

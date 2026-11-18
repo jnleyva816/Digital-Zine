@@ -64,6 +64,31 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
 | `npm run db:push` | Applies `prisma/schema.prisma` to the database |
 | `npm run db:seed` | Reseeds the sample user, assets, and zine |
 | `npm run db:setup` | `db:push` followed by `db:seed` |
+| `npm test` | Unit, component, and API tests (Vitest) against the test database |
+| `npm run test:watch` | Vitest in watch mode |
+| `npm run test:e2e` | Builds the app, starts it on port 3417, and runs the Playwright browser tests against the test database |
+| `npm run test:db:reset` | Applies the schema to the test database, empties it, and reseeds it |
+
+## Testing
+
+This project is test-driven. Write a failing test, make it pass, then refactor. `CLAUDE.md` and `.cursor/rules/test-driven.mdc` hold the full rules.
+
+| Layer | Tool | Where |
+| --- | --- | --- |
+| Unit | Vitest | `src/**/*.test.ts`, next to the code |
+| Component | Vitest, Testing Library, jsdom | `src/**/*.test.tsx`, next to the component |
+| API route handlers | Vitest against Postgres | `tests/api/` |
+| End to end | Playwright against `next start` | `tests/e2e/` |
+
+Tests use the separate `digital_zine_test` database from `.env.test`. That file is committed because it holds only local, non-secret values. `npm test` and `npm run test:e2e` reset and seed the test database before each run. The reset refuses to touch any database whose name does not end in `_test`, so your dev data is safe. The Postgres user must be allowed to create that database; the Docker command above allows it.
+
+Before the first browser run, install Chromium:
+
+```sh
+npx playwright install chromium
+```
+
+CI (`.github/workflows/ci.yml`) runs the build, `npm test`, and `npm run test:e2e` on every push and pull request.
 
 ## Environment variables
 
@@ -110,4 +135,11 @@ export PRISMA_QUERY_ENGINE_LIBRARY=$E/lib/libquery_engine.node
 export PRISMA_SCHEMA_ENGINE_BINARY=$E/bin/schema-engine
 export PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING=1
 nix shell nixpkgs#nodejs_22 nixpkgs#openssl -c npm run build
+```
+
+Playwright cannot download its own browser on NixOS. Point it at the nixpkgs Chromium instead:
+
+```sh
+export PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(nix build --no-link --print-out-paths nixpkgs#chromium)/bin/chromium
+npm run test:e2e
 ```

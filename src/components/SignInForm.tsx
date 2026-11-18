@@ -4,17 +4,10 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowRight, KeyRound } from "lucide-react";
+import { safeCallbackUrl } from "@/lib/safe-callback-url";
 
 const DEV_EMAIL = "creator@digitalzine.local";
 const DEV_PASSWORD = "zine1234";
-
-/** Only allow same-origin relative paths so `callbackUrl` cannot redirect off-site. */
-function safeCallbackUrl(raw: string | null): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) {
-    return "/board";
-  }
-  return raw;
-}
 
 interface SignInFormProps {
   /** Show and prefill the seeded dev account. Never true in production builds. */

@@ -12,7 +12,8 @@ import {
   Trash2,
   UtensilsCrossed,
 } from "lucide-react";
-import type { ExifData, RecipeData } from "@/lib/types";
+import type { RecipeData } from "@/lib/types";
+import { assetLabel, exifBadges, moveItem } from "./board-utils";
 import type { PreparedUpload } from "@/lib/storage/types";
 import { RecipeEditor } from "./RecipeEditor";
 import {
@@ -39,27 +40,6 @@ const STAGE_LABEL: Record<UploadStage, string> = {
   saving: "Saving to board",
   error: "Failed",
 };
-
-function assetLabel(asset: BoardAsset, index: number): string {
-  return asset.originalName?.trim() || `Photo ${index + 1}`;
-}
-
-function exifBadges(exif: ExifData | null): string[] {
-  if (!exif) return [];
-  return [
-    exif.iso !== null && exif.iso !== undefined && String(exif.iso).trim() ? `ISO ${exif.iso}` : null,
-    exif.aperture,
-    exif.shutterSpeed,
-    exif.focalLength,
-  ].filter((v): v is string => typeof v === "string" && v.trim() !== "");
-}
-
-function moveItem<T>(list: T[], from: number, to: number): T[] {
-  const next = [...list];
-  const [item] = next.splice(from, 1);
-  next.splice(to, 0, item);
-  return next;
-}
 
 async function uploadOne(file: File, onStage: (stage: UploadStage) => void): Promise<BoardAsset> {
   onStage("reading");
@@ -383,6 +363,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
             {assets.length} photo{assets.length === 1 ? "" : "s"}. Drag a card, or use its arrow buttons, to change the order.
           </p>
           <ol
+            aria-label="Vision Board photos"
             aria-describedby={`${inputId}-order-hint`}
             className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
             onDragOver={(e) => {

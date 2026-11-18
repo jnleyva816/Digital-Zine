@@ -26,3 +26,8 @@ yarn-error.log*
 *.pem
 next-env.d.ts
 *.tsbuildinfo
+
+# Test output
+/test-results/
+/playwright-report/
+/blob-report/
