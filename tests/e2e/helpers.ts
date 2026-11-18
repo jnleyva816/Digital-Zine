@@ -31,3 +31,34 @@ export const boardCards = (page: Page) => page.getByRole("list", { name: "Vision
 export function waitForReorder(page: Page) {
   return page.waitForResponse((r) => r.url().endsWith("/api/assets/reorder") && r.request().method() === "POST");
 }
+
+const SEED_IMAGES = [
+  "seed/plate-01-charred-persimmon.jpg",
+  "seed/plate-02-morning-cellar.jpg",
+  "seed/plate-03-smoked-chili-oil.jpg",
+];
+
+/** A new creator whose board holds three photos (reusing the seeded image files). */
+export async function createUserWithPhotos(names = ["persimmon.jpg", "cellar.jpg", "chili.jpg"]) {
+  const user = await createUser();
+  const assets = [];
+  for (const [i, name] of names.entries()) {
+    assets.push(
+      await testDb.mediaAsset.create({
+        data: {
+          ownerId: user.id,
+          storageKey: `users/${user.id}/${randomUUID()}-${name}`,
+          publicUrl: `/api/media/${SEED_IMAGES[i % SEED_IMAGES.length]}`,
+          originalName: name,
+          sortOrder: i,
+          exif: { iso: 200 },
+        },
+      })
+    );
+  }
+  return { user, assets };
+}
+
+export async function deleteUser(id: string) {
+  await testDb.user.delete({ where: { id } }).catch(() => undefined);
+}

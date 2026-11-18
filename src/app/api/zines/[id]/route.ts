@@ -74,6 +74,14 @@ export async function PATCH(
   let nextSlug: string | undefined;
   if (parsed.data.slug !== undefined) {
     nextSlug = slugifyTitle(parsed.data.slug);
+    // `publishedAt` records the first publish and is kept through unpublish,
+    // so shared links keep working once a zine has ever been public.
+    if (nextSlug !== existing.slug && existing.publishedAt) {
+      return NextResponse.json(
+        { error: "The public URL is locked once a zine has been published." },
+        { status: 409 }
+      );
+    }
     if (nextSlug !== existing.slug) {
       const collision = await prisma.zine.findUnique({
         where: { slug: nextSlug },
@@ -84,6 +92,19 @@ export async function PATCH(
           { status: 409 }
         );
       }
+    }
+  }
+
+  if (parsed.data.published === true) {
+    const pageCount =
+      parsed.data.pages !== undefined
+        ? parsed.data.pages.length
+        : await prisma.zinePage.count({ where: { zineId: existing.id } });
+    if (pageCount === 0) {
+      return NextResponse.json(
+        { error: "Add at least one page before publishing." },
+        { status: 400 }
+      );
     }
   }
 
@@ -142,9 +163,7 @@ export async function PATCH(
         ...(parsed.data.published !== undefined
           ? {
               published: parsed.data.published,
-              publishedAt: parsed.data.published
-                ? existing.publishedAt ?? new Date()
-                : null,
+              publishedAt: existing.publishedAt ?? (parsed.data.published ? new Date() : null),
             }
           : {}),
       },

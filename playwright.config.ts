@@ -3,7 +3,12 @@ import { loadTestEnv } from "./scripts/test-db";
 
 const port = Number(process.env.E2E_PORT ?? 3417);
 const baseURL = `http://localhost:${port}`;
-const testEnv = { ...loadTestEnv(), NEXT_PUBLIC_APP_URL: baseURL };
+const testEnv: Record<string, string> = {
+  ...loadTestEnv(),
+  NEXT_PUBLIC_APP_URL: baseURL,
+  // When Playwright builds the app itself, keep the output away from `.next`, which `next dev` uses.
+  ...(process.env.E2E_SKIP_BUILD ? {} : { NEXT_DIST_DIR: ".next-e2e" }),
+};
 
 // CI builds in an earlier step; locally, build first so tests never run against stale output.
 const start = `npx next start -p ${port}`;
