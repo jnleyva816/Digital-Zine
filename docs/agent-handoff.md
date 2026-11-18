@@ -2,13 +2,13 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 3:30 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) done in `5f931b9`; CI green (run 44339460602). DIG-11 (billing) done in `08dbc9e`; CI green (run 44341471872). DIG-16 (Stripe Tax) done in `33955b3`; CI green. DIG-17 (admin role) done in `ff60272`; CI green. DIG-12 (final verification) done; see the ticket table. Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 4:00 PM America/New_York (Claude Code, local). **The MVP is merged**: PR #1 went into `main` as merge commit `c70f82a`, and CI is green on `main` (run 44351057883). The active Linear project is now [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af).
 
 ## Do this first
 
 1. Read this file.
-2. Read the open Linear issues in [Digital Zine MVP](https://linear.app/digital-zine/project/digital-zine-mvp-3317748153f6). Do not start a second issue while one is already in progress unless the user says to.
-3. Work on branch `cursor/digital-zine-mvp-8439`. The draft pull request is https://github.com/jnleyva816/Digital-Zine/pull/1. Do not open a second pull request for the same MVP.
+2. Read the open Linear issues in the active project, [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). Do not start a second issue while one is already in progress unless the user says to.
+3. Branch off an up-to-date `main` using the ticket's Linear branch name, and open one PR per ticket. Never commit to `main`, and never merge unless the user says so. Branch `cursor/digital-zine-mvp-8439` and PR #1 are finished history.
 4. Do not rebuild anything listed under "Already in the tree".
 
 ## Already decided
@@ -39,6 +39,11 @@ Do not reopen these unless the user explicitly changes them.
 - Smoke checks (decided 18 Nov, DIG-12): `scripts/smoke.ts` must create its own throwaway user and data and delete them afterwards. The dev database holds the owner's real data; the seeded zine was renamed "Car Show".
 - Sales tax (decided 18 Nov, DIG-16): Pro is $15/month plus applicable tax (exclusive). `STRIPE_AUTOMATIC_TAX=true` turns on Stripe Tax at Checkout for an environment. When it's unset, no tax is sent. Stripe-side setup (head office, registrations, product tax code) belongs to the account owner and is described in the README. Never enable it in code unconditionally.
 - Screenshots (decided 18 Nov, DIG-12): commit them to `docs/screenshots/` and embed them in the README and PR #1.
+- Workflow after the MVP (decided 18 Nov, DIG-21):
+  - Every Linear ticket gets one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) and one **Type** label (Bug, Feature, Improvement).
+  - Projects are goals, not areas.
+  - One branch and one PR per ticket, off `main`. The ticket goes to In Review when CI is green on its PR, and to Done when the owner merges.
+  - Only the owner merges.
 - `publishedAt` means *first* published (decided 18 Nov, DIG-8): unpublishing flips only `published` and keeps `publishedAt`, which is what locks the slug. `PATCH /api/zines/[id]` returns 409 for a slug change once `publishedAt` is set, and 400 when publishing would leave zero pages.
 - Deleting a Vision Board photo (decided 18 Nov): allowed, with an inline confirm, but `DELETE /api/assets/[id]` returns 409 and names the zine when any of the user's zine pages uses the asset. Stored bytes are not deleted (asset garbage collection is out of scope).
 - `/` (decided 18 Nov): no landing page. Signed in → `/board`, signed out → `/signin`.
@@ -97,24 +102,30 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 
 | Issue | State at last update | Remaining work |
 | --- | --- | --- |
-| [DIG-5](https://linear.app/digital-zine/issue/DIG-5/ship-the-digital-zine-mvp) | In Progress | Parent. Close only when DIG-6 through DIG-12 are done. |
+| [DIG-5](https://linear.app/digital-zine/issue/DIG-5/ship-the-digital-zine-mvp) | Done | Parent. Closed when PR #1 merged (`c70f82a`). |
 | [DIG-6](https://linear.app/digital-zine/issue/DIG-6/scaffold-nextjs-postgres-storage-and-auth) | Done | Sign-in page, README, green `npm run build`, curl smoke check of credentials sign-in. |
 | [DIG-7](https://linear.app/digital-zine/issue/DIG-7/vision-board-upload-exif-recipes-and-reorder) | Done | `/board` with upload, EXIF badges, recipe editor, drag/keyboard reorder, guarded delete. Browser smoke check passed. |
 | [DIG-8](https://linear.app/digital-zine/issue/DIG-8/editor-one-template-ordered-pages-and-publish) | Done | `/editor` list and `/editor/[id]`: captions, per-page flip, reorder, add or remove pages, explicit save, publish and unpublish, slug lock, typed-title delete. Built test-first. |
 | [DIG-9](https://linear.app/digital-zine/issue/DIG-9/public-flip-viewer-with-open-graph-previews) | Done | SSR `/z/[slug]` with Open Graph and Twitter tags, a canonical URL, byline, phone layout, and an accessible flip. 12 viewer e2e tests. |
-| [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | Done (pending CI) | Owner-only route hardened and tested against Postgres; "Download PDF" in the editor, with an upgrade prompt for Free creators. |
+| [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | Done | Owner-only route hardened and tested against Postgres; "Download PDF" in the editor, with an upgrade prompt for Free creators. |
 | [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | Done | `/billing` with Checkout, Customer Portal, failed-payment warning, and not-configured state. Webhook hardened and tested with signed events. |
-| [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Backlog | Refund, dispute, and fraud-warning webhooks. Product response not decided; ask first. |
 | [DIG-16](https://linear.app/digital-zine/issue/DIG-16/collect-sales-tax-on-pro-with-stripe-tax) | Done | Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, exclusive pricing, README setup guide. Registrations are the account owner's job. |
 | [DIG-17](https://linear.app/digital-zine/issue/DIG-17/admin-role-with-full-access-and-a-view-as-free-toggle) | Done | Admin role, `admin:create`, "View as Free" header switch and banner. |
-| [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Done (pending CI) | Smoke checks 11/11 against a production build on local Postgres; screenshots in `docs/screenshots/`; README updated; PR #1 description rewritten and marked ready. |
+| [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Done | Smoke checks 11/11 against a production build on local Postgres; screenshots in `docs/screenshots/`; README updated; PR #1 description rewritten, marked ready, and merged. |
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
 
-Next: the MVP tickets are done and PR #1 is ready for review. Do not merge without the user. Open follow-ups:
-- DIG-15 (Backlog): Stripe refund, dispute, and fraud-warning events. Ask the user what each one should do before building.
-- DIG-5 (parent) closes once the user accepts PR #1.
-- Before going live: a real Stripe sandbox round trip (see the README's Billing section), the Stripe Tax setup in the Dashboard, and a production `AUTH_SECRET` and `NEXT_PUBLIC_APP_URL`.
+### Launch readiness (active)
+
+| Issue | Area | State | Remaining work |
+| --- | --- | --- | --- |
+| [DIG-21](https://linear.app/digital-zine/issue/DIG-21/update-agent-rules-and-handoff-for-post-mvp-work) | Docs | In Review | This rules and handoff update. Waiting for the owner to merge its PR. |
+| [DIG-18](https://linear.app/digital-zine/issue/DIG-18/verify-billing-end-to-end-in-a-stripe-sandbox) | Payments | Backlog | Real Stripe sandbox round trip. Needs sandbox keys from the owner in a local `.env`. |
+| [DIG-19](https://linear.app/digital-zine/issue/DIG-19/switch-production-schema-changes-to-prisma-migrations) | Data | Backlog | Baseline Prisma migration and `migrate deploy`. Whether the test reset keeps `db push` is not decided; ask. |
+| [DIG-20](https://linear.app/digital-zine/issue/DIG-20/deploy-to-production-with-secrets-storage-and-monitoring) | Infra | Backlog | Production deploy. Hosting, database, storage, domain, and monitoring are not decided; ask. |
+| [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Payments | Backlog | Refund, dispute, and fraud-warning webhooks. The product response is not decided; ask first. |
+
+Next: once the owner merges DIG-21, ask which Launch readiness ticket to start. DIG-19 (migrations) and DIG-20 (deploy) block real users. DIG-18 needs Stripe sandbox keys.
 
 To re-verify a running server: `SMOKE_BASE_URL=<url> npm run smoke`. It creates and deletes its own `@smoke.digitalzine.local` user and rewrites `docs/screenshots/`.
 
@@ -126,6 +137,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 4:00 PM | Claude Code (local) | The owner merged PR #1 (`c70f82a`); CI green on `main`. Closed DIG-5 and completed the MVP project. Set up Linear Area labels and labelled DIG-6 to DIG-17. Created the Launch readiness project with DIG-15, DIG-18, DIG-19, DIG-20, and DIG-21. Updated `CLAUDE.md`, `.cursor/rules/`, and this handoff for one branch and PR per ticket. | Owner merges the DIG-21 PR; then pick a Launch readiness ticket. |
 | 18 Nov 2026, 3:30 PM | Claude Code (local) | DIG-12: rewrote `scripts/smoke.ts` to create and delete its own creator. 11/11 checks passed against a production build on the dev DB (port 3430). Captured 5 screenshots, which the README now embeds. Fixed a hang: lazy off-screen images never decode, so the screenshot wait now covers only visible images. Fixed a flaky admin e2e test (about 1 in 100 runs): `router.refresh()` after the view switch could reuse a prefetch that started before the cookie was set. The switch now does a full reload and stays disabled until hydrated. 150/150 e2e across 3 repeats. | Review PR #1. |
 | 18 Nov 2026, 2:50 PM | Claude Code (local) | Paused DIG-12 at the user's request and built DIG-17, the admin role, test-first: 3 entitlement unit tests, 10 admin API tests, 1 checkout test, 6 component tests, 3 e2e tests. Schema: `User.role`. Ran `prisma db push` on the dev DB, which only added the column. | Create the user's admin account, then DIG-12. |
 | 18 Nov 2026, 2:20 PM | Claude Code (local) | DIG-16: Stripe Tax at Checkout behind `STRIPE_AUTOMATIC_TAX`, with exclusive pricing and a "plus applicable tax" label. 5 new tests (unit, API, component), all seen red first. The README has a Stripe Tax setup guide. | DIG-12. |
