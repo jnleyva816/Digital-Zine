@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 12:55 PM America/New_York (Cursor, local). The MVP is merged (`c70f82a`), and so is DIG-21 (`b3e7e09`). DIG-22 (Fujifilm film recipes) is In Review on PR #3 and is not on `main`. DIG-23 (read a recipe from a Fujifilm photo and let the creator name it) is In Progress on `joshleyva816/dig-23-fill-in-fujifilm-recipes-from-the-photos`, which is branched from DIG-22. The active Linear project is still [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). DIG-23 lives in [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-dcaac18e-a36e-4238-87b3-d8e036afef5f).
+Last updated: 18 Nov 2026, 1:00 PM America/New_York (Cursor, local). The MVP is merged (`c70f82a`), and so are DIG-21 (`b3e7e09`) and DIG-22 (`9528683`, PR #3). DIG-23 (read a recipe from a Fujifilm photo and let the creator name it) is In Progress on `joshleyva816/dig-23-fill-in-fujifilm-recipes-from-the-photos` at `260d357`. That branch was cut from DIG-22 before the merge, so it is not yet a pull request. The active Linear project is still [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). DIG-23 lives in [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-dcaac18e-a36e-4238-87b3-d8e036afef5f).
 
 ## Do this first
 
@@ -133,7 +133,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-22](https://linear.app/digital-zine/issue/DIG-22/recipes-are-fujifilm-film-simulation-recipes-not-food-recipes) | UI/UX | In Review | Fujifilm film recipes replace food recipes everywhere. Waiting for the owner to merge its PR. |
+| [DIG-22](https://linear.app/digital-zine/issue/DIG-22/recipes-are-fujifilm-film-simulation-recipes-not-food-recipes) | UI/UX | Done | Merged in `9528683` (PR #3). Fujifilm film recipes replace food recipes everywhere. |
 | [DIG-21](https://linear.app/digital-zine/issue/DIG-21/update-agent-rules-and-handoff-for-post-mvp-work) | Docs | Done | Merged in `b3e7e09`. |
 | [DIG-18](https://linear.app/digital-zine/issue/DIG-18/verify-billing-end-to-end-in-a-stripe-sandbox) | Payments | Backlog | Real Stripe sandbox round trip. Needs sandbox keys from the owner in a local `.env`. |
 | [DIG-19](https://linear.app/digital-zine/issue/DIG-19/switch-production-schema-changes-to-prisma-migrations) | Data | Backlog | Baseline Prisma migration and `migrate deploy`. Whether the test reset keeps `db push` is not decided; ask. |
@@ -144,7 +144,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-23](https://linear.app/digital-zine/issue/DIG-23/fill-in-fujifilm-recipes-from-the-photos-maker-notes) | UI/UX | In Progress | Reader and upload review are built on the DIG-22 branch. No PR yet: rebase onto `main` after the owner merges PR #3, then open the PR. Fluorescent 2/3 mapping is still unconfirmed. |
+| [DIG-23](https://linear.app/digital-zine/issue/DIG-23/fill-in-fujifilm-recipes-from-the-photos-maker-notes) | UI/UX | In Progress | Reader and upload review are on `260d357`. Next: merge `main` into this branch (do not force-push), open the PR, and set it to In Review once CI is green. Fluorescent 2/3 mapping is still unconfirmed. |
 | [DIG-24](https://linear.app/digital-zine/issue/DIG-24/saved-reusable-fujifilm-recipes) | Data | Backlog | Saved recipe library. Schema change; ask first. |
 | [DIG-25](https://linear.app/digital-zine/issue/DIG-25) | UI/UX | Backlog | Multiple Vision Boards. Ask before building: what happens when a board is deleted, whether a zine can switch boards, and the board URLs. |
 | [DIG-26](https://linear.app/digital-zine/issue/DIG-26) | Infra | Backlog | Image pipeline. |
@@ -152,7 +152,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-28](https://linear.app/digital-zine/issue/DIG-28) | Security | Backlog | Rate limiting. |
 | [DIG-29](https://linear.app/digital-zine/issue/DIG-29) | Backend | Backlog | Large-board performance. |
 
-Next: the owner merges PR #3 (DIG-22). Then rebase `joshleyva816/dig-23-fill-in-fujifilm-recipes-from-the-photos` onto `main`, open its PR, and set DIG-23 to In Review once CI is green. Do not start DIG-25 until the three board decisions are answered. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
+Next: merge `main` into `joshleyva816/dig-23-fill-in-fujifilm-recipes-from-the-photos` (do not force-push), open the DIG-23 pull request, and set it to In Review once CI is green. Do not start DIG-25 until the three board decisions are answered. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
 
 To re-verify a running server: `SMOKE_BASE_URL=<url> npm run smoke`. It creates and deletes its own `@smoke.digitalzine.local` user and rewrites `docs/screenshots/`.
 
@@ -162,6 +162,7 @@ Append a row when you stop. Do not delete earlier rows.
 
 | When (America/New_York) | Tool | What changed | Left unfinished |
 | --- | --- | --- | --- |
+| 18 Nov 2026, 1:00 PM | Cursor (local) | Merged PR #3 (`9528683`) after CI passed. DIG-22 is Done. | DIG-23 is still only on its branch. Next file is this handoff; next command is `git merge origin/main` on the DIG-23 branch, then open its PR. |
 | 18 Nov 2026, 12:55 PM | Cursor (local) | Wired DIG-23 into upload, test-first. `RecipeEditor` takes `prefill` (hint missing in the red run). `extractExifFromFile` returns `foundRecipe` (it was undefined in the red run). The board shows "Review recipe found in photo" and does not POST the recipe; the e2e timed out on that button before the wiring. After: `npm test` 218/218, `npm run test:e2e` 51/51. One admin API test failed once with a missing user row and passed on rerun. | Rebase onto `main` after PR #3 merges, then open the DIG-23 PR. Confirm Fluorescent 2/3 with the owner. |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
