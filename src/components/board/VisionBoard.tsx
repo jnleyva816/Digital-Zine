@@ -10,7 +10,7 @@ import {
   ImagePlus,
   Loader2,
   Trash2,
-  UtensilsCrossed,
+  SlidersHorizontal,
 } from "lucide-react";
 import type { RecipeData } from "@/lib/types";
 import { assetLabel, exifBadges, moveItem } from "./board-utils";
@@ -428,7 +428,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                     </span>
                     {asset.kind === "recipe" && asset.recipe ? (
                       <span className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full bg-paper-50/95 px-2.5 py-1 text-[11px] font-semibold text-ink-900 shadow">
-                        <UtensilsCrossed className="h-3 w-3 text-vermilion-500" aria-hidden="true" />
+                        <SlidersHorizontal className="h-3 w-3 text-vermilion-500" aria-hidden="true" />
                         Recipe
                       </span>
                     ) : null}
@@ -439,8 +439,10 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                       <p className="truncate text-sm font-medium text-ink-900" title={label}>
                         {label}
                       </p>
-                      {asset.kind === "recipe" && asset.recipe?.title ? (
-                        <p className="truncate font-serif text-sm text-ink-700">{asset.recipe.title}</p>
+                      {asset.kind === "recipe" && asset.recipe ? (
+                        <p className="truncate font-serif text-sm text-ink-700" title={`${asset.recipe.name} · ${asset.recipe.filmSimulation}`}>
+                          {asset.recipe.name} <span className="font-sans text-xs text-ink-500">· {asset.recipe.filmSimulation}</span>
+                        </p>
                       ) : null}
                     </div>
 
@@ -510,7 +512,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                             onClick={() => setEditingId(asset.id)}
                             className="inline-flex items-center gap-1 rounded-lg border border-paper-300 px-2.5 py-1.5 text-xs font-medium text-ink-800 transition hover:bg-paper-100"
                           >
-                            <UtensilsCrossed className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
+                            <SlidersHorizontal className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
                             {asset.recipe ? "Edit recipe" : "Add recipe"}
                             <span className="sr-only"> for {label}</span>
                           </button>

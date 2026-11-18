@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { getStorageDriver } from "@/lib/storage";
@@ -19,16 +20,8 @@ const exifSchema = z
   .nullable()
   .optional();
 
-const recipeSchema = z
-  .object({
-    title: z.string().max(160).optional(),
-    servings: z.string().max(80).optional(),
-    prepTime: z.string().max(80).optional(),
-    ingredients: z.array(z.string().max(300)).max(50).optional(),
-    method: z.array(z.string().max(800)).max(40).optional(),
-  })
-  .nullable()
-  .optional();
+/** Fujifilm film-simulation recipe (DIG-22), shared with the PATCH route and the parser. */
+const recipeSchema = fujiRecipeSchema.nullable().optional();
 
 const createAssetSchema = z.object({
   storageKey: z.string().min(1).max(500),

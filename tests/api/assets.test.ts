@@ -88,18 +88,38 @@ describe("PATCH /api/assets/[id]", () => {
     expect(res.status).toBe(404);
   });
 
-  it("rejects a recipe over the API limits with 400", async () => {
+  it("rejects a recipe the camera can't produce, and old food recipes, with 400", async () => {
     const mine = await createAsset(me.id, 0);
-    const res = await PATCH(
-      jsonRequest("/", "PATCH", { recipe: { title: "x".repeat(161) } }),
-      params({ id: mine.id })
+    for (const recipe of [
+      { name: "x".repeat(81), filmSimulation: "Classic Chrome" },
+      { name: "Bad sim", filmSimulation: "Kodak Gold" },
+      { name: "Bad tone", filmSimulation: "Classic Chrome", highlight: 0.25 },
+      { title: "Kraut", ingredients: ["cabbage"], method: ["shred"] },
+    ]) {
+      const res = await PATCH(jsonRequest("/", "PATCH", { kind: "recipe", recipe }), params({ id: mine.id }));
+      expect(res.status, JSON.stringify(recipe)).toBe(400);
+    }
+    expect(await prisma.mediaAsset.findUnique({ where: { id: mine.id } })).toMatchObject({ kind: "photo", recipe: null });
+  });
+
+  it("creates an asset with a Fujifilm recipe", async () => {
+    const recipe = { name: "Portra 400", filmSimulation: "Classic Neg.", grain: "Weak, Small", shadow: -1 };
+    const res = await POST(
+      jsonRequest("/api/assets", "POST", { storageKey: `users/${me.id}/portra.jpg`, kind: "recipe", recipe })
     );
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(201);
+    const { asset } = (await res.json()) as { asset: { id: string } };
+    expect(await prisma.mediaAsset.findUnique({ where: { id: asset.id } })).toMatchObject({ kind: "recipe", recipe });
   });
 
   it("sets and then clears a recipe", async () => {
     const mine = await createAsset(me.id, 0);
-    const recipe = { title: "Kraut", ingredients: ["cabbage"], method: ["shred"] };
+    const recipe = {
+      name: "Kodachrome 64",
+      filmSimulation: "Classic Chrome",
+      whiteBalance: { mode: "Kelvin", kelvin: 5200, red: 2, blue: -5 },
+      exposureCompensation: "0 to +2/3",
+    };
     let res = await PATCH(jsonRequest("/", "PATCH", { kind: "recipe", recipe }), params({ id: mine.id }));
     expect(res.status).toBe(200);
     expect(await prisma.mediaAsset.findUnique({ where: { id: mine.id } })).toMatchObject({ kind: "recipe", recipe });

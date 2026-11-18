@@ -28,9 +28,36 @@ describe("FlipCard", () => {
     expect(button).toHaveAttribute("aria-pressed", "false");
   });
 
-  it("names the reverse as a recipe for recipe pages", () => {
-    setup({ kind: "recipe", recipe: { title: "Chili oil", ingredients: ["chilies"], method: ["Heat"] } });
-    expect(screen.getByRole("button", { name: "Page 1: flip to recipe" })).toBeInTheDocument();
+  it("names the reverse as a film recipe for recipe pages", () => {
+    setup({ kind: "recipe", recipe: { name: "Kodachrome 64", filmSimulation: "Classic Chrome" } });
+    expect(screen.getByRole("button", { name: "Page 1: flip to film recipe" })).toBeInTheDocument();
+  });
+
+  it("shows the Fujifilm recipe on the back, with the camera details underneath", async () => {
+    const user = setup({
+      kind: "recipe",
+      recipe: {
+        name: "Kodachrome 64",
+        filmSimulation: "Classic Chrome",
+        dynamicRange: "DR200",
+        whiteBalance: { mode: "Daylight", red: 2, blue: -5 },
+        highlight: 0,
+        shadow: 0.5,
+      },
+    });
+    await user.click(screen.getByRole("button", { name: /flip to film recipe/ }));
+    expect(screen.getByRole("heading", { name: "Kodachrome 64" })).toBeInTheDocument();
+    const terms = screen.getAllByRole("term").map((t) => t.textContent);
+    const defs = screen.getAllByRole("definition").map((d) => d.textContent);
+    expect(Object.fromEntries(terms.map((t, i) => [t, defs[i]]))).toEqual({
+      "Film Simulation": "Classic Chrome",
+      "Dynamic Range": "DR200",
+      "White Balance": "Daylight, +2 Red & -5 Blue",
+      Highlight: "0",
+      Shadow: "+0.5",
+    });
+    expect(screen.getByText(/Fujifilm GFX 50R/)).toBeInTheDocument();
+    expect(screen.queryByText(/ingredient|method|kitchen|yield/i)).not.toBeInTheDocument();
   });
 
   it("hides the reverse from assistive tech until flipped, then hides the front", async () => {

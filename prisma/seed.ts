@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import { writeLocalObject } from "../src/lib/storage/local";
 import { ZINE_TEMPLATE_ID } from "../src/lib/types";
+import type { FujiRecipe } from "../src/lib/fuji-recipe";
 
 const prisma = new PrismaClient();
 
@@ -34,13 +35,8 @@ interface SeedPlateSpec {
       IFD2: Record<string, string>;
     };
   };
-  recipe?: {
-    title: string;
-    servings: string;
-    prepTime: string;
-    ingredients: string[];
-    method: string[];
-  };
+  /** A Fujifilm film-simulation recipe (DIG-22). */
+  recipe?: FujiRecipe;
   caption: string;
   flipEnabled: boolean;
 }
@@ -111,10 +107,32 @@ async function renderEditorialPlateJpeg(spec: SeedPlateSpec): Promise<Buffer> {
     .toBuffer();
 }
 
+const fujiExif = (iso: string, aperture: string, exposure: string, shutter: string, focal: string, model: string, lens: string, takenAt: string) => ({
+  iso,
+  aperture,
+  shutterSpeed: shutter,
+  focalLength: `${focal}mm`,
+  cameraMake: "FUJIFILM",
+  cameraModel: model,
+  lens,
+  takenAt,
+  rawExifIfd: {
+    IFD0: { Make: "FUJIFILM", Model: model },
+    IFD2: {
+      ISOSpeedRatings: iso,
+      PhotographicSensitivity: iso,
+      FNumber: aperture.replace("f/", ""),
+      ExposureTime: exposure,
+      FocalLength: focal,
+      LensModel: lens,
+    },
+  },
+});
+
 const SEED_PLATES: SeedPlateSpec[] = [
   {
-    storageKey: "seed/plate-01-charred-persimmon.jpg",
-    originalName: "DSC_0412-charred-persimmon.jpg",
+    storageKey: "seed/plate-01-harbor-dusk.jpg",
+    originalName: "DSCF0412-harbor-dusk.jpg",
     kind: "recipe",
     palette: {
       bgTop: "#2B1810",
@@ -122,56 +140,34 @@ const SEED_PLATES: SeedPlateSpec[] = [
       accentA: "#D95D24",
       accentB: "#8E2C12",
       highlight: "#F4A259",
-      plateLabel: "TEST KITCHEN · AUTUMN TABLE",
-      subjectTitle: "Charred Persimmon & Cultured Butter Toast",
-      frameCode: "KODAK PORTRA 400 · FRAME 04A",
+      plateLabel: "HARBOR · LAST LIGHT",
+      subjectTitle: "Fishing Boats at Golden Hour",
+      frameCode: "X-T5 · XF 33MM F1.4 · FRAME 04A",
     },
-    exif: {
-      iso: "400",
-      aperture: "f/2.8",
-      shutterSpeed: "1/250s",
-      focalLength: "50mm",
-      cameraMake: "Fujifilm",
-      cameraModel: "GFX 50S II",
-      lens: "GF 50mm f/3.5 R LM WR",
-      takenAt: "2026-10-19 16:42:11",
-      rawExifIfd: {
-        IFD0: { Make: "Fujifilm", Model: "GFX 50S II" },
-        IFD2: {
-          ISOSpeedRatings: "400",
-          PhotographicSensitivity: "400",
-          FNumber: "2.8",
-          ExposureTime: "0.004",
-          FocalLength: "50",
-          LensModel: "GF 50mm f/3.5 R LM WR",
-        },
-      },
-    },
+    exif: fujiExif("400", "f/2.8", "0.004", "1/250s", "33", "X-T5", "XF33mmF1.4 R LM WR", "2026-10-19 16:42:11"),
     recipe: {
-      title: "Charred Persimmon & Brown-Butter Brioche",
-      servings: "2 plates",
-      prepTime: "18 mins",
-      ingredients: [
-        "2 ripe Fuyu persimmons, cut into thick 1cm wedges",
-        "2 thick slices country sourdough or toasted brioche",
-        "60g salted cultured butter, whipped to room temp",
-        "1 tbsp wildflower honey + 1 tsp toasted fennel seeds",
-        "Flaky sea salt & cracked Tellicherry black pepper",
-      ],
-      method: [
-        "Heat a dry cast-iron skillet until smoking hot; sear persimmon wedges 90 seconds per side until blistered at the edges.",
-        "Toast the bread in foaming brown butter until deep mahogany and crisp.",
-        "Swipe generous ribbons of cold cultured butter across warm toast and shingle the charred persimmons on top.",
-        "Warm honey briefly with crushed fennel seeds, spoon over fruit, and finish with flaky salt.",
-      ],
+      name: "Kodachrome 64",
+      filmSimulation: "Classic Chrome",
+      dynamicRange: "DR200",
+      grain: "Weak, Small",
+      colorChrome: "Strong",
+      colorChromeFxBlue: "Off",
+      whiteBalance: { mode: "Daylight", red: 2, blue: -5 },
+      highlight: 0,
+      shadow: 0.5,
+      color: 2,
+      sharpness: 1,
+      clarity: 3,
+      noiseReduction: -4,
+      iso: "Auto up to ISO 6400",
+      exposureCompensation: "0 to +2/3",
     },
-    caption:
-      "Late-afternoon sun across cast iron: blistered Fuyu persimmons over cold cultured butter.",
+    caption: "Last light on the harbor: boats tied up and the water going copper.",
     flipEnabled: true,
   },
   {
-    storageKey: "seed/plate-02-morning-cellar.jpg",
-    originalName: "L1004882-morning-cellar.jpg",
+    storageKey: "seed/plate-02-morning-fog.jpg",
+    originalName: "DSCF0488-morning-fog.jpg",
     kind: "photo",
     palette: {
       bgTop: "#1C242B",
@@ -179,38 +175,17 @@ const SEED_PLATES: SeedPlateSpec[] = [
       accentA: "#5B7B8C",
       accentB: "#293845",
       highlight: "#D4DFC7",
-      plateLabel: "NORTH WINDOW · STONEWARE CROCKS",
-      subjectTitle: "Six-Week White Miso & Koji Jar Study",
-      frameCode: "LEICA M11 · SUMMILUX 35 · 11A",
+      plateLabel: "RIDGELINE · 8:14 AM",
+      subjectTitle: "Fog Lifting Off the Ridge",
+      frameCode: "X100VI · 23MM F2 · FRAME 11A",
     },
-    exif: {
-      iso: "200",
-      aperture: "f/2.0",
-      shutterSpeed: "1/500s",
-      focalLength: "35mm",
-      cameraMake: "Leica",
-      cameraModel: "LEICA M11",
-      lens: "APO-Summicron-M 35mm f/2 ASPH",
-      takenAt: "2026-10-20 08:14:05",
-      rawExifIfd: {
-        IFD0: { Make: "Leica", Model: "LEICA M11" },
-        IFD2: {
-          ISOSpeedRatings: "200",
-          PhotographicSensitivity: "200",
-          FNumber: "2.0",
-          ExposureTime: "0.002",
-          FocalLength: "35",
-          LensModel: "APO-Summicron-M 35mm f/2 ASPH",
-        },
-      },
-    },
-    caption:
-      "Stoneware fermentation crocks lined along the north studio sill at 8:14 AM.",
+    exif: fujiExif("200", "f/5.6", "0.002", "1/500s", "23", "X100VI", "FUJINON 23mm F2", "2026-10-20 08:14:05"),
+    caption: "Morning fog lifting off the ridge, shot from the trailhead.",
     flipEnabled: true,
   },
   {
-    storageKey: "seed/plate-03-smoked-chili-oil.jpg",
-    originalName: "DSC_0519-smoked-chili-crisp.jpg",
+    storageKey: "seed/plate-03-neon-alley.jpg",
+    originalName: "DSCF0519-neon-alley.jpg",
     kind: "recipe",
     palette: {
       bgTop: "#331210",
@@ -218,56 +193,34 @@ const SEED_PLATES: SeedPlateSpec[] = [
       accentA: "#C8371E",
       accentB: "#6B160B",
       highlight: "#F2B84B",
-      plateLabel: "PANTRY STAPLE · SMALL BATCH",
-      subjectTitle: "Smoked Urfa & Black Cardamom Chili Crisp",
-      frameCode: "RICOH GR IIIx · 40MM EQUIV · 19B",
+      plateLabel: "AFTER RAIN · NIGHT WALK",
+      subjectTitle: "Neon Alley After the Rain",
+      frameCode: "X-PRO3 · XF 23MM F2 · FRAME 19B",
     },
-    exif: {
-      iso: "800",
-      aperture: "f/4.0",
-      shutterSpeed: "1/125s",
-      focalLength: "40mm",
-      cameraMake: "Ricoh",
-      cameraModel: "GR IIIx",
-      lens: "GR Lens 26.1mm f/2.8",
-      takenAt: "2026-10-21 19:08:44",
-      rawExifIfd: {
-        IFD0: { Make: "Ricoh", Model: "GR IIIx" },
-        IFD2: {
-          ISOSpeedRatings: "800",
-          PhotographicSensitivity: "800",
-          FNumber: "4.0",
-          ExposureTime: "0.008",
-          FocalLength: "40",
-          LensModel: "GR Lens 26.1mm f/2.8",
-        },
-      },
-    },
+    exif: fujiExif("3200", "f/2.0", "0.0167", "1/60s", "23", "X-Pro3", "XF23mmF2 R WR", "2026-10-21 21:08:44"),
     recipe: {
-      title: "Smoked Urfa & Black Cardamom Chili Crisp",
-      servings: "1 pint jar",
-      prepTime: "25 mins",
-      ingredients: [
-        "220ml neutral cold-pressed rapeseed or peanut oil",
-        "3 shallots & 6 cloves garlic, sliced paper-thin on a mandoline",
-        "3 tbsp Turkish Urfa biber flakes + 2 tbsp Gochugaru",
-        "2 bruised black cardamom pods & 1 star anise",
-        "1 tbsp toasted white sesame seeds, 1 tsp soy sauce, pinch cane sugar",
-      ],
-      method: [
-        "Combine shallots, garlic, cardamom pods, and star anise with cold oil in a saucepan; bring gently to 155C until golden and crisp.",
-        "Strain crisped aromatics immediately, reserving them on a wire rack while chili flakes wait in a heatproof stoneware bowl.",
-        "Pour hot spiced oil over Urfa biber, Gochugaru, and sesame seeds so they sizzle without scorching.",
-        "Once cooled to lukewarm, fold crisped shallots and garlic back in with soy sauce and sugar.",
-      ],
+      name: "CineStill 800T",
+      filmSimulation: "Eterna/Cinema",
+      dynamicRange: "DR400",
+      grain: "Strong, Large",
+      colorChrome: "Off",
+      colorChromeFxBlue: "Off",
+      whiteBalance: { mode: "Kelvin", kelvin: 3200, red: -6, blue: 4 },
+      highlight: 1,
+      shadow: 2,
+      color: 2,
+      sharpness: -2,
+      clarity: -3,
+      noiseReduction: -4,
+      iso: "Auto up to ISO 6400",
+      exposureCompensation: "+1/3",
     },
-    caption:
-      "Infusing smoky Urfa biber and toasted sesame at 155C before folding back crisp shallots.",
+    caption: "Rain still on the pavement, and the signs doing all the lighting.",
     flipEnabled: true,
   },
   {
-    storageKey: "seed/plate-04-closing-linen.jpg",
-    originalName: "DSC_0604-closing-linen.jpg",
+    storageKey: "seed/plate-04-window-light.jpg",
+    originalName: "DSCF0604-window-light.jpg",
     kind: "photo",
     palette: {
       bgTop: "#2A261F",
@@ -276,32 +229,11 @@ const SEED_PLATES: SeedPlateSpec[] = [
       accentB: "#4A4133",
       highlight: "#EFE6D5",
       plateLabel: "COLOPHON · QUIET PLATE (NO FLIP)",
-      subjectTitle: "Washed Linen & Cedar Tea Tray at Dusk",
-      frameCode: "NIKON Zf · NIKKOR 40MM · 36END",
+      subjectTitle: "Window Light on Linen",
+      frameCode: "X-E4 · XF 27MM F2.8 · 36END",
     },
-    exif: {
-      iso: "640",
-      aperture: "f/2.2",
-      shutterSpeed: "1/160s",
-      focalLength: "40mm",
-      cameraMake: "Nikon",
-      cameraModel: "NIKON Zf",
-      lens: "NIKKOR Z 40mm f/2",
-      takenAt: "2026-10-21 20:15:00",
-      rawExifIfd: {
-        IFD0: { Make: "Nikon", Model: "NIKON Zf" },
-        IFD2: {
-          ISOSpeedRatings: "640",
-          PhotographicSensitivity: "640",
-          FNumber: "2.2",
-          ExposureTime: "0.00625",
-          FocalLength: "40",
-          LensModel: "NIKKOR Z 40mm f/2",
-        },
-      },
-    },
-    caption:
-      "Closing spread — flip intentionally disabled on this quiet colophon plate.",
+    exif: fujiExif("640", "f/2.8", "0.00625", "1/160s", "27", "X-E4", "XF27mmF2.8 R WR", "2026-10-21 20:15:00"),
+    caption: "Closing spread. Flip is turned off on this quiet colophon page.",
     flipEnabled: false,
   },
 ];
@@ -363,21 +295,21 @@ async function main() {
   }
 
   const zine = await prisma.zine.upsert({
-    where: { slug: "sunday-ferments-issue-01" },
+    where: { slug: "golden-hour-field-notes-issue-01" },
     update: {
       ownerId: devUser.id,
-      title: "Sunday Ferments — Issue 01",
+      title: "Golden Hour Field Notes — Issue 01",
       description:
-        "Field notes, medium-format exposures, and late-autumn pantry recipes drafted from the studio kitchen.",
+        "Harbor light, morning fog, and neon after rain, each shot on Fujifilm with the film recipe on the back of the card.",
       published: true,
       publishedAt: new Date("2026-10-22T09:00:00Z"),
     },
     create: {
       ownerId: devUser.id,
-      title: "Sunday Ferments — Issue 01",
-      slug: "sunday-ferments-issue-01",
+      title: "Golden Hour Field Notes — Issue 01",
+      slug: "golden-hour-field-notes-issue-01",
       description:
-        "Field notes, medium-format exposures, and late-autumn pantry recipes drafted from the studio kitchen.",
+        "Harbor light, morning fog, and neon after rain, each shot on Fujifilm with the film recipe on the back of the card.",
       published: true,
       publishedAt: new Date("2026-10-22T09:00:00Z"),
     },

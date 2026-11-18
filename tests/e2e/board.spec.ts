@@ -4,8 +4,8 @@ import { loadTestEnv } from "../../scripts/test-db";
 import { boardCards, createUser, signIn, testDb, waitForReorder } from "./helpers";
 
 // The seed writes real-EXIF JPEGs into the test storage directory.
-const FIXTURE = path.resolve(loadTestEnv().LOCAL_STORAGE_DIR, "seed/plate-02-morning-cellar.jpg");
-const UPLOAD_NAME = "plate-02-morning-cellar.jpg";
+const FIXTURE = path.resolve(loadTestEnv().LOCAL_STORAGE_DIR, "seed/plate-02-morning-fog.jpg");
+const UPLOAD_NAME = "plate-02-morning-fog.jpg";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -23,7 +23,7 @@ test.describe("Vision Board, seeded creator", () => {
     const cards = boardCards(page);
     await expect(cards).toHaveCount(4);
     await expect(cards.first()).toContainText(/ISO \d+/);
-    await expect(cards.first()).toContainText("Fujifilm GFX 50S II");
+    await expect(cards.first()).toContainText("FUJIFILM X-T5");
   });
 
   test("drag and drop reorders the board and persists", async ({ page }) => {
@@ -61,25 +61,35 @@ test.describe("Vision Board, seeded creator", () => {
     const card = cards.nth(4);
     await expect(card).toContainText(UPLOAD_NAME);
     await expect(card).toContainText("ISO 200");
-    await expect(card).toContainText("Leica LEICA M11");
+    await expect(card).toContainText("FUJIFILM X100VI");
 
     await card.getByRole("button", { name: `Add recipe for ${UPLOAD_NAME}` }).click();
-    const dialog = page.getByRole("dialog", { name: "Add a recipe" });
+    const dialog = page.getByRole("dialog", { name: "Add a film recipe" });
     await dialog.getByRole("button", { name: "Save recipe" }).click();
-    await expect(dialog.getByRole("alert")).toContainText("Add a title");
-    await dialog.getByLabel("Title").fill("Test Kitchen Kraut");
-    await dialog.getByLabel("Ingredients").fill("1 cabbage\n2% salt by weight");
-    await dialog.getByLabel("Method").fill("Shred.\nSalt and pack.");
+    await expect(dialog.getByRole("alert")).toContainText("Give the recipe a name.");
+    await dialog.getByLabel("Recipe name").fill("Portra 400");
+    await dialog.getByLabel("Film simulation").selectOption("Classic Neg.");
+    await dialog.getByLabel("Grain effect").selectOption("Weak, Small");
+    await dialog.getByLabel("White balance", { exact: true }).selectOption("Kelvin");
+    await dialog.getByLabel("Kelvin").fill("5500");
+    await dialog.getByLabel("Shadow").selectOption("-0.5");
     await dialog.getByRole("button", { name: "Save recipe" }).click();
     await expect(dialog).toBeHidden();
-    await expect(card).toContainText("Test Kitchen Kraut");
+    await expect(card).toContainText("Portra 400");
+    await expect(card).toContainText("Classic Neg.");
 
     const done = waitForReorder(page);
     await page.getByRole("button", { name: `Move ${UPLOAD_NAME} earlier` }).click();
     await done;
     await page.reload();
     await expect(cards.nth(3)).toContainText(UPLOAD_NAME);
-    await expect(cards.nth(3)).toContainText("Test Kitchen Kraut");
+    await expect(cards.nth(3)).toContainText("Portra 400");
+
+    // Reopening shows the saved settings.
+    await cards.nth(3).getByRole("button", { name: `Edit recipe for ${UPLOAD_NAME}` }).click();
+    const edit = page.getByRole("dialog", { name: "Edit film recipe" });
+    await expect(edit.getByLabel("Kelvin")).toHaveValue("5500");
+    await expect(edit.getByLabel("Shadow")).toHaveValue("-0.5");
   });
 
   test("rejects files that are not images", async ({ page }) => {
@@ -93,7 +103,7 @@ test.describe("Vision Board, seeded creator", () => {
     const seeded = cards.filter({ hasNotText: UPLOAD_NAME }).first();
     await seeded.getByRole("button", { name: /^Delete / }).click();
     await seeded.getByRole("button", { name: "Delete", exact: true }).click();
-    await expect(page.getByRole("alert").filter({ hasText: "is used in “Sunday Ferments — Issue 01”" })).toBeVisible();
+    await expect(page.getByRole("alert").filter({ hasText: "is used in “Golden Hour Field Notes — Issue 01”" })).toBeVisible();
     await expect(cards).toHaveCount(5);
 
     const mine = cards.filter({ hasText: UPLOAD_NAME });

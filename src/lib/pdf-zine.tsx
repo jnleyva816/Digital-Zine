@@ -8,6 +8,7 @@ import {
   View,
   renderToBuffer,
 } from "@react-pdf/renderer";
+import { recipeRows } from "@/lib/fuji-recipe";
 import type { ExifData, RecipeData } from "@/lib/types";
 
 export interface PdfRenderedPageItem {
@@ -145,29 +146,30 @@ const styles = StyleSheet.create({
     marginBottom: 6,
     color: "#161412",
   },
-  recipeColumns: {
+  recipeGrid: {
     display: "flex",
     flexDirection: "row",
-    gap: 16,
+    flexWrap: "wrap",
   },
-  recipeColLeft: {
-    width: "42%",
+  recipeRow: {
+    width: "50%",
+    display: "flex",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingRight: 12,
+    paddingVertical: 2,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#E5DCCB",
   },
-  recipeColRight: {
-    width: "58%",
-  },
-  subLabel: {
-    fontSize: 7.5,
+  recipeLabel: {
+    fontSize: 7,
     textTransform: "uppercase",
     color: "#6E655B",
-    marginBottom: 4,
-    letterSpacing: 1,
+    letterSpacing: 0.6,
   },
-  listItem: {
+  recipeValue: {
     fontSize: 8.5,
-    color: "#26221E",
-    lineHeight: 1.4,
-    marginBottom: 2.5,
+    color: "#161412",
   },
 });
 
@@ -223,29 +225,15 @@ function ZinePdfDocument({ zine }: { zine: PdfZinePayload }) {
 
             {showRecipe && p.recipe ? (
               <View style={styles.reverseBox}>
-                <Text style={styles.reverseHeading}>
-                  Card Reverse · Recipe Notes
-                </Text>
-                {p.recipe.title ? (
-                  <Text style={styles.recipeTitle}>{p.recipe.title}</Text>
-                ) : null}
-                <View style={styles.recipeColumns}>
-                  <View style={styles.recipeColLeft}>
-                    <Text style={styles.subLabel}>Ingredients</Text>
-                    {(p.recipe.ingredients ?? []).slice(0, 8).map((ing, i) => (
-                      <Text key={i} style={styles.listItem}>
-                        • {ing}
-                      </Text>
-                    ))}
-                  </View>
-                  <View style={styles.recipeColRight}>
-                    <Text style={styles.subLabel}>Method</Text>
-                    {(p.recipe.method ?? []).slice(0, 6).map((step, i) => (
-                      <Text key={i} style={styles.listItem}>
-                        {i + 1}. {step}
-                      </Text>
-                    ))}
-                  </View>
+                <Text style={styles.reverseHeading}>Card Reverse · Fujifilm Film Recipe</Text>
+                <Text style={styles.recipeTitle}>{p.recipe.name}</Text>
+                <View style={styles.recipeGrid}>
+                  {recipeRows(p.recipe).map((row) => (
+                    <View key={row.label} style={styles.recipeRow}>
+                      <Text style={styles.recipeLabel}>{row.label}</Text>
+                      <Text style={styles.recipeValue}>{row.value}</Text>
+                    </View>
+                  ))}
                 </View>
               </View>
             ) : null}

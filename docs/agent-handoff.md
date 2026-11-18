@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 4:00 PM America/New_York (Claude Code, local). **The MVP is merged**: PR #1 went into `main` as merge commit `c70f82a`, and CI is green on `main` (run 44351057883). The active Linear project is now [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af).
+Last updated: 18 Nov 2026, 5:00 PM America/New_York (Claude Code, local). The MVP is merged (`c70f82a`), and so is DIG-21 (`b3e7e09`). DIG-22 (Fujifilm film recipes) is In Review on its own PR. The active Linear project is [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af).
 
 ## Do this first
 
@@ -16,12 +16,17 @@ Last updated: 18 Nov 2026, 4:00 PM America/New_York (Claude Code, local). **The 
 Do not reopen these unless the user explicitly changes them.
 
 - Product: private Vision Board, one full-bleed photo template with an optional caption, public flip viewer at `/z/[slug]`. The board is never exported. PDF comes from published template pages.
-- Flip is on by default. A creator can turn it off on a single page. Card backs are text and structured fields only (EXIF or recipe). No audio or video.
+- Flip is on by default. A creator can turn it off on a single page. Card backs are text and structured fields only (EXIF or a Fujifilm film recipe). No audio or video.
+- **"Recipe" means a Fujifilm film-simulation recipe, never a food recipe** (owner, 18 Nov, DIG-22). A recipe is the in-camera settings: film simulation, dynamic range, grain, Color Chrome and FX Blue, white balance with red/blue shift, highlight, shadow, color, sharpness, clarity, noise reduction, ISO, and exposure compensation.
+  - Fields use the camera's real options (selects and steps), defined in `src/lib/fuji-recipe.ts`.
+  - Each photo has its own recipe, stored in `MediaAsset.recipe` (JSON). There is no schema change and no saved recipe library yet; that's DIG-24.
+  - Recipes are not read automatically from the photo's Fujifilm maker notes; that's DIG-23.
+  - Old food recipes are dropped. `parseRecipe` returns null for them, and the API rejects them.
 - EXIF and recipe text on a published zine are public. No account is required to read them.
 - Stack: Next.js App Router, React, PostgreSQL, Prisma, Auth.js credentials (no OAuth required), `exifreader` in the browser before upload, storage interface with a local filesystem driver and an S3 presigned PUT, `@react-pdf/renderer`, `next/image` with `src/lib/image-loader.ts`.
 - Stripe is subscriptions only: Free, and Pro at $15/month. PDF export is Pro-only. The board, the one template, and the public viewer stay on Free. Missing `STRIPE_SECRET_KEY` must explain that billing is not configured and must not crash.
 - Out of this version: print-on-demand, proof copies, cover QR codes, Stripe Connect, payouts, extra templates, asset garbage collection, audio and video.
-- Seeded dev user: `creator@digitalzine.local` / `zine1234`. Sample slug in the local database: `sunday-ferments-issue-01`.
+- Seeded dev user: `creator@digitalzine.local` / `zine1234`. The seed's sample zine is "Golden Hour Field Notes — Issue 01" at `golden-hour-field-notes-issue-01`, shot on Fujifilm with two film recipes. The owner's dev DB was seeded before DIG-22 and still has the old `sunday-ferments-issue-01` zine, which the owner renamed "Car Show". Don't re-seed the dev DB: it resets the seeded user's name and password.
 - Test-driven development (decided 18 Nov): red, green, refactor for each acceptance behavior. Tooling is Vitest, Testing Library, and jsdom for unit, component, and API tests, and `@playwright/test` for end-to-end tests. Tests run against the separate `digital_zine_test` database from `.env.test`, which is reset before each run. Earlier work was backfilled with tests (DIG-14), and GitHub Actions CI runs the build and both suites. A ticket is Done only when `npm run build`, `npm test`, and `npm run test:e2e` pass and CI is green. The rules are in `CLAUDE.md` and `.cursor/rules/test-driven.mdc`.
 - Editor (decided 18 Nov, DIG-8): creators can have many zines. `/editor` lists them and has a "Create zine" form; new zines start with up to 8 board photos (existing API behavior). `/editor/[id]` saves explicitly with "Save changes"; edits stay local with an "Unsaved changes" indicator, and leaving warns on full unloads and in-app link clicks. Publishing needs at least one page and saves pending edits in the same request. The public URL (slug) is editable only until the first publish. Deleting a zine requires typing its exact title.
 - Public viewer (decided 18 Nov, DIG-9): `/z/[slug]` is one vertical column of `FlipCard`s, not a pager. The byline shows the creator's display name when set and nothing otherwise; the email never appears. Only zines with `published: true` render; anything else is a 404.
@@ -69,6 +74,10 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
   - `src/lib/admin-account.ts` has `ensureAdmin`; `scripts/admin-create.ts` is the CLI.
   - `src/components/AdminViewToggle.tsx` has the switch and the banner. `StudioHeader` takes `role` and `viewingAsFree`.
   - `/billing` shows "Your plan: Admin", or the Free page with checkout disabled when previewing.
+- Fujifilm recipes (DIG-22):
+  - `src/lib/fuji-recipe.ts`: the camera option lists, `fujiRecipeSchema` (strict zod, shared by `POST /api/assets`, `PATCH /api/assets/[id]`, and `parseRecipe`), `formatSigned`, and `recipeRows` (label/value pairs in camera-menu order). The card back and the PDF both use `recipeRows`.
+  - `src/components/board/RecipeEditor.tsx`: "Add a film recipe" dialog. The Kelvin field appears only for Kelvin white balance. Exposure compensation can be a range ("0 to +2/3").
+  - `FlipCard` shows "Fujifilm Film Recipe" with a definition list, and its toggle is named "flip to film recipe". The PDF reverse is "Card Reverse · Fujifilm Film Recipe".
 - Billing (DIG-11):
   - `src/lib/billing.ts`: `tierForStatus`, `describeSubscription`, `appOrigin` (return URLs come only from `NEXT_PUBLIC_APP_URL`, never from the request host).
   - `POST /api/billing/checkout`: 401 signed out, 503 `configured: false` without keys or app URL, 409 if already Pro. It reuses the stored customer, or creates one with an idempotency key.
@@ -119,13 +128,16 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-21](https://linear.app/digital-zine/issue/DIG-21/update-agent-rules-and-handoff-for-post-mvp-work) | Docs | In Review | This rules and handoff update. Waiting for the owner to merge its PR. |
+| [DIG-22](https://linear.app/digital-zine/issue/DIG-22/recipes-are-fujifilm-film-simulation-recipes-not-food-recipes) | UI/UX | In Review | Fujifilm film recipes replace food recipes everywhere. Waiting for the owner to merge its PR. |
+| [DIG-21](https://linear.app/digital-zine/issue/DIG-21/update-agent-rules-and-handoff-for-post-mvp-work) | Docs | Done | Merged in `b3e7e09`. |
 | [DIG-18](https://linear.app/digital-zine/issue/DIG-18/verify-billing-end-to-end-in-a-stripe-sandbox) | Payments | Backlog | Real Stripe sandbox round trip. Needs sandbox keys from the owner in a local `.env`. |
 | [DIG-19](https://linear.app/digital-zine/issue/DIG-19/switch-production-schema-changes-to-prisma-migrations) | Data | Backlog | Baseline Prisma migration and `migrate deploy`. Whether the test reset keeps `db push` is not decided; ask. |
 | [DIG-20](https://linear.app/digital-zine/issue/DIG-20/deploy-to-production-with-secrets-storage-and-monitoring) | Infra | Backlog | Production deploy. Hosting, database, storage, domain, and monitoring are not decided; ask. |
 | [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Payments | Backlog | Refund, dispute, and fraud-warning webhooks. The product response is not decided; ask first. |
 
-Next: once the owner merges DIG-21, ask which Launch readiness ticket to start. DIG-19 (migrations) and DIG-20 (deploy) block real users. DIG-18 needs Stripe sandbox keys.
+Not in a project yet: [DIG-23](https://linear.app/digital-zine/issue/DIG-23/fill-in-fujifilm-recipes-from-the-photos-maker-notes) (fill in recipes from Fujifilm maker notes; parser vs. dependency not decided) and [DIG-24](https://linear.app/digital-zine/issue/DIG-24/saved-reusable-fujifilm-recipes) (saved recipe library; schema change).
+
+Next: once the owner merges DIG-22, ask which Launch readiness ticket to start. DIG-19 (migrations) and DIG-20 (deploy) block real users. DIG-18 needs Stripe sandbox keys.
 
 To re-verify a running server: `SMOKE_BASE_URL=<url> npm run smoke`. It creates and deletes its own `@smoke.digitalzine.local` user and rewrites `docs/screenshots/`.
 
@@ -137,6 +149,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 5:00 PM | Claude Code (local) | The owner merged DIG-21 and clarified that "recipe" means a Fujifilm film-simulation recipe. Built DIG-22 test-first: new `fuji-recipe.ts` (11 unit tests), a rewritten recipe editor (8 component tests), the card back (2 tests) and PDF, API validation (3 new tests), the board e2e flow, and re-themed seed and smoke data. The dev DB had no recipes to drop. Smoke 11/11; screenshots regenerated. | Owner merges the DIG-22 PR. |
 | 18 Nov 2026, 4:00 PM | Claude Code (local) | The owner merged PR #1 (`c70f82a`); CI green on `main`. Closed DIG-5 and completed the MVP project. Set up Linear Area labels and labelled DIG-6 to DIG-17. Created the Launch readiness project with DIG-15, DIG-18, DIG-19, DIG-20, and DIG-21. Updated `CLAUDE.md`, `.cursor/rules/`, and this handoff for one branch and PR per ticket. | Owner merges the DIG-21 PR; then pick a Launch readiness ticket. |
 | 18 Nov 2026, 3:30 PM | Claude Code (local) | DIG-12: rewrote `scripts/smoke.ts` to create and delete its own creator. 11/11 checks passed against a production build on the dev DB (port 3430). Captured 5 screenshots, which the README now embeds. Fixed a hang: lazy off-screen images never decode, so the screenshot wait now covers only visible images. Fixed a flaky admin e2e test (about 1 in 100 runs): `router.refresh()` after the view switch could reuse a prefetch that started before the cookie was set. The switch now does a full reload and stays disabled until hydrated. 150/150 e2e across 3 repeats. | Review PR #1. |
 | 18 Nov 2026, 2:50 PM | Claude Code (local) | Paused DIG-12 at the user's request and built DIG-17, the admin role, test-first: 3 entitlement unit tests, 10 admin API tests, 1 checkout test, 6 component tests, 3 e2e tests. Schema: `User.role`. Ran `prisma db push` on the dev DB, which only added the column. | Create the user's admin account, then DIG-12. |

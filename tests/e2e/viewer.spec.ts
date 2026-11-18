@@ -189,7 +189,7 @@ test("fits a phone screen without horizontal scrolling", async ({ page }) => {
 });
 
 test("the seeded zine is publicly viewable", async ({ page }) => {
-  await page.goto("/z/sunday-ferments-issue-01");
-  await expect(page.getByRole("heading", { level: 1, name: "Sunday Ferments — Issue 01" })).toBeVisible();
+  await page.goto("/z/golden-hour-field-notes-issue-01");
+  await expect(page.getByRole("heading", { level: 1, name: "Golden Hour Field Notes — Issue 01" })).toBeVisible();
   await expect(zinePages(page)).toHaveCount(4);
 });

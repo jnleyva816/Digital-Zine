@@ -114,6 +114,27 @@ describe("GET /api/pdf/[slug]", () => {
     expect(pdfPageCount(bytes)).toBe(3);
   });
 
+  it("renders a page whose photo carries a Fujifilm recipe", async () => {
+    const withRecipe = await photo(pro.id);
+    await prisma.mediaAsset.update({
+      where: { id: withRecipe.id },
+      data: {
+        kind: "recipe",
+        recipe: {
+          name: "Kodachrome 64",
+          filmSimulation: "Classic Chrome",
+          whiteBalance: { mode: "Daylight", red: 2, blue: -5 },
+          highlight: 0,
+          shadow: 0.5,
+        },
+      },
+    });
+    const z = await zine(pro.id, [withRecipe.id]);
+    const res = await get(z.slug);
+    expect(res.status).toBe(200);
+    expect(pdfPageCount(Buffer.from(await res.arrayBuffer()))).toBe(2);
+  });
+
   it("never prints the owner's email when they have no display name", async () => {
     await prisma.user.update({ where: { id: pro.id }, data: { name: null } });
     try {

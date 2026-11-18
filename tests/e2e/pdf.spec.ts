@@ -71,10 +71,10 @@ test("a Pro reader cannot export someone else's zine", async ({ page, request })
   cleanup.push(reader.user.id);
   await makePro(reader.user.id);
   await signIn(page, reader.user.email, reader.user.password);
-  const res = await page.request.get("/api/pdf/sunday-ferments-issue-01");
+  const res = await page.request.get("/api/pdf/golden-hour-field-notes-issue-01");
   expect(res.status()).toBe(404);
   // Signed out gets 401, not the file.
-  expect((await request.get("/api/pdf/sunday-ferments-issue-01")).status()).toBe(401);
+  expect((await request.get("/api/pdf/golden-hour-field-notes-issue-01")).status()).toBe(401);
 });
 
 test("downloading with unsaved edits does not trigger the leave warning", async ({ page }) => {

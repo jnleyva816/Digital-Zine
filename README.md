@@ -1,6 +1,6 @@
 # Digital Zine
 
-Creators collect photos on a private Vision Board, sequence them into a full-bleed photo zine, and publish it at `/z/[slug]`. On the public page, each card flips over to show its EXIF data or a recipe. Pro subscribers ($15/month) can export a published zine as a PDF.
+Creators collect photos on a private Vision Board, sequence them into a full-bleed photo zine, and publish it at `/z/[slug]`. On the public page, each card flips over to show the photo's camera EXIF or its Fujifilm film recipe: the in-camera settings (film simulation, dynamic range, grain, white balance, tone) that produced the look. Pro subscribers ($15/month) can export a published zine as a PDF.
 
 Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js credentials, `@react-pdf/renderer`, and Stripe subscriptions.
 
@@ -8,11 +8,11 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
 
 | Vision Board | Zine editor |
 | --- | --- |
-| ![Vision Board with four photos, EXIF badges, and a recipe tag](docs/screenshots/vision-board.png) | ![Zine editor with a published zine, the PDF upgrade prompt, and page list](docs/screenshots/editor.png) |
+| ![Vision Board with four photos, EXIF badges, and film recipe names](docs/screenshots/vision-board.png) | ![Zine editor with a published zine, the PDF upgrade prompt, and page list](docs/screenshots/editor.png) |
 
-| Public zine | Card flipped to its recipe | On a phone |
+| Public zine | Card flipped to its film recipe | On a phone |
 | --- | --- | --- |
-| ![Public zine page with title, byline, and the first flip card](docs/screenshots/public-viewer.png) | ![The first card flipped to its recipe and camera details](docs/screenshots/public-viewer-flipped.png) | ![The public zine page at phone width](docs/screenshots/public-viewer-phone.png) |
+| ![Public zine page with title, byline, and the first flip card](docs/screenshots/public-viewer.png) | ![The first card flipped to its Fujifilm film recipe and camera details](docs/screenshots/public-viewer-flipped.png) | ![The public zine page at phone width](docs/screenshots/public-viewer-phone.png) |
 
 `npm run smoke` regenerates these screenshots from a running server (see "Scripts").
 
@@ -49,7 +49,7 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
    npm run db:setup
    ```
 
-   The seed creates a Free-tier user, four Vision Board photos with real EXIF, and a published sample zine at `/z/sunday-ferments-issue-01`.
+   The seed creates a Free-tier user, four Vision Board photos with real EXIF, and a published sample zine at `/z/golden-hour-field-notes-issue-01`.
 
 5. Start the dev server and sign in at http://localhost:3000/signin.
 

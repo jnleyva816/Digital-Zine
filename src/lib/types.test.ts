@@ -25,16 +25,18 @@ describe("parseExif", () => {
 });
 
 describe("parseRecipe", () => {
-  it("returns null without a title, ingredients, or method", () => {
-    expect(parseRecipe(null)).toBeNull();
-    expect(parseRecipe({ servings: "4" })).toBeNull();
-    expect(parseRecipe({ title: "   ", ingredients: ["", "  "] })).toBeNull();
+  it("reads a Fujifilm recipe", () => {
+    expect(parseRecipe({ name: " Kodachrome 64 ", filmSimulation: "Classic Chrome", dynamicRange: "DR200" })).toEqual({
+      name: "Kodachrome 64",
+      filmSimulation: "Classic Chrome",
+      dynamicRange: "DR200",
+    });
   });
 
-  it("trims strings and drops blank or non-string list items", () => {
-    expect(
-      parseRecipe({ title: " Kraut ", ingredients: [" cabbage ", "", 3], method: ["shred"], servings: " 1 qt ", prepTime: "" })
-    ).toEqual({ title: "Kraut", ingredients: ["cabbage"], method: ["shred"], servings: "1 qt" });
+  it("drops old food recipes and anything else that isn't a Fujifilm recipe", () => {
+    expect(parseRecipe(null)).toBeNull();
+    expect(parseRecipe({ title: "Kraut", ingredients: ["cabbage"], method: ["shred"] })).toBeNull();
+    expect(parseRecipe({ name: "No sim" })).toBeNull();
   });
 });
 
