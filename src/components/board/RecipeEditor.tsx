@@ -2,62 +2,172 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
-import type { RecipeData } from "@/lib/types";
-import { RECIPE_LIMITS } from "./types";
+import {
+  COLOR_CHROME_LEVELS,
+  DYNAMIC_RANGES,
+  EXPOSURE_COMPENSATION,
+  FILM_SIMULATIONS,
+  GRAIN_EFFECTS,
+  ISO_OPTIONS,
+  KELVIN_RANGE,
+  RECIPE_NAME_MAX,
+  TONE_SETTINGS,
+  WB_SHIFT_RANGE,
+  WHITE_BALANCE_MODES,
+  formatSigned,
+  fujiRecipeSchema,
+  steps,
+  type FujiRecipe,
+  type ToneKey,
+} from "@/lib/fuji-recipe";
 
 interface RecipeEditorProps {
   /** Asset label used in the dialog heading. */
   assetLabel: string;
-  initial: RecipeData | null;
+  initial: FujiRecipe | null;
   open: boolean;
   onClose: () => void;
   /** Persist the recipe. `null` removes it. Resolve with an error message to keep the dialog open. */
-  onSave: (recipe: RecipeData | null) => Promise<string | null>;
+  onSave: (recipe: FujiRecipe | null) => Promise<string | null>;
 }
 
-function splitLines(value: string): string[] {
-  return value
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
+/** Form state: every select holds a string, and "" means "Not set". */
+interface FormState {
+  name: string;
+  filmSimulation: string;
+  dynamicRange: string;
+  grain: string;
+  colorChrome: string;
+  colorChromeFxBlue: string;
+  wbMode: string;
+  kelvin: string;
+  wbRed: string;
+  wbBlue: string;
+  tones: Record<ToneKey, string>;
+  iso: string;
+  evFrom: string;
+  evTo: string;
 }
 
-function validate(recipe: Required<Pick<RecipeData, "ingredients" | "method">> & RecipeData): string | null {
-  if (!recipe.title?.trim() && recipe.ingredients.length === 0 && recipe.method.length === 0) {
-    return "Add a title, at least one ingredient, or at least one step.";
+const TONE_KEYS = Object.keys(TONE_SETTINGS) as ToneKey[];
+
+function toForm(recipe: FujiRecipe | null): FormState {
+  const [evFrom = "", evTo = ""] = recipe?.exposureCompensation?.split(" to ") ?? [];
+  const wb = recipe?.whiteBalance;
+  return {
+    name: recipe?.name ?? "",
+    filmSimulation: recipe?.filmSimulation ?? "",
+    dynamicRange: recipe?.dynamicRange ?? "",
+    grain: recipe?.grain ?? "",
+    colorChrome: recipe?.colorChrome ?? "",
+    colorChromeFxBlue: recipe?.colorChromeFxBlue ?? "",
+    wbMode: wb?.mode ?? "",
+    kelvin: wb?.kelvin !== undefined ? String(wb.kelvin) : "",
+    wbRed: wb ? String(wb.red) : "0",
+    wbBlue: wb ? String(wb.blue) : "0",
+    tones: Object.fromEntries(TONE_KEYS.map((k) => [k, recipe?.[k] !== undefined ? String(recipe[k]) : ""])) as Record<
+      ToneKey,
+      string
+    >,
+    iso: recipe?.iso ?? "",
+    evFrom,
+    evTo,
+  };
+}
+
+/** Builds the recipe from the form, or returns the first problem to show. */
+function fromForm(form: FormState): { recipe: FujiRecipe } | { error: string } {
+  const name = form.name.trim();
+  if (!name) return { error: "Give the recipe a name." };
+  if (!form.filmSimulation) return { error: "Choose a film simulation." };
+
+  const draft: Record<string, unknown> = { name, filmSimulation: form.filmSimulation };
+  if (form.dynamicRange) draft.dynamicRange = form.dynamicRange;
+  if (form.grain) draft.grain = form.grain;
+  if (form.colorChrome) draft.colorChrome = form.colorChrome;
+  if (form.colorChromeFxBlue) draft.colorChromeFxBlue = form.colorChromeFxBlue;
+
+  if (form.wbMode) {
+    const wb: Record<string, unknown> = { mode: form.wbMode };
+    if (form.wbMode === "Kelvin") {
+      const kelvin = Number(form.kelvin);
+      if (
+        !form.kelvin.trim() ||
+        !Number.isInteger(kelvin) ||
+        kelvin < KELVIN_RANGE.min ||
+        kelvin > KELVIN_RANGE.max ||
+        kelvin % KELVIN_RANGE.step !== 0
+      ) {
+        return { error: `Kelvin must be ${KELVIN_RANGE.min}K to ${KELVIN_RANGE.max}K, in steps of ${KELVIN_RANGE.step}K.` };
+      }
+      wb.kelvin = kelvin;
+    }
+    wb.red = Number(form.wbRed);
+    wb.blue = Number(form.wbBlue);
+    draft.whiteBalance = wb;
   }
-  if ((recipe.title ?? "").length > RECIPE_LIMITS.title) {
-    return `Keep the title under ${RECIPE_LIMITS.title} characters.`;
+
+  for (const key of TONE_KEYS) {
+    if (form.tones[key] !== "") draft[key] = Number(form.tones[key]);
   }
-  if ((recipe.servings ?? "").length > RECIPE_LIMITS.servings) {
-    return `Keep servings under ${RECIPE_LIMITS.servings} characters.`;
+  if (form.iso) draft.iso = form.iso;
+
+  if (form.evFrom && form.evTo) {
+    if (EXPOSURE_COMPENSATION.indexOf(form.evFrom) >= EXPOSURE_COMPENSATION.indexOf(form.evTo)) {
+      return { error: "The exposure range has to go from lower to higher." };
+    }
+    draft.exposureCompensation = `${form.evFrom} to ${form.evTo}`;
+  } else if (form.evFrom || form.evTo) {
+    draft.exposureCompensation = form.evFrom || form.evTo;
   }
-  if ((recipe.prepTime ?? "").length > RECIPE_LIMITS.prepTime) {
-    return `Keep the time under ${RECIPE_LIMITS.prepTime} characters.`;
-  }
-  if (recipe.ingredients.length > RECIPE_LIMITS.ingredientCount) {
-    return `Use at most ${RECIPE_LIMITS.ingredientCount} ingredients.`;
-  }
-  if (recipe.ingredients.some((i) => i.length > RECIPE_LIMITS.ingredientLength)) {
-    return `Keep each ingredient under ${RECIPE_LIMITS.ingredientLength} characters.`;
-  }
-  if (recipe.method.length > RECIPE_LIMITS.methodCount) {
-    return `Use at most ${RECIPE_LIMITS.methodCount} steps.`;
-  }
-  if (recipe.method.some((m) => m.length > RECIPE_LIMITS.methodLength)) {
-    return `Keep each step under ${RECIPE_LIMITS.methodLength} characters.`;
-  }
-  return null;
+
+  // The same schema the API enforces, so the dialog never sends something the server rejects.
+  const parsed = fujiRecipeSchema.safeParse(draft);
+  if (!parsed.success) return { error: parsed.error.issues[0]?.message ?? "Check the recipe settings." };
+  return { recipe: parsed.data };
+}
+
+const inputClass =
+  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20";
+const labelClass = "block font-mono text-[11px] uppercase tracking-wider text-ink-700";
+
+/** A labelled select. Top level, so React keeps the same element (and focus) between renders. */
+function Select({
+  id,
+  label,
+  value,
+  onChange,
+  options,
+  placeholder = "Not set",
+}: {
+  id: string;
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  options: readonly { value: string; label: string }[];
+  placeholder?: string | null;
+}) {
+  return (
+    <div>
+      <label htmlFor={id} className={labelClass}>
+        {label}
+      </label>
+      <select id={id} value={value} onChange={(e) => onChange(e.target.value)} className={inputClass}>
+        {placeholder !== null ? <option value="">{placeholder}</option> : null}
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
 }
 
 export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: RecipeEditorProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
-  const formId = useId();
-  const [title, setTitle] = useState("");
-  const [servings, setServings] = useState("");
-  const [prepTime, setPrepTime] = useState("");
-  const [ingredients, setIngredients] = useState("");
-  const [method, setMethod] = useState("");
+  const id = useId();
+  const [form, setForm] = useState<FormState>(() => toForm(initial));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -65,11 +175,7 @@ export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: Rec
     const dialog = dialogRef.current;
     if (!dialog) return;
     if (open) {
-      setTitle(initial?.title ?? "");
-      setServings(initial?.servings ?? "");
-      setPrepTime(initial?.prepTime ?? "");
-      setIngredients((initial?.ingredients ?? []).join("\n"));
-      setMethod((initial?.method ?? []).join("\n"));
+      setForm(toForm(initial));
       setError(null);
       setSaving(false);
       if (!dialog.open) dialog.showModal();
@@ -78,7 +184,9 @@ export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: Rec
     }
   }, [open, initial]);
 
-  async function submit(recipe: RecipeData | null) {
+  const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setForm((f) => ({ ...f, [key]: value }));
+
+  async function submit(recipe: FujiRecipe | null) {
     setSaving(true);
     setError(null);
     const message = await onSave(recipe);
@@ -90,30 +198,17 @@ export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: Rec
 
   async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
     e.preventDefault();
-    const recipe = {
-      title: title.trim(),
-      servings: servings.trim(),
-      prepTime: prepTime.trim(),
-      ingredients: splitLines(ingredients),
-      method: splitLines(method),
-    };
-    const problem = validate(recipe);
-    if (problem) {
-      setError(problem);
+    const result = fromForm(form);
+    if ("error" in result) {
+      setError(result.error);
       return;
     }
-    await submit({
-      title: recipe.title,
-      ingredients: recipe.ingredients,
-      method: recipe.method,
-      ...(recipe.servings ? { servings: recipe.servings } : {}),
-      ...(recipe.prepTime ? { prepTime: recipe.prepTime } : {}),
-    });
+    await submit(result.recipe);
   }
 
-  const inputClass =
-    "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20";
-  const labelClass = "block font-mono text-xs uppercase tracking-wider text-ink-700";
+  const plain = (list: readonly string[]) => list.map((v) => ({ value: v, label: v }));
+  const signed = (list: number[]) => list.map((n) => ({ value: String(n), label: formatSigned(n) }));
+  const shiftOptions = signed(steps(WB_SHIFT_RANGE.min, WB_SHIFT_RANGE.max, 1));
 
   return (
     <dialog
@@ -122,14 +217,14 @@ export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: Rec
       onCancel={(e) => {
         if (saving) e.preventDefault();
       }}
-      aria-labelledby={`${formId}-heading`}
-      className="w-[min(100vw-2rem,36rem)] rounded-2xl border border-paper-300 bg-paper-50 p-0 text-ink-900 shadow-2xl backdrop:bg-ink-900/50"
+      aria-labelledby={`${id}-heading`}
+      className="w-[min(100vw-2rem,40rem)] rounded-2xl border border-paper-300 bg-paper-50 p-0 text-ink-900 shadow-2xl backdrop:bg-ink-900/50"
     >
-      <form onSubmit={handleSubmit} className="flex max-h-[85vh] flex-col">
+      <form onSubmit={handleSubmit} noValidate className="flex max-h-[88vh] flex-col">
         <div className="flex items-start justify-between gap-4 border-b border-paper-300 px-5 py-4 sm:px-6">
-          <div>
-            <h2 id={`${formId}-heading`} className="font-serif text-xl font-bold">
-              {initial ? "Edit recipe" : "Add a recipe"}
+          <div className="min-w-0">
+            <h2 id={`${id}-heading`} className="font-serif text-xl font-bold">
+              {initial ? "Edit film recipe" : "Add a film recipe"}
             </h2>
             <p className="mt-0.5 truncate text-xs text-ink-500">{assetLabel}</p>
           </div>
@@ -144,88 +239,102 @@ export function RecipeEditor({ assetLabel, initial, open, onClose, onSave }: Rec
           </button>
         </div>
 
-        <div className="space-y-4 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
           <p className="text-xs text-ink-500">
-            The recipe is shown on the back of this photo&apos;s card when it is published.
+            The in-camera settings behind this photo. They&apos;re shown on the back of its card when the zine is
+            published. Leave anything you didn&apos;t set as &ldquo;Not set&rdquo;.
           </p>
-          <div>
-            <label htmlFor={`${formId}-title`} className={labelClass}>
-              Title
-            </label>
-            <input
-              id={`${formId}-title`}
-              value={title}
-              maxLength={RECIPE_LIMITS.title}
-              onChange={(e) => setTitle(e.target.value)}
-              className={inputClass}
-            />
-          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor={`${formId}-servings`} className={labelClass}>
-                Servings
+              <label htmlFor={`${id}-name`} className={labelClass}>
+                Recipe name
               </label>
               <input
-                id={`${formId}-servings`}
-                value={servings}
-                maxLength={RECIPE_LIMITS.servings}
-                placeholder="e.g. 1 quart"
-                onChange={(e) => setServings(e.target.value)}
+                id={`${id}-name`}
+                value={form.name}
+                maxLength={RECIPE_NAME_MAX}
+                placeholder="e.g. Kodachrome 64"
+                onChange={(e) => set("name", e.target.value)}
                 className={inputClass}
               />
             </div>
-            <div>
-              <label htmlFor={`${formId}-time`} className={labelClass}>
-                Time
-              </label>
-              <input
-                id={`${formId}-time`}
-                value={prepTime}
-                maxLength={RECIPE_LIMITS.prepTime}
-                placeholder="e.g. 20 min + 5 days"
-                onChange={(e) => setPrepTime(e.target.value)}
-                className={inputClass}
-              />
-            </div>
-          </div>
-          <div>
-            <label htmlFor={`${formId}-ingredients`} className={labelClass}>
-              Ingredients
-            </label>
-            <p id={`${formId}-ingredients-hint`} className="mt-0.5 text-xs text-ink-500">
-              One per line.
-            </p>
-            <textarea
-              id={`${formId}-ingredients`}
-              aria-describedby={`${formId}-ingredients-hint`}
-              value={ingredients}
-              rows={5}
-              onChange={(e) => setIngredients(e.target.value)}
-              className={inputClass}
-            />
-          </div>
-          <div>
-            <label htmlFor={`${formId}-method`} className={labelClass}>
-              Method
-            </label>
-            <p id={`${formId}-method-hint`} className="mt-0.5 text-xs text-ink-500">
-              One step per line.
-            </p>
-            <textarea
-              id={`${formId}-method`}
-              aria-describedby={`${formId}-method-hint`}
-              value={method}
-              rows={6}
-              onChange={(e) => setMethod(e.target.value)}
-              className={inputClass}
+            <Select
+              id={`${id}-sim`}
+              label="Film simulation"
+              value={form.filmSimulation}
+              onChange={(v) => set("filmSimulation", v)}
+              options={plain(FILM_SIMULATIONS)}
+              placeholder="Choose a film simulation"
             />
           </div>
 
+          <fieldset className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-2 font-serif text-sm font-bold text-ink-900">Image quality</legend>
+            <Select id={`${id}-dr`} label="Dynamic range" value={form.dynamicRange} onChange={(v) => set("dynamicRange", v)} options={plain(DYNAMIC_RANGES)} />
+            <Select id={`${id}-grain`} label="Grain effect" value={form.grain} onChange={(v) => set("grain", v)} options={plain(GRAIN_EFFECTS)} />
+            <Select id={`${id}-cc`} label="Color Chrome Effect" value={form.colorChrome} onChange={(v) => set("colorChrome", v)} options={plain(COLOR_CHROME_LEVELS)} />
+            <Select id={`${id}-ccb`} label="Color Chrome FX Blue" value={form.colorChromeFxBlue} onChange={(v) => set("colorChromeFxBlue", v)} options={plain(COLOR_CHROME_LEVELS)} />
+          </fieldset>
+
+          <fieldset className="grid gap-4 sm:grid-cols-2">
+            <legend className="mb-2 font-serif text-sm font-bold text-ink-900">White balance</legend>
+            <Select id={`${id}-wb`} label="White balance" value={form.wbMode} onChange={(v) => set("wbMode", v)} options={plain(WHITE_BALANCE_MODES)} />
+            {form.wbMode === "Kelvin" ? (
+              <div>
+                <label htmlFor={`${id}-kelvin`} className={labelClass}>
+                  Kelvin
+                </label>
+                <input
+                  id={`${id}-kelvin`}
+                  type="number"
+                  inputMode="numeric"
+                  min={KELVIN_RANGE.min}
+                  max={KELVIN_RANGE.max}
+                  step={KELVIN_RANGE.step}
+                  value={form.kelvin}
+                  placeholder="e.g. 5200"
+                  onChange={(e) => set("kelvin", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+            ) : (
+              <span className="hidden sm:block" />
+            )}
+            {form.wbMode ? (
+              <>
+                <Select id={`${id}-wbr`} label="White balance red shift" value={form.wbRed} onChange={(v) => set("wbRed", v)} options={shiftOptions} placeholder={null} />
+                <Select id={`${id}-wbb`} label="White balance blue shift" value={form.wbBlue} onChange={(v) => set("wbBlue", v)} options={shiftOptions} placeholder={null} />
+              </>
+            ) : null}
+          </fieldset>
+
+          <fieldset className="grid gap-4 sm:grid-cols-3">
+            <legend className="mb-2 font-serif text-sm font-bold text-ink-900">Tone and detail</legend>
+            {TONE_KEYS.map((key) => {
+              const t = TONE_SETTINGS[key];
+              return (
+                <Select
+                  key={key}
+                  id={`${id}-${key}`}
+                  label={t.label}
+                  value={form.tones[key]}
+                  onChange={(v) => setForm((f) => ({ ...f, tones: { ...f.tones, [key]: v } }))}
+                  options={signed(steps(t.min, t.max, t.step))}
+                />
+              );
+            })}
+          </fieldset>
+
+          <fieldset className="grid gap-4 sm:grid-cols-3">
+            <legend className="mb-2 font-serif text-sm font-bold text-ink-900">Exposure</legend>
+            <Select id={`${id}-iso`} label="ISO" value={form.iso} onChange={(v) => set("iso", v)} options={plain(ISO_OPTIONS)} />
+            <Select id={`${id}-ev`} label="Exposure compensation" value={form.evFrom} onChange={(v) => set("evFrom", v)} options={plain(EXPOSURE_COMPENSATION)} />
+            <Select id={`${id}-evto`} label="Exposure compensation up to" value={form.evTo} onChange={(v) => set("evTo", v)} options={plain(EXPOSURE_COMPENSATION)} placeholder="No range" />
+          </fieldset>
+
           {error ? (
-            <p
-              role="alert"
-              className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2.5 text-xs text-red-800"
-            >
+            <p role="alert" className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2.5 text-xs text-red-800">
               {error}
             </p>
           ) : null}

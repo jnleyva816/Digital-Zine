@@ -37,7 +37,7 @@ test("signed-out visitors are redirected from the editor", async ({ request }) =
 test("lists the seeded creator's published zine", async ({ page }) => {
   await signIn(page);
   await page.goto("/editor");
-  const item = page.getByRole("list", { name: "Zines" }).getByRole("listitem").filter({ hasText: "Sunday Ferments — Issue 01" });
+  const item = page.getByRole("list", { name: "Zines" }).getByRole("listitem").filter({ hasText: "Golden Hour Field Notes — Issue 01" });
   await expect(item).toContainText("Published");
   await expect(item).toContainText("4 pages");
 });
@@ -144,7 +144,7 @@ test("deletes a zine only after typing its title", async ({ page }) => {
 });
 
 test("another creator's zine is not found", async ({ page }) => {
-  const seededZine = await testDb.zine.findFirstOrThrow({ where: { slug: "sunday-ferments-issue-01" } });
+  const seededZine = await testDb.zine.findFirstOrThrow({ where: { slug: "golden-hour-field-notes-issue-01" } });
   await creatorWithPhotos(page);
   const res = await page.goto(`/editor/${seededZine.id}`);
   expect(res?.status()).toBe(404);

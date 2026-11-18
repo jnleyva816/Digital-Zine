@@ -6,11 +6,11 @@ const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000
 export const metadata: Metadata = {
   metadataBase: new URL(appUrl),
   title: {
-    default: "Folio — Digital Zine & Recipe Studio",
+    default: "Folio — Digital Photo Zines",
     template: "%s · Folio Digital Zine",
   },
   description:
-    "Draft on a private Vision Board, sequence full-bleed zine editions, and publish interactive flip cards with camera EXIF and kitchen recipes.",
+    "Draft on a private Vision Board, sequence full-bleed photo zines, and publish flip cards that show each photo's camera EXIF or Fujifilm film recipe.",
 };
 
 export default function RootLayout({

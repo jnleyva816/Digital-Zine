@@ -38,9 +38,9 @@ export function waitForReorder(page: Page) {
 }
 
 const SEED_IMAGES = [
-  "seed/plate-01-charred-persimmon.jpg",
-  "seed/plate-02-morning-cellar.jpg",
-  "seed/plate-03-smoked-chili-oil.jpg",
+  "seed/plate-01-harbor-dusk.jpg",
+  "seed/plate-02-morning-fog.jpg",
+  "seed/plate-03-neon-alley.jpg",
 ];
 
 /**

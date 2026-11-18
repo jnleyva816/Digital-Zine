@@ -1,3 +1,5 @@
+import { parseFujiRecipe, type FujiRecipe } from "./fuji-recipe";
+
 export const ZINE_TEMPLATE_ID = "full-bleed-photo" as const;
 export type ZineTemplateId = typeof ZINE_TEMPLATE_ID;
 
@@ -12,13 +14,8 @@ export interface ExifData {
   takenAt?: string | null;
 }
 
-export interface RecipeData {
-  title?: string;
-  ingredients?: string[];
-  method?: string[];
-  servings?: string;
-  prepTime?: string;
-}
+/** A Fujifilm film-simulation recipe (DIG-22). See `src/lib/fuji-recipe.ts`. */
+export type RecipeData = FujiRecipe;
 
 export interface ZinePageContent {
   assetId: string;
@@ -48,34 +45,9 @@ export function parseExif(raw: unknown): ExifData | null {
   return hasAny ? data : null;
 }
 
+/** A stored Fujifilm recipe, or null (old food recipes are dropped). */
 export function parseRecipe(raw: unknown): RecipeData | null {
-  if (!raw || typeof raw !== "object" || Array.isArray(raw)) return null;
-  const obj = raw as Record<string, unknown>;
-  const title = typeof obj.title === "string" ? obj.title.trim() : "";
-  const ingredients = Array.isArray(obj.ingredients)
-    ? obj.ingredients
-        .map((i) => (typeof i === "string" ? i.trim() : ""))
-        .filter(Boolean)
-    : [];
-  const method = Array.isArray(obj.method)
-    ? obj.method
-        .map((m) => (typeof m === "string" ? m.trim() : ""))
-        .filter(Boolean)
-    : [];
-  const servings = typeof obj.servings === "string" ? obj.servings.trim() : "";
-  const prepTime = typeof obj.prepTime === "string" ? obj.prepTime.trim() : "";
-
-  if (!title && ingredients.length === 0 && method.length === 0) {
-    return null;
-  }
-
-  return {
-    title,
-    ingredients,
-    method,
-    ...(servings ? { servings } : {}),
-    ...(prepTime ? { prepTime } : {}),
-  };
+  return parseFujiRecipe(raw);
 }
 
 export function parsePageContent(raw: unknown): ZinePageContent {

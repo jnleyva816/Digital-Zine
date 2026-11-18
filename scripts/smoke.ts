@@ -39,39 +39,61 @@ const PLATES: {
   recipe?: Prisma.InputJsonValue;
 }[] = [
   {
-    seed: "plate-01-charred-persimmon.jpg",
-    name: "charred-persimmon.jpg",
-    caption: "Late-afternoon sun across cast iron: blistered persimmons over cold cultured butter.",
+    seed: "plate-01-harbor-dusk.jpg",
+    name: "DSCF0412-harbor-dusk.jpg",
+    caption: "Last light on the harbor: boats tied up and the water going copper.",
     flip: true,
-    exif: { iso: 400, aperture: "f/2.8", shutterSpeed: "1/250s", focalLength: "50mm", cameraMake: "Fujifilm", cameraModel: "GFX 50S II" },
+    exif: { iso: 400, aperture: "f/2.8", shutterSpeed: "1/250s", focalLength: "33mm", cameraMake: "FUJIFILM", cameraModel: "X-T5" },
     recipe: {
-      title: "Charred Persimmon & Brown-Butter Brioche",
-      servings: "2 plates",
-      prepTime: "18 mins",
-      ingredients: ["2 ripe Fuyu persimmons", "2 slices brioche", "60g cultured butter", "1 tbsp honey", "Flaky salt"],
-      method: ["Sear the persimmons in a smoking-hot pan.", "Toast the brioche in brown butter.", "Butter, shingle the fruit, and finish with honey and salt."],
+      name: "Kodachrome 64",
+      filmSimulation: "Classic Chrome",
+      dynamicRange: "DR200",
+      grain: "Weak, Small",
+      colorChrome: "Strong",
+      whiteBalance: { mode: "Daylight", red: 2, blue: -5 },
+      highlight: 0,
+      shadow: 0.5,
+      color: 2,
+      clarity: 3,
+      iso: "Auto up to ISO 6400",
+      exposureCompensation: "0 to +2/3",
     },
   },
   {
-    seed: "plate-02-morning-cellar.jpg",
-    name: "morning-cellar.jpg",
-    caption: "Morning light in the cellar, jars lined up for the long winter.",
+    seed: "plate-02-morning-fog.jpg",
+    name: "DSCF0488-morning-fog.jpg",
+    caption: "Morning fog lifting off the ridge, shot from the trailhead.",
     flip: true,
-    exif: { iso: 800, aperture: "f/4", shutterSpeed: "1/60s", focalLength: "35mm", cameraMake: "Leica", cameraModel: "Q3" },
+    exif: { iso: 200, aperture: "f/5.6", shutterSpeed: "1/500s", focalLength: "23mm", cameraMake: "FUJIFILM", cameraModel: "X100VI" },
   },
   {
-    seed: "plate-03-smoked-chili-oil.jpg",
-    name: "smoked-chili-oil.jpg",
-    caption: "Smoked chili oil, still warm.",
+    seed: "plate-03-neon-alley.jpg",
+    name: "DSCF0519-neon-alley.jpg",
+    caption: "Rain still on the pavement, and the signs doing all the lighting.",
     flip: true,
-    exif: { iso: 200, aperture: "f/5.6", shutterSpeed: "1/125s", focalLength: "90mm", cameraMake: "Sony", cameraModel: "A7R V" },
+    exif: { iso: 3200, aperture: "f/2", shutterSpeed: "1/60s", focalLength: "23mm", cameraMake: "FUJIFILM", cameraModel: "X-Pro3" },
+    recipe: {
+      name: "CineStill 800T",
+      filmSimulation: "Eterna/Cinema",
+      dynamicRange: "DR400",
+      grain: "Strong, Large",
+      whiteBalance: { mode: "Kelvin", kelvin: 3200, red: -6, blue: 4 },
+      highlight: 1,
+      shadow: 2,
+      color: 2,
+      sharpness: -2,
+      clarity: -3,
+      noiseReduction: -4,
+      iso: "Auto up to ISO 6400",
+      exposureCompensation: "+1/3",
+    },
   },
   {
-    seed: "plate-04-closing-linen.jpg",
-    name: "closing-linen.jpg",
-    caption: "Linen folded at the end of service.",
+    seed: "plate-04-window-light.jpg",
+    name: "DSCF0604-window-light.jpg",
+    caption: "Closing spread. Flip is turned off on this quiet colophon page.",
     flip: false,
-    exif: { iso: 100, aperture: "f/8", shutterSpeed: "1/500s", focalLength: "28mm", cameraMake: "Ricoh", cameraModel: "GR IIIx" },
+    exif: { iso: 640, aperture: "f/2.8", shutterSpeed: "1/160s", focalLength: "27mm", cameraMake: "FUJIFILM", cameraModel: "X-E4" },
   },
 ];
 
@@ -116,9 +138,9 @@ async function createSmokeCreator() {
   const zine = await prisma.zine.create({
     data: {
       ownerId: user.id,
-      title: "Late Autumn Pantry",
-      description: "Field notes, medium-format exposures, and pantry recipes from the studio kitchen.",
-      slug: `late-autumn-pantry-${randomUUID().slice(0, 6)}`,
+      title: "Night Walks & Harbor Light",
+      description: "Harbor light, morning fog, and neon after rain, each shot on Fujifilm with the film recipe on the back of the card.",
+      slug: `night-walks-${randomUUID().slice(0, 6)}`,
       published: true,
       publishedAt: new Date(),
       pages: {
@@ -216,10 +238,10 @@ async function runChecks(email: string, password: string, ZINE_SLUG: string) {
   let editorUrl = "";
   await check("editor lists and opens the zine", async () => {
     await page.goto("/editor");
-    await page.getByRole("list", { name: "Zines" }).getByRole("link", { name: /Late Autumn Pantry/ }).click();
+    await page.getByRole("list", { name: "Zines" }).getByRole("link", { name: /Night Walks/ }).click();
     await expect(page).toHaveURL(/\/editor\/[a-z0-9]+$/);
     editorUrl = page.url();
-    await expect(page.getByRole("heading", { level: 1, name: "Late Autumn Pantry" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Night Walks & Harbor Light" })).toBeVisible();
     await expect(page.getByRole("list", { name: "Pages" }).getByRole("listitem")).toHaveCount(4);
     await shot(page, "editor.png");
   });
@@ -262,7 +284,7 @@ async function runChecks(email: string, password: string, ZINE_SLUG: string) {
 
   await check("public viewer flips cards for a signed-out reader", async () => {
     await viewer.goto(`/z/${ZINE_SLUG}`);
-    await expect(viewer.getByRole("heading", { level: 1, name: "Late Autumn Pantry" })).toBeVisible();
+    await expect(viewer.getByRole("heading", { level: 1, name: "Night Walks & Harbor Light" })).toBeVisible();
     await shot(viewer, "public-viewer.png");
     const flip = viewer.getByRole("button", { name: /^Page 1: flip/ });
     await flip.click();

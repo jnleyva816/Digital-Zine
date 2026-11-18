@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Camera, RotateCw, UtensilsCrossed } from "lucide-react";
+import { Camera, RotateCw, SlidersHorizontal } from "lucide-react";
+import { recipeRows } from "@/lib/fuji-recipe";
 import type { ExifData, RecipeData } from "@/lib/types";
 
 export interface FlipCardProps {
@@ -32,15 +33,9 @@ export function FlipCard({
 }: FlipCardProps) {
   const [flipped, setFlipped] = useState(flipEnabled ? defaultFlipped : false);
 
-  const hasRecipe = Boolean(
-    recipe &&
-      (recipe.title ||
-        (recipe.ingredients && recipe.ingredients.length > 0) ||
-        (recipe.method && recipe.method.length > 0))
-  );
-  const showRecipePrimary = kind === "recipe" && hasRecipe;
-  const reverseBadgeLabel = showRecipePrimary ? "Recipe Card" : "Camera EXIF";
-  const reverseName = showRecipePrimary ? "recipe" : "camera details";
+  const showRecipePrimary = kind === "recipe" && recipe !== null;
+  const reverseBadgeLabel = showRecipePrimary ? "Film Recipe" : "Camera EXIF";
+  const reverseName = showRecipePrimary ? "film recipe" : "camera details";
   const isFlipped = flipEnabled && flipped;
 
   const handleToggle = () => {
@@ -100,7 +95,7 @@ export function FlipCard({
                   className="inline-flex items-center gap-1.5 rounded-full bg-paper-50/95 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-md backdrop-blur"
                 >
                   {showRecipePrimary ? (
-                    <UtensilsCrossed className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
+                    <SlidersHorizontal className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
                   ) : (
                     <Camera className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
                   )}
@@ -141,57 +136,20 @@ export function FlipCard({
                   <div className="mt-5 space-y-4">
                     <div>
                       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-500">
-                        Kitchen Test Card
+                        Fujifilm Film Recipe
                       </p>
                       <h3 className="mt-1 font-serif text-xl font-bold leading-snug text-ink-900 sm:text-2xl">
-                        {recipe.title || "Untitled Recipe"}
+                        {recipe.name}
                       </h3>
-                      {recipe.servings || recipe.prepTime ? (
-                        <div className="mt-2 flex flex-wrap gap-2 font-mono text-xs text-ink-700">
-                          {recipe.servings ? (
-                            <span className="rounded bg-paper-200 px-2.5 py-0.5">
-                              Yield: {recipe.servings}
-                            </span>
-                          ) : null}
-                          {recipe.prepTime ? (
-                            <span className="rounded bg-paper-200 px-2.5 py-0.5">
-                              Time: {recipe.prepTime}
-                            </span>
-                          ) : null}
-                        </div>
-                      ) : null}
                     </div>
-
-                    {recipe.ingredients && recipe.ingredients.length > 0 ? (
-                      <div>
-                        <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">
-                          Ingredients
-                        </h4>
-                        <ul className="mt-2 space-y-1.5 border-l-2 border-vermilion-500/60 pl-3.5 text-xs leading-relaxed text-ink-800 sm:text-sm">
-                          {recipe.ingredients.map((item, idx) => (
-                            <li key={idx}>{item}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    ) : null}
-
-                    {recipe.method && recipe.method.length > 0 ? (
-                      <div>
-                        <h4 className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-ink-500">
-                          Method
-                        </h4>
-                        <ol className="mt-2 space-y-2 text-xs leading-relaxed text-ink-800 sm:text-sm">
-                          {recipe.method.map((step, idx) => (
-                            <li key={idx} className="flex gap-2.5">
-                              <span className="font-mono text-xs font-bold text-vermilion-600">
-                                {String(idx + 1).padStart(2, "0")}.
-                              </span>
-                              <span>{step}</span>
-                            </li>
-                          ))}
-                        </ol>
-                      </div>
-                    ) : null}
+                    <dl className="grid grid-cols-1 gap-x-5 gap-y-1.5 text-xs sm:grid-cols-2 sm:text-sm">
+                      {recipeRows(recipe).map((row) => (
+                        <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-paper-300/70 py-1">
+                          <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-500">{row.label}</dt>
+                          <dd className="text-right font-medium text-ink-900">{row.value}</dd>
+                        </div>
+                      ))}
+                    </dl>
                   </div>
                 ) : (
                   <div className="mt-6 space-y-5">
@@ -261,7 +219,7 @@ export function FlipCard({
                 )}
               </div>
 
-              {/* Compact secondary EXIF footer when showing a Recipe Card that also has camera EXIF */}
+              {/* Compact secondary EXIF footer when the back shows a film recipe and the photo also has camera EXIF */}
               {showRecipePrimary && exif ? (
                 <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-paper-300 pt-3 font-mono text-[11px] text-ink-500">
                   <span>

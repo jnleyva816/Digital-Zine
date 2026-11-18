@@ -1,21 +1,13 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
 const updateAssetSchema = z.object({
   kind: z.enum(["photo", "recipe"]).optional(),
-  recipe: z
-    .object({
-      title: z.string().max(160).optional(),
-      servings: z.string().max(80).optional(),
-      prepTime: z.string().max(80).optional(),
-      ingredients: z.array(z.string().max(300)).max(50).optional(),
-      method: z.array(z.string().max(800)).max(40).optional(),
-    })
-    .nullable()
-    .optional(),
+  recipe: fujiRecipeSchema.nullable().optional(),
 });
 
 export async function PATCH(

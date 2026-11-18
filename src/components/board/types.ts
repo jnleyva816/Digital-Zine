@@ -41,17 +41,6 @@ export const ACCEPTED_IMAGE_TYPES = [
 /** Matches the server limit in `PUT /api/uploads/local/[...key]`. */
 export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
-/** Matches `recipeSchema` in `src/app/api/assets/[id]/route.ts`. */
-export const RECIPE_LIMITS = {
-  title: 160,
-  servings: 80,
-  prepTime: 80,
-  ingredientCount: 50,
-  ingredientLength: 300,
-  methodCount: 40,
-  methodLength: 800,
-} as const;
-
 /** Reads `{ error }` from a JSON error response, falling back to a generic message. */
 export async function readApiError(res: Response, fallback: string): Promise<string> {
   try {
