@@ -105,7 +105,30 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `AWS_S3_ENDPOINT` | No | Endpoint for S3-compatible stores such as R2 or MinIO |
 | `AWS_S3_PUBLIC_URL` | No | Public base URL for reading objects |
 | `NEXT_PUBLIC_IMAGE_CDN_URL` | No | Image CDN prefix. See below. |
-| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` | No | Pro subscription billing. If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
+| `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID` | No | Pro subscription billing (see "Billing" below). If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
+
+## Billing (Stripe)
+
+Pro costs $15/month and unlocks PDF export. `/billing` shows the plan, starts Stripe Checkout, and opens Stripe's hosted Customer Portal, where Pro users cancel, change their card, or see invoices.
+
+To turn it on:
+
+1. Use a [Stripe sandbox](https://docs.stripe.com/sandboxes) for development, and a [restricted API key](https://docs.stripe.com/keys#limit-access) (`rk_…`) where you can. The key needs write access to Customers, Checkout Sessions, and Customer Portal sessions, and read access to Subscriptions.
+2. Create a Product named "Digital Zine Pro" with a $15/month recurring Price, and set `STRIPE_PRO_PRICE_ID`. If it is unset, Checkout falls back to an inline $15/month price.
+3. Turn on the Customer Portal in the Dashboard (Settings → Billing → Customer portal), and allow cancellation and payment-method updates.
+4. Add a webhook endpoint at `<NEXT_PUBLIC_APP_URL>/api/billing/webhook` and set `STRIPE_WEBHOOK_SECRET` to its signing secret. Subscribe to:
+   - `checkout.session.completed`, `checkout.session.async_payment_succeeded`
+   - `customer.subscription.created`, `.updated`, `.deleted`, `.paused`, `.resumed`
+   - `invoice.paid`, `invoice.payment_failed`
+
+   For local testing: `stripe listen --forward-to localhost:3000/api/billing/webhook`.
+
+How it behaves:
+
+- The webhook re-reads each subscription from Stripe instead of trusting the event payload, so events that arrive out of order are handled. It finds users only by their linked Stripe customer.
+- `active`, `trialing`, and `past_due` count as Pro. While Stripe retries a failed renewal, the creator keeps Pro and sees a warning on `/billing`. They drop to Free when the subscription becomes `unpaid` or `canceled`.
+- Without `STRIPE_SECRET_KEY` or `NEXT_PUBLIC_APP_URL`, `/billing` says billing is not set up and the billing APIs return 503. The rest of the app is unaffected.
+- Not handled yet: refund, dispute, and early-fraud-warning events (DIG-15). Sales tax is not collected. If you charge US or EU customers, set up [Stripe Tax](https://docs.stripe.com/billing/taxes/collect-taxes) with an active registration before going live.
 
 ## Storage
 

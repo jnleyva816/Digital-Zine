@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 1:10 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) built test-first; see the ticket table for its CI status. Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 2:00 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) done in `5f931b9`; CI green (run 44339460602). DIG-11 (billing) built test-first; see the ticket table for its CI status. Foundation checkpoint: `698c7bb`.
 
 ## Do this first
 
@@ -26,6 +26,10 @@ Do not reopen these unless the user explicitly changes them.
 - Editor (decided 18 Nov, DIG-8): creators can have many zines. `/editor` lists them and has a "Create zine" form; new zines start with up to 8 board photos (existing API behavior). `/editor/[id]` saves explicitly with "Save changes"; edits stay local with an "Unsaved changes" indicator, and leaving warns on full unloads and in-app link clicks. Publishing needs at least one page and saves pending edits in the same request. The public URL (slug) is editable only until the first publish. Deleting a zine requires typing its exact title.
 - Public viewer (decided 18 Nov, DIG-9): `/z/[slug]` is one vertical column of `FlipCard`s, not a pager. The byline shows the creator's display name when set and nothing otherwise; the email never appears. Only zines with `published: true` render; anything else is a 404.
 - PDF export (decided 18 Nov, DIG-10): owner-only. `GET /api/pdf/[slug]` returns 404 for anyone else's zine, even a Pro user's. The "Download PDF" button is in `/editor/[id]` under "View public page", and only while the zine is published. Free creators see "PDF export is a Pro feature." with an "Upgrade to Pro" link to `/billing`. The PDF never prints an email; with no display name there is no byline.
+- Billing (decided 18 Nov, DIG-11):
+  - `/billing` opens Stripe's hosted Customer Portal ("Manage subscription") for cancelling, card updates, and invoices.
+  - `active`, `trialing`, and `past_due` count as Pro. A failed renewal keeps Pro and shows a warning; the plan drops to Free at `unpaid` or `canceled`.
+  - Refund, dispute, and fraud-warning events are out of scope and tracked in DIG-15 (Backlog). Ask the user what each should do before building it.
 - `publishedAt` means *first* published (decided 18 Nov, DIG-8): unpublishing flips only `published` and keeps `publishedAt`, which is what locks the slug. `PATCH /api/zines/[id]` returns 409 for a slug change once `publishedAt` is set, and 400 when publishing would leave zero pages.
 - Deleting a Vision Board photo (decided 18 Nov): allowed, with an inline confirm, but `DELETE /api/assets/[id]` returns 409 and names the zine when any of the user's zine pages uses the asset. Stored bytes are not deleted (asset garbage collection is out of scope).
 - `/` (decided 18 Nov): no landing page. Signed in → `/board`, signed out → `/signin`.
@@ -42,7 +46,13 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 - Assets: `src/app/api/assets/route.ts`, `src/app/api/assets/[id]/route.ts`, `src/app/api/assets/reorder/route.ts`.
 - Zines: `src/app/api/zines/route.ts`, `src/app/api/zines/[id]/route.ts`. Template id is `full-bleed-photo`.
 - PDF (DIG-10): `src/lib/pdf-zine.tsx` and `GET /api/pdf/[slug]`. The route returns 401 signed out, 403 for Free, and 404 unless the caller owns the published zine. It uses only the owner's assets. Images are read from local storage by key, or fetched only from absolute `https://` public URLs (S3), never from the request host. A page whose image can't be loaded is left out and the rest are renumbered. The response sets `Cache-Control: private, no-store`. `src/components/editor/PdfExport.tsx` downloads the file through a blob link. The editor's leave warning ignores `a[download]`. E2E photos from `createUserWithPhotos` are now real files copied from the seed images under each user's own storage key; `deleteUser` removes them.
-- Stripe: `src/lib/stripe.ts`, `POST /api/billing/checkout`, `POST /api/billing/webhook`. No billing page.
+- Billing (DIG-11):
+  - `src/lib/billing.ts`: `tierForStatus`, `describeSubscription`, `appOrigin` (return URLs come only from `NEXT_PUBLIC_APP_URL`, never from the request host).
+  - `POST /api/billing/checkout`: 401 signed out, 503 `configured: false` without keys or app URL, 409 if already Pro. It reuses the stored customer, or creates one with an idempotency key.
+  - `POST /api/billing/portal`: 401, 503, 409 when there is no customer, otherwise a Customer Portal URL.
+  - `POST /api/billing/webhook`: verifies the signature. It handles checkout completion (only when `payment_status` is paid), `customer.subscription.*`, and `invoice.paid` / `invoice.payment_failed`. For each, it re-reads the subscription from Stripe and finds the user only by `stripeCustomerId`, never by metadata. Processing errors return 500 so Stripe retries.
+  - `/billing` page: `src/app/billing/{layout,page,loading,error}.tsx` and `src/components/billing/BillingPanel.tsx`. After checkout it refreshes every 3s, up to 10 times, until the webhook marks the user Pro.
+  - API tests mock `getStripeClient` but use the real SDK's `webhooks` with `generateTestHeaderString`. E2E runs without keys, so it covers the not-configured path and the plan states.
 - Sign-in page `src/app/signin/page.tsx` (SSR, noindex, signed-in users redirect to `/board`). `SignInForm` only accepts same-origin relative `callbackUrl`s and shows the seeded account only when `NODE_ENV !== "production"`.
 - README: setup, env vars, storage, CDN loader swap, NixOS notes.
 - `/` redirect in `src/app/page.tsx`.
@@ -59,7 +69,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 
 ## Not built yet
 
-- Pages: `/billing` (DIG-11). Until it exists, the `StudioHeader` link to it prefetches a 404. That is expected.
+- Deploy setup for Stripe (portal on, webhook events, price ID) is in the README's "Billing (Stripe)" section. Sales tax is not collected.
 - On this NixOS machine, run e2e with `PLAYWRIGHT_CHROMIUM_EXECUTABLE=$(nix build --no-link --print-out-paths nixpkgs#chromium)/bin/chromium` (see the README's NixOS section).
 - Pull request #1 is a draft checkpoint, not a finished review.
 - CI caches `node_modules` (keyed on the lockfile; a hit skips `npm ci`) and `.next/cache` plus `tsconfig.tsbuildinfo`. It installs only Playwright's headless Chromium shell, without `--with-deps` (the runner already has the libraries; add the flag back if Chromium fails to launch) and uses `postgres:17-alpine`. Commit the handoff together with the code it describes, so a docs-only follow-up doesn't trigger a second full CI run.
@@ -74,16 +84,18 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-8](https://linear.app/digital-zine/issue/DIG-8/editor-one-template-ordered-pages-and-publish) | Done | `/editor` list and `/editor/[id]`: captions, per-page flip, reorder, add or remove pages, explicit save, publish and unpublish, slug lock, typed-title delete. Built test-first. |
 | [DIG-9](https://linear.app/digital-zine/issue/DIG-9/public-flip-viewer-with-open-graph-previews) | Done | SSR `/z/[slug]` with Open Graph and Twitter tags, a canonical URL, byline, phone layout, and an accessible flip. 12 viewer e2e tests. |
 | [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | Done (pending CI) | Owner-only route hardened and tested against Postgres; "Download PDF" in the editor, with an upgrade prompt for Free creators. |
-| [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | In Progress | Routes exist. Build `/billing`. Missing Stripe keys must stay non-fatal. |
+| [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | Done (pending CI) | `/billing` with Checkout, Customer Portal, failed-payment warning, and not-configured state. Webhook hardened and tested with signed events. |
+| [DIG-15](https://linear.app/digital-zine/issue/DIG-15/handle-stripe-refund-dispute-and-fraud-warning-events) | Backlog | Refund, dispute, and fraud-warning webhooks. Product response not decided; ask first. |
 | [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Todo | Build, smoke checks, screenshots, mark PR #1 ready. |
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
 
-Next ticket to resume: DIG-11, Stripe Pro billing, test-first. Start with `tests/api/billing.test.ts` for:
-- `POST /api/billing/checkout`: 401 signed out; `configured: false` with no `STRIPE_SECRET_KEY`.
-- `POST /api/billing/webhook`: rejects a bad signature, and flips `tier` for a signed test event (build one with `stripe.webhooks.generateTestHeaderString`).
-
-Then add an e2e test for `/billing` and build it. With keys unset (as in CI), it must explain that billing isn't configured. The PDF upsell already links there. Whether `/billing` also needs a Stripe customer-portal link for cancelling is not settled; ask the user.
+Next ticket to resume: DIG-12, final verification. It gates marking PR #1 ready.
+- `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green.
+- The README covers env vars, local Postgres, the seeded user, and how to run. Check this; it mostly does already.
+- Smoke check against local Postgres (dev DB, `next dev` on 3420): sign-in, board, editor, public flip viewer, PDF gate, and the Stripe unconfigured path.
+- Screenshots of the Vision Board, editor, and public flip viewer. Where they go (repo `docs/screenshots/` or only the PR) is not settled; ask the user.
+- Rewrite the PR #1 description: what is in, and what is deferred (print, payouts, extra templates, asset garbage collection, audio and video, DIG-15). Mark it ready for review only after all of the above. Do not merge.
 
 ## Session log
 
@@ -93,6 +105,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 2:00 PM | Claude Code (local) | Built DIG-11, billing, test-first: 33 billing unit and API tests, 10 `BillingPanel` component tests, 8 billing e2e tests. Added the Customer Portal route and `/billing`. Webhook: re-reads subscriptions, maps users only by customer, gates on payment, keeps Pro while `past_due`, returns 500 for retries. Checkout: 409 for Pro, idempotent customer creation, no Host-derived URLs. Filed DIG-15. README now has a Billing section. | DIG-12 next. |
 | 18 Nov 2026, 1:10 PM | Claude Code (local) | CI speedups: `node_modules` and Next build caches, headless-shell Chromium without `--with-deps`, alpine Postgres; a typical run is about 1:34. Built DIG-10, PDF export, test-first: 10 API tests, 5 `PdfExport` component tests, 5 PDF e2e tests. Fixes: export is owner-only, no email in the PDF, no fetching from the request host, missing images no longer crash the export, and the leave warning no longer blocks downloads. | DIG-11 next. |
 | 18 Nov 2026, 12:20 PM | Claude Code (local) | Built DIG-9, the public viewer, test-first: 12 viewer e2e tests (OG tags, share crawlers, 404s, signed-out reading, flip by click/Enter/Space, phone width), `FlipCard` component tests, and `shareDescription` unit tests. Mutation-checked the crawler and 404 tests by adding a `loading.tsx`. | DIG-10 next. |
 | 18 Nov 2026, 11:30 AM | Claude Code (local) | DIG-14 closed after CI went green. Built DIG-8, the editor, test-first: zine API rules (non-empty publish, slug lock, first-publish `publishedAt`), `editor-state` unit tests, 9 editor e2e tests, and the pages. Playwright now builds into `.next-e2e/`. | DIG-9 next. |
