@@ -7,7 +7,7 @@ alwaysApply: true
 
 These rules match the "Test-driven development" section of `CLAUDE.md`. If you change them, change `CLAUDE.md` in the same commit.
 
-Work test-first. The tooling and test database were decided on 18 Nov 2026; see "Already decided" in the handoff.
+Work test-first. The tooling and test database were decided on 18 Nov 2026; see "Already decided" on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page.
 
 For each behavior in the ticket's acceptance:
 

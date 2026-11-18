@@ -1,11 +1,11 @@
 ---
-description: PM workflow for Digital Zine. One ticket at a time, update Linear, and update the handoff before any stop, including an interruption.
+description: PM workflow for Digital Zine. One ticket at a time, update Linear, and update the Agent handoff page before any stop, including an interruption.
 alwaysApply: true
 ---
 
 # Project management
 
-Track work in the Linear team **Digital-Zine**. Projects are goals. The active project is named in `docs/agent-handoff.md`, which is also the issue map. These rules match `CLAUDE.md`; change both in the same commit.
+Track work in the Linear team **Digital-Zine**. Projects are goals. The active project is named on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page, which is also the issue map. These rules match `CLAUDE.md`; change both in the same commit.
 
 - Every ticket gets exactly one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) and one **Type** label (Bug, Feature, Improvement). Label tickets you create. Split large cross-cutting work into sub-issues with their own Areas.
 - Security belongs to every ticket: anything touching auth, permissions, payments, uploads, or user data gets abuse-case tests. The Security label is for work whose main purpose is security.
@@ -15,11 +15,11 @@ Track work in the Linear team **Digital-Zine**. Projects are goals. The active p
 - One implementation issue in progress at a time.
 - Set the issue to In Progress, and create its branch, when you start it. Set it to In Review once its acceptance is met, its tests are committed, `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green on its PR. It becomes Done when the owner merges.
 - On that issue, record what changed, which tests you wrote (and that you saw them fail first), how you verified it, and the exact next step.
-- Update `docs/agent-handoff.md` in the same change: "Already in the tree", "Not built yet", the ticket table, and a new session-log row. Times are America/New_York.
+- Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page in the same session: "Now", open tickets, and "Latest session". Append one row to the [log](https://linear.app/digital-zine/document/agent-handoff-log-b0673a41c909). Times are America/New_York. Delete a row when its ticket is Done. Do not recreate `docs/agent-handoff.md`.
 
 Before you stop, including an interruption or a context limit:
 
-1. Write the handoff so the next Claude or Cursor session can continue without rereading the chat.
+1. Update the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page ("Now", open tickets, "Latest session") and append one row to the [log](https://linear.app/digital-zine/document/agent-handoff-log-b0673a41c909). Do not copy the log back onto the page.
 2. Update the open Linear issue. Name the next file and the next command. "Continue later" is not a status.
 3. Commit and push unfinished code on the ticket's branch. Mark the commit as a checkpoint if the ticket is not done.
 4. Open or update the ticket's pull request. Leave it as a draft until the ticket is In Review. Do not merge it.

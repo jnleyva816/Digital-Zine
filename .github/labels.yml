@@ -11,7 +11,7 @@
 # Area — pick exactly one. The main part of the product a ticket changes.
 - name: "area:docs"
   color: "bec2c8"
-  description: README, the agent handoff, and the Claude and Cursor rules.
+  description: README, the Linear agent handoff page, and the Claude and Cursor rules.
 
 - name: "area:infra"
   color: "95a2b3"
