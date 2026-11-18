@@ -4,7 +4,17 @@ Creators collect photos on a private Vision Board, sequence them into a full-ble
 
 Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js credentials, `@react-pdf/renderer`, and Stripe subscriptions.
 
-> Build status: the MVP is in progress on `cursor/digital-zine-mvp-8439`. `docs/agent-handoff.md` lists which pages exist and which are still open.
+> Build status: the MVP is complete on `cursor/digital-zine-mvp-8439` (PR #1). `docs/agent-handoff.md` tracks status and what is deferred.
+
+| Vision Board | Zine editor |
+| --- | --- |
+| ![Vision Board with four photos, EXIF badges, and a recipe tag](docs/screenshots/vision-board.png) | ![Zine editor with a published zine, the PDF upgrade prompt, and page list](docs/screenshots/editor.png) |
+
+| Public zine | Card flipped to its recipe | On a phone |
+| --- | --- | --- |
+| ![Public zine page with title, byline, and the first flip card](docs/screenshots/public-viewer.png) | ![The first card flipped to its recipe and camera details](docs/screenshots/public-viewer-flipped.png) | ![The public zine page at phone width](docs/screenshots/public-viewer-phone.png) |
+
+`npm run smoke` regenerates these screenshots from a running server (see "Scripts").
 
 ## Requirements
 

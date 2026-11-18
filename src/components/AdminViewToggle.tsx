@@ -1,13 +1,22 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { Eye } from "lucide-react";
 import { readApiError } from "@/components/board/types";
 
-/** Switches an admin between full access and the Free creator's view (DIG-17). */
-function useViewAs() {
-  const router = useRouter();
+type Reload = () => void;
+const reloadPage: Reload = () => window.location.reload();
+
+/**
+ * Switches an admin between full access and the Free creator's view (DIG-17). It does a full
+ * reload rather than `router.refresh()`: the switch changes access on every page, and a refresh
+ * can reuse an in-flight prefetch made before the cookie was set (seen as a flaky e2e test).
+ */
+function useViewAs(reload: Reload) {
+  // Server-rendered buttons are visible before React attaches handlers; a click in that gap
+  // would do nothing. Keep them disabled until hydrated.
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,21 +31,22 @@ function useViewAs() {
       });
       if (!res.ok) {
         setError(await readApiError(res, "The view could not be switched. Try again."));
+        setBusy(false);
         return;
       }
-      router.refresh();
+      // Stay busy while the page reloads.
+      reload();
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
-    } finally {
       setBusy(false);
     }
   }
 
-  return { busy, error, set };
+  return { busy: busy || !ready, error, set };
 }
 
-export function AdminViewToggle({ viewingAsFree }: { viewingAsFree: boolean }) {
-  const { busy, error, set } = useViewAs();
+export function AdminViewToggle({ viewingAsFree, reload = reloadPage }: { viewingAsFree: boolean; reload?: Reload }) {
+  const { busy, error, set } = useViewAs(reload);
   return (
     <div className="relative">
       <button
@@ -70,8 +80,8 @@ export function AdminViewToggle({ viewingAsFree }: { viewingAsFree: boolean }) {
   );
 }
 
-export function AdminViewBanner() {
-  const { busy, error, set } = useViewAs();
+export function AdminViewBanner({ reload = reloadPage }: { reload?: Reload }) {
+  const { busy, error, set } = useViewAs(reload);
   return (
     <div className="border-b border-vermilion-500/40 bg-vermilion-500/10">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-2 px-4 py-2 text-sm sm:px-6">
