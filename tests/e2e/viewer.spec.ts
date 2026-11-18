@@ -118,7 +118,7 @@ test("unknown, draft, and unpublished slugs return 404", async ({ request, page 
 });
 
 test("signed-out readers see the zine with its byline, date, and pages through the image loader", async ({ page }) => {
-  const { slug } = await arrangeZine({ name: "Mara Ito" });
+  const { slug, assets } = await arrangeZine({ name: "Mara Ito" });
   await page.goto(`/z/${slug}`);
 
   await expect(page.getByRole("heading", { level: 1, name: "Brine & Light" })).toBeVisible();
@@ -128,7 +128,9 @@ test("signed-out readers see the zine with its byline, date, and pages through t
   await expect(zinePages(page)).toHaveCount(3);
 
   const first = zinePages(page).nth(0).getByRole("img", { name: "Persimmons over coals" });
-  await expect(first).toHaveAttribute("src", /\/api\/media\/seed\/plate-01-charred-persimmon\.jpg\?w=\d+&q=\d+/);
+  const src = await first.getAttribute("src");
+  expect(src?.startsWith(`${assets[0].publicUrl}?w=`)).toBe(true);
+  expect(src).toMatch(/\?w=\d+&q=\d+$/);
   await expect.poll(() => first.evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
 
   // No studio chrome for readers.

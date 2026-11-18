@@ -55,6 +55,7 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
             pages: zine.pages.map((p) => ({ pageNumber: p.pageNumber, flipEnabled: p.flipEnabled, content: p.content })),
           }}
           boardAssets={assets.map(toBoardAsset)}
+          tier={user.tier}
         />
       </main>
     </>

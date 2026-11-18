@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import fs from "node:fs/promises";
+import path from "node:path";
 import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { expect, type Page } from "@playwright/test";
@@ -7,7 +9,10 @@ import { loadTestEnv } from "../../scripts/test-db";
 export const SEEDED = { email: "creator@digitalzine.local", password: "zine1234" } as const;
 
 /** Prisma client bound to the test database, for arranging data the UI cannot create. */
-export const testDb = new PrismaClient({ datasourceUrl: loadTestEnv().DATABASE_URL });
+const testEnv = loadTestEnv();
+export const testDb = new PrismaClient({ datasourceUrl: testEnv.DATABASE_URL });
+/** Where the test server keeps uploaded files. */
+const storageRoot = path.resolve(testEnv.LOCAL_STORAGE_DIR);
 
 export async function signIn(page: Page, email: string = SEEDED.email, password: string = SEEDED.password) {
   await page.goto("/signin");
@@ -38,17 +43,24 @@ const SEED_IMAGES = [
   "seed/plate-03-smoked-chili-oil.jpg",
 ];
 
-/** A new creator whose board holds three photos (reusing the seeded image files). */
+/**
+ * A new creator whose board holds three photos. Each photo is a copy of a seeded image stored
+ * under the creator's own key, as a real upload would be.
+ */
 export async function createUserWithPhotos(names = ["persimmon.jpg", "cellar.jpg", "chili.jpg"]) {
   const user = await createUser();
   const assets = [];
   for (const [i, name] of names.entries()) {
+    const storageKey = `users/${user.id}/${randomUUID()}-${name}`;
+    const target = path.join(storageRoot, storageKey);
+    await fs.mkdir(path.dirname(target), { recursive: true });
+    await fs.copyFile(path.join(storageRoot, SEED_IMAGES[i % SEED_IMAGES.length]), target);
     assets.push(
       await testDb.mediaAsset.create({
         data: {
           ownerId: user.id,
-          storageKey: `users/${user.id}/${randomUUID()}-${name}`,
-          publicUrl: `/api/media/${SEED_IMAGES[i % SEED_IMAGES.length]}`,
+          storageKey,
+          publicUrl: `/api/media/${storageKey}`,
           originalName: name,
           sortOrder: i,
           exif: { iso: 200 },
@@ -61,4 +73,9 @@ export async function createUserWithPhotos(names = ["persimmon.jpg", "cellar.jpg
 
 export async function deleteUser(id: string) {
   await testDb.user.delete({ where: { id } }).catch(() => undefined);
+  await fs.rm(path.join(storageRoot, "users", id), { recursive: true, force: true });
+}
+
+export async function makePro(id: string) {
+  await testDb.user.update({ where: { id }, data: { tier: "pro", subscriptionStatus: "active" } });
 }

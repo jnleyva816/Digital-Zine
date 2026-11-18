@@ -8,6 +8,7 @@ import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-reac
 import { readApiError, type BoardAsset } from "@/components/board/types";
 import { assetLabel } from "@/components/board/board-utils";
 import { DeleteZineDialog } from "./DeleteZineDialog";
+import { PdfExport } from "./PdfExport";
 import {
   addPage,
   canPublish,
@@ -37,7 +38,15 @@ const labelClass = "block font-mono text-xs uppercase tracking-wider text-ink-70
 const iconButton =
   "rounded-lg border border-paper-300 p-1.5 text-ink-700 transition hover:bg-paper-100 disabled:opacity-30";
 
-export function ZineEditor({ zine, boardAssets }: { zine: EditorZine; boardAssets: BoardAsset[] }) {
+export function ZineEditor({
+  zine,
+  boardAssets,
+  tier,
+}: {
+  zine: EditorZine;
+  boardAssets: BoardAsset[];
+  tier: "free" | "pro";
+}) {
   const router = useRouter();
   const id = useId();
   const initial = useMemo(() => draftFromZine(zine), [zine]);
@@ -70,7 +79,8 @@ export function ZineEditor({ zine, boardAssets }: { zine: EditorZine; boardAsset
       if (!dirtyRef.current || e.defaultPrevented || e.button !== 0) return;
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
       const anchor = (e.target as Element | null)?.closest?.("a[href]");
-      if (!(anchor instanceof HTMLAnchorElement) || anchor.target === "_blank") return;
+      // New tabs and downloads (such as the PDF export) do not leave the editor.
+      if (!(anchor instanceof HTMLAnchorElement) || anchor.target === "_blank" || anchor.hasAttribute("download")) return;
       if (!window.confirm(LEAVE_MESSAGE)) {
         e.preventDefault();
         e.stopPropagation();
@@ -181,6 +191,11 @@ export function ZineEditor({ zine, boardAssets }: { zine: EditorZine; boardAsset
               View public page
               <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
+          ) : null}
+          {published ? (
+            <div className="mt-3">
+              <PdfExport slug={saved.slug} tier={tier} dirty={dirty} />
+            </div>
           ) : null}
         </div>
       </div>

@@ -15,7 +15,8 @@ export interface PdfRenderedPageItem {
   caption: string;
   flipEnabled: boolean;
   assetKind: "photo" | "recipe";
-  imageSrc: { data: Buffer; format: "jpg" | "png" } | string;
+  /** JPEG bytes, already read from storage. Pages without an image are left out before rendering. */
+  imageSrc: { data: Buffer; format: "jpg" };
   exif: ExifData | null;
   recipe: RecipeData | null;
 }
@@ -23,7 +24,8 @@ export interface PdfRenderedPageItem {
 export interface PdfZinePayload {
   title: string;
   description: string | null;
-  authorName: string;
+  /** The creator's display name, or null to leave the byline out. Never an email address. */
+  authorName: string | null;
   slug: string;
   publishedAt: string;
   pages: PdfRenderedPageItem[];
@@ -173,7 +175,7 @@ function ZinePdfDocument({ zine }: { zine: PdfZinePayload }) {
   return (
     <Document
       title={zine.title}
-      author={zine.authorName}
+      author={zine.authorName ?? undefined}
       subject={zine.description ?? "Digital Zine Edition"}
     >
       <Page size="A4" style={styles.coverPage}>
@@ -185,7 +187,7 @@ function ZinePdfDocument({ zine }: { zine: PdfZinePayload }) {
           ) : null}
         </View>
         <View style={styles.coverFooter}>
-          <Text>By {zine.authorName}</Text>
+          {zine.authorName ? <Text>By {zine.authorName}</Text> : null}
           <Text>
             {zine.pages.length} {zine.pages.length === 1 ? "Plate" : "Plates"} · /z/
             {zine.slug}

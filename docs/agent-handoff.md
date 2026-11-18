@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 12:20 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 1:10 PM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). DIG-9 (public viewer) done in `d172e95`; CI green on `111dc78` (run 44335684998). DIG-10 (PDF export) built test-first; see the ticket table for its CI status. Foundation checkpoint: `698c7bb`.
 
 ## Do this first
 
@@ -25,6 +25,7 @@ Do not reopen these unless the user explicitly changes them.
 - Test-driven development (decided 18 Nov): red, green, refactor for each acceptance behavior. Tooling is Vitest, Testing Library, and jsdom for unit, component, and API tests, and `@playwright/test` for end-to-end tests. Tests run against the separate `digital_zine_test` database from `.env.test`, which is reset before each run. Earlier work was backfilled with tests (DIG-14), and GitHub Actions CI runs the build and both suites. A ticket is Done only when `npm run build`, `npm test`, and `npm run test:e2e` pass and CI is green. The rules are in `CLAUDE.md` and `.cursor/rules/test-driven.mdc`.
 - Editor (decided 18 Nov, DIG-8): creators can have many zines. `/editor` lists them and has a "Create zine" form; new zines start with up to 8 board photos (existing API behavior). `/editor/[id]` saves explicitly with "Save changes"; edits stay local with an "Unsaved changes" indicator, and leaving warns on full unloads and in-app link clicks. Publishing needs at least one page and saves pending edits in the same request. The public URL (slug) is editable only until the first publish. Deleting a zine requires typing its exact title.
 - Public viewer (decided 18 Nov, DIG-9): `/z/[slug]` is one vertical column of `FlipCard`s, not a pager. The byline shows the creator's display name when set and nothing otherwise; the email never appears. Only zines with `published: true` render; anything else is a 404.
+- PDF export (decided 18 Nov, DIG-10): owner-only. `GET /api/pdf/[slug]` returns 404 for anyone else's zine, even a Pro user's. The "Download PDF" button is in `/editor/[id]` under "View public page", and only while the zine is published. Free creators see "PDF export is a Pro feature." with an "Upgrade to Pro" link to `/billing`. The PDF never prints an email; with no display name there is no byline.
 - `publishedAt` means *first* published (decided 18 Nov, DIG-8): unpublishing flips only `published` and keeps `publishedAt`, which is what locks the slug. `PATCH /api/zines/[id]` returns 409 for a slug change once `publishedAt` is set, and 400 when publishing would leave zero pages.
 - Deleting a Vision Board photo (decided 18 Nov): allowed, with an inline confirm, but `DELETE /api/assets/[id]` returns 409 and names the zine when any of the user's zine pages uses the asset. Stored bytes are not deleted (asset garbage collection is out of scope).
 - `/` (decided 18 Nov): no landing page. Signed in → `/board`, signed out → `/signin`.
@@ -40,7 +41,7 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 - Storage: `src/lib/storage/` (local + S3). Presign `POST /api/uploads/presign`. Local bytes `PUT /api/uploads/local/[...key]`. Public reads `GET /api/media/[...key]`.
 - Assets: `src/app/api/assets/route.ts`, `src/app/api/assets/[id]/route.ts`, `src/app/api/assets/reorder/route.ts`.
 - Zines: `src/app/api/zines/route.ts`, `src/app/api/zines/[id]/route.ts`. Template id is `full-bleed-photo`.
-- PDF: `src/lib/pdf-zine.tsx`, `GET /api/pdf/[slug]` (401 unsigned, 403 unless `tier` is `pro`). Not exercised end to end.
+- PDF (DIG-10): `src/lib/pdf-zine.tsx` and `GET /api/pdf/[slug]`. The route returns 401 signed out, 403 for Free, and 404 unless the caller owns the published zine. It uses only the owner's assets. Images are read from local storage by key, or fetched only from absolute `https://` public URLs (S3), never from the request host. A page whose image can't be loaded is left out and the rest are renumbered. The response sets `Cache-Control: private, no-store`. `src/components/editor/PdfExport.tsx` downloads the file through a blob link. The editor's leave warning ignores `a[download]`. E2E photos from `createUserWithPhotos` are now real files copied from the seed images under each user's own storage key; `deleteUser` removes them.
 - Stripe: `src/lib/stripe.ts`, `POST /api/billing/checkout`, `POST /api/billing/webhook`. No billing page.
 - Sign-in page `src/app/signin/page.tsx` (SSR, noindex, signed-in users redirect to `/board`). `SignInForm` only accepts same-origin relative `callbackUrl`s and shows the seeded account only when `NODE_ENV !== "production"`.
 - README: setup, env vars, storage, CDN loader swap, NixOS notes.
@@ -72,13 +73,17 @@ Do not rewrite these unless a bug in them blocks the next ticket. Extend them.
 | [DIG-7](https://linear.app/digital-zine/issue/DIG-7/vision-board-upload-exif-recipes-and-reorder) | Done | `/board` with upload, EXIF badges, recipe editor, drag/keyboard reorder, guarded delete. Browser smoke check passed. |
 | [DIG-8](https://linear.app/digital-zine/issue/DIG-8/editor-one-template-ordered-pages-and-publish) | Done | `/editor` list and `/editor/[id]`: captions, per-page flip, reorder, add or remove pages, explicit save, publish and unpublish, slug lock, typed-title delete. Built test-first. |
 | [DIG-9](https://linear.app/digital-zine/issue/DIG-9/public-flip-viewer-with-open-graph-previews) | Done | SSR `/z/[slug]` with Open Graph and Twitter tags, a canonical URL, byline, phone layout, and an accessible flip. 12 viewer e2e tests. |
-| [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | In Progress | Route exists. Prove it against Postgres and add the download control for Pro. |
+| [DIG-10](https://linear.app/digital-zine/issue/DIG-10/pdf-export-from-the-published-template) | Done (pending CI) | Owner-only route hardened and tested against Postgres; "Download PDF" in the editor, with an upgrade prompt for Free creators. |
 | [DIG-11](https://linear.app/digital-zine/issue/DIG-11/stripe-pro-subscription-at-dollar15month) | In Progress | Routes exist. Build `/billing`. Missing Stripe keys must stay non-fatal. |
 | [DIG-12](https://linear.app/digital-zine/issue/DIG-12/verify-the-build-smoke-checks-screenshots-and-pr) | Todo | Build, smoke checks, screenshots, mark PR #1 ready. |
 | [DIG-13](https://linear.app/digital-zine/issue/DIG-13/agent-handoff-and-principal-engineer-rules) | Done | Handoff and Claude/Cursor rules landed in `1b5f334`. |
 | [DIG-14](https://linear.app/digital-zine/issue/DIG-14/test-harness-tdd-rules-backfilled-tests-and-ci) | Done | Harness, TDD rules, 64 Vitest + 13 Playwright tests, CI green on PR #1. |
 
-Next ticket to resume: DIG-10, PDF export, test-first. Start with `tests/api/pdf.test.ts` against `GET /api/pdf/[slug]`, covering 401 signed out, 403 for a free user, 404 for an unpublished or unknown slug, and 200 `application/pdf` (starting with `%PDF`) for a Pro owner. Then add an e2e test for the download control and build it. Where the control goes, and whether readers or only the owner can download, are not settled. Ask the user before you build the UI.
+Next ticket to resume: DIG-11, Stripe Pro billing, test-first. Start with `tests/api/billing.test.ts` for:
+- `POST /api/billing/checkout`: 401 signed out; `configured: false` with no `STRIPE_SECRET_KEY`.
+- `POST /api/billing/webhook`: rejects a bad signature, and flips `tier` for a signed test event (build one with `stripe.webhooks.generateTestHeaderString`).
+
+Then add an e2e test for `/billing` and build it. With keys unset (as in CI), it must explain that billing isn't configured. The PDF upsell already links there. Whether `/billing` also needs a Stripe customer-portal link for cancelling is not settled; ask the user.
 
 ## Session log
 
@@ -88,6 +93,7 @@ Append a row when you stop. Do not delete earlier rows.
 | --- | --- | --- | --- |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
+| 18 Nov 2026, 1:10 PM | Claude Code (local) | CI speedups: `node_modules` and Next build caches, headless-shell Chromium without `--with-deps`, alpine Postgres; a typical run is about 1:34. Built DIG-10, PDF export, test-first: 10 API tests, 5 `PdfExport` component tests, 5 PDF e2e tests. Fixes: export is owner-only, no email in the PDF, no fetching from the request host, missing images no longer crash the export, and the leave warning no longer blocks downloads. | DIG-11 next. |
 | 18 Nov 2026, 12:20 PM | Claude Code (local) | Built DIG-9, the public viewer, test-first: 12 viewer e2e tests (OG tags, share crawlers, 404s, signed-out reading, flip by click/Enter/Space, phone width), `FlipCard` component tests, and `shareDescription` unit tests. Mutation-checked the crawler and 404 tests by adding a `loading.tsx`. | DIG-10 next. |
 | 18 Nov 2026, 11:30 AM | Claude Code (local) | DIG-14 closed after CI went green. Built DIG-8, the editor, test-first: zine API rules (non-empty publish, slug lock, first-publish `publishedAt`), `editor-state` unit tests, 9 editor e2e tests, and the pages. Playwright now builds into `.next-e2e/`. | DIG-9 next. |
 | 18 Nov 2026, 10:50 AM | Claude Code (local) | Adopted TDD at the user's request: added rules in `CLAUDE.md` and `.cursor/rules/`, the Vitest and Playwright harness, the guarded test-database reset, 64 Vitest and 13 Playwright tests backfilled for DIG-6 and DIG-7, and CI. Named the board grid for accessibility. | DIG-8. |
