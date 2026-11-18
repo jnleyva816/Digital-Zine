@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 10:50 AM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) is in the commit that carries this line. Foundation checkpoint: `698c7bb`.
+Last updated: 18 Nov 2026, 10:50 AM America/New_York (Claude Code, local). DIG-6 done in `4ed05b3`, DIG-7 in `e8f826f`. DIG-14 (test harness) done in `c66d05e`. DIG-8 (editor) done in `842b384`; CI green (run 44332418693). Foundation checkpoint: `698c7bb`.
 
 ## Do this first
 
