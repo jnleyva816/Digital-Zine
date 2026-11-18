@@ -2,7 +2,7 @@ import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { zineLimitFor } from "@/lib/limits";
+import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
 import { withUserLock } from "@/lib/usage";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
@@ -105,13 +105,7 @@ export async function POST(req: Request) {
   });
 
   if (!zine) {
-    return NextResponse.json(
-      {
-        error: `Free includes ${limit} zine${limit === 1 ? "" : "s"}. Upgrade to Pro for unlimited zines.`,
-        code: "zine_limit",
-      },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: zineLimitMessage(limit ?? 0), code: "zine_limit" }, { status: 403 });
   }
 
   return NextResponse.json({ zine }, { status: 201 });

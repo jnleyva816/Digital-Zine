@@ -1,12 +1,17 @@
 "use client";
 
 import { useId, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { readApiError } from "@/components/board/types";
 import { ZINE_LIMITS } from "./editor-state";
 
-export function NewZineForm() {
+/**
+ * `limitReached` is the message to show instead of the form when the creator's plan allows no
+ * more zines (DIG-32), or null.
+ */
+export function NewZineForm({ limitReached }: { limitReached: string | null }) {
   const router = useRouter();
   const id = useId();
   const [title, setTitle] = useState("");
@@ -35,6 +40,23 @@ export function NewZineForm() {
       setError(err instanceof Error ? err.message : "Could not create the zine.");
       setCreating(false);
     }
+  }
+
+  if (limitReached) {
+    return (
+      <section aria-labelledby={`${id}-limit`} className="rounded-2xl border border-paper-300 bg-white p-5 shadow-sm">
+        <h2 id={`${id}-limit`} className="font-serif text-lg font-bold text-ink-900">
+          Start a new zine
+        </h2>
+        <p className="mt-1 text-sm text-ink-700">{limitReached}</p>
+        <Link
+          href="/billing"
+          className="mt-3 inline-flex rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+        >
+          Upgrade to Pro
+        </Link>
+      </section>
+    );
   }
 
   return (

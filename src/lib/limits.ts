@@ -22,6 +22,11 @@ export function zineLimitFor(tier: "free" | "pro"): number | null {
   return ZINE_LIMITS[tier];
 }
 
+/** What a creator sees when their plan allows no more zines. */
+export function zineLimitMessage(limit: number): string {
+  return `Free includes ${limit} zine${limit === 1 ? "" : "s"}. Upgrade to Pro for unlimited zines.`;
+}
+
 export type UploadCheck =
   | { ok: true }
   | { ok: false; reason: "invalid_size" | "too_large" | "over_quota"; message: string };

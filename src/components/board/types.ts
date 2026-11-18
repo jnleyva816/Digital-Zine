@@ -8,6 +8,8 @@ export interface BoardAsset {
   kind: "photo" | "recipe";
   exif: ExifData | null;
   recipe: RecipeData | null;
+  /** Bytes in storage (DIG-32). */
+  sizeBytes: number;
 }
 
 interface RawAsset {
@@ -17,6 +19,7 @@ interface RawAsset {
   kind: string;
   exif?: unknown;
   recipe?: unknown;
+  sizeBytes?: number;
 }
 
 export function toBoardAsset(raw: RawAsset): BoardAsset {
@@ -27,6 +30,7 @@ export function toBoardAsset(raw: RawAsset): BoardAsset {
     kind: raw.kind === "recipe" ? "recipe" : "photo",
     exif: parseExif(raw.exif),
     recipe: parseRecipe(raw.recipe),
+    sizeBytes: raw.sizeBytes ?? 0,
   };
 }
 
@@ -37,9 +41,6 @@ export const ACCEPTED_IMAGE_TYPES = [
   "image/gif",
   "image/avif",
 ] as const;
-
-/** Matches the server limit in `PUT /api/uploads/local/[...key]`. */
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
 
 /** Reads `{ error }` from a JSON error response, falling back to a generic message. */
 export async function readApiError(res: Response, fallback: string): Promise<string> {

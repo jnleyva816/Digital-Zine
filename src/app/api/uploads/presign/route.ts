@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { buildStorageKey, getStorageDriver } from "@/lib/storage";
 import { getBoardUsageBytes } from "@/lib/usage";
@@ -29,12 +30,7 @@ export async function POST(req: Request) {
   }
 
   const check = checkUpload({ size: parsed.data.size, usedBytes: await getBoardUsageBytes(user.id) });
-  if (!check.ok) {
-    return NextResponse.json(
-      { error: check.message, code: check.reason },
-      { status: check.reason === "too_large" ? 413 : check.reason === "over_quota" ? 403 : 400 }
-    );
-  }
+  if (!check.ok) return uploadLimitResponse(check);
 
   const driver = getStorageDriver();
   const storageKey = buildStorageKey(user.id, parsed.data.filename);

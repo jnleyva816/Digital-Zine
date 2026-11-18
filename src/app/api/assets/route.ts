@@ -4,6 +4,7 @@ import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { getStorageDriver } from "@/lib/storage";
 import { getBoardUsageBytes, withUserLock } from "@/lib/usage";
@@ -112,11 +113,7 @@ export async function POST(req: Request) {
   if (result.rejected) {
     // Nothing references the bytes, so they would only cost money.
     await driver.deleteObject(storageKey);
-    const { reason, message } = result.rejected;
-    return NextResponse.json(
-      { error: message, code: reason },
-      { status: reason === "too_large" ? 413 : reason === "over_quota" ? 403 : 400 }
-    );
+    return uploadLimitResponse(result.rejected);
   }
   const { asset } = result;
 
