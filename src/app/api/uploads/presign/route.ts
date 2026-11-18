@@ -1,0 +1,36 @@
+import { NextResponse } from "next/server";
+import { z } from "zod";
+import { getAuthenticatedUser } from "@/lib/auth";
+import { buildStorageKey, getStorageDriver } from "@/lib/storage";
+
+const presignSchema = z.object({
+  filename: z.string().min(1).max(255),
+  contentType: z
+    .string()
+    .regex(/^image\/(jpeg|jpg|png|webp|gif|avif)$/i, "Only image files are supported"),
+});
+
+export async function POST(req: Request) {
+  const user = await getAuthenticatedUser();
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const body = await req.json().catch(() => null);
+  const parsed = presignSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: parsed.error.issues[0]?.message ?? "Invalid upload request" },
+      { status: 400 }
+    );
+  }
+
+  const driver = getStorageDriver();
+  const storageKey = buildStorageKey(user.id, parsed.data.filename);
+  const prepared = await driver.prepareUpload({
+    storageKey,
+    contentType: parsed.data.contentType,
+  });
+
+  return NextResponse.json(prepared);
+}

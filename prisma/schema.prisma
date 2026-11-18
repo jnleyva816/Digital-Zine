@@ -1,0 +1,89 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Tier {
+  free
+  pro
+}
+
+/// Admins get every Pro feature without a subscription (DIG-17).
+enum Role {
+  user
+  admin
+}
+
+enum AssetKind {
+  photo
+  recipe
+}
+
+model User {
+  id                   String       @id @default(cuid())
+  email                String       @unique
+  name                 String?
+  passwordHash         String
+  stripeCustomerId     String?      @unique
+  stripeSubscriptionId String?      @unique
+  subscriptionStatus   String       @default("inactive")
+  tier                 Tier         @default(free)
+  role                 Role         @default(user)
+  createdAt            DateTime     @default(now())
+  updatedAt            DateTime     @updatedAt
+  assets               MediaAsset[]
+  zines                Zine[]
+}
+
+model MediaAsset {
+  id           String    @id @default(cuid())
+  ownerId      String
+  owner        User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  storageKey   String    @unique
+  publicUrl    String
+  originalName String?
+  mimeType     String    @default("image/jpeg")
+  kind         AssetKind @default(photo)
+  exif         Json?     @db.JsonB
+  recipe       Json?     @db.JsonB
+  sortOrder    Int       @default(0)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([ownerId, sortOrder])
+}
+
+model Zine {
+  id          String     @id @default(cuid())
+  ownerId     String
+  owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  slug        String     @unique
+  published   Boolean    @default(false)
+  publishedAt DateTime?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  pages       ZinePage[]
+
+  @@index([ownerId])
+}
+
+model ZinePage {
+  id          String   @id @default(cuid())
+  zineId      String
+  zine        Zine     @relation(fields: [zineId], references: [id], onDelete: Cascade)
+  pageNumber  Int
+  templateId  String   @default("full-bleed-photo")
+  content     Json     @db.JsonB
+  flipEnabled Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@unique([zineId, pageNumber])
+  @@index([zineId, pageNumber])
+}
