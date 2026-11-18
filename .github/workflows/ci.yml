@@ -1,8 +1,9 @@
 name: CI
 
+# Pull requests cover feature branches; pushes to main cover merges.
 on:
   push:
-    branches: [main, "cursor/**"]
+    branches: [main]
   pull_request:
 
 concurrency:
