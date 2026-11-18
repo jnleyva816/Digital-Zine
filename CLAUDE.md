@@ -4,7 +4,17 @@ You are the principal engineer on this repository. The same rules live in `.curs
 
 ## Start of every session
 
-Read `docs/agent-handoff.md` and the [Digital Zine MVP](https://linear.app/digital-zine/project/digital-zine-mvp-3317748153f6) issues before you edit anything. The handoff lists work that already exists. Do not rebuild it. Continue branch `cursor/digital-zine-mvp-8439` and draft pull request https://github.com/jnleyva816/Digital-Zine/pull/1. Do not open a second pull request for this MVP.
+Read `docs/agent-handoff.md` and the open issues in the active Linear project (the handoff names it) before you edit anything. The handoff lists work that already exists. Do not rebuild it. Follow "How work is organized" below for branches and pull requests.
+
+## How work is organized
+
+The MVP shipped: PR #1 was merged into `main` on 18 Nov 2026. Work now runs ticket by ticket in the Linear team **Digital-Zine**.
+
+- **Projects are goals.** The current one is [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af). The handoff names the active project.
+- **Labels describe the work.** Every ticket gets exactly one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) for the main part of the product it changes, and one **Type** label (Bug, Feature, Improvement). Label tickets you create. If cross-cutting work is large, split it into sub-issues with their own Areas.
+- **Security belongs to every ticket.** Anything touching auth, permissions, payments, uploads, or user data gets tests for its abuse cases, whatever its Area. The Security label is for work whose main purpose is security.
+- **One branch and one PR per ticket.** Branch off an up-to-date `main` using the ticket's Linear branch name (`gitBranchName`), and open one PR into `main` with the ticket ID in the title. Never commit to `main` directly.
+- **Only the owner merges.** Do not merge a PR unless the user tells you to in this session.
 
 ## Ask when it is not settled
 
@@ -12,11 +22,11 @@ If the handoff, the tickets, and the code do not already answer a product, schem
 
 Do not ask for facts you can read from the repo, the handoff, or Linear. Do not re-ask decisions listed under "Already decided" in the handoff.
 
-Ask before you: change the Prisma schema, add a dependency, delete or rewrite a module that the handoff says is done, expand past the MVP, force-push, or merge.
+Ask before you: change the Prisma schema, add a dependency, delete or rewrite a module that the handoff says is done, expand past the ticket's scope, force-push, or merge.
 
 ## Build to a production bar
 
-Ship the MVP as specified, at a production bar. No toy stand-ins, no fake success responses, no placeholder pages that pretend a flow works.
+Ship each ticket as specified, at a production bar. No toy stand-ins, no fake success responses, no placeholder pages that pretend a flow works.
 
 Within the current ticket that means strict TypeScript, real empty, loading, and error states, accessible controls, server-rendered public zine pages with Open Graph metadata, and committed tests that prove the path you touched (see "Test-driven development"), plus a green `npm run build`.
 
@@ -55,7 +65,8 @@ Rules:
 ## Run the work like a PM
 
 - One implementation issue in progress at a time. Finish it, or leave it with a precise remaining step.
-- When you start an issue, set it to In Progress. Set it to Done only when its acceptance is met, its tests are committed, and `npm run build`, `npm test`, and `npm run test:e2e` pass.
+- When you start an issue, set it to In Progress and create its branch.
+- When its acceptance is met, its tests are committed, `npm run build`, `npm test`, and `npm run test:e2e` pass, and CI is green on its PR, set it to **In Review**. It becomes **Done** when the owner merges the PR.
 - Comment on the issue with what changed, which tests you wrote (and that you saw them fail first), how you verified it, and what is left.
 - Keep `docs/agent-handoff.md` in sync in the same change: done, not done, ticket table, session log.
 
@@ -66,6 +77,6 @@ Before you stop, including when the user interrupts you or the context is about 
 1. Update `docs/agent-handoff.md` so the next agent can continue without rereading the whole chat.
 2. Update the Linear issue you were on. Name the next file and the next command.
 3. Commit and push any work that would otherwise exist only in the working tree. Say in the commit message that it is a checkpoint if the ticket is not done.
-4. Update pull request #1. Do not mark it ready for review until DIG-12 is actually done.
+4. Open or update the ticket's pull request. Leave it as a draft until the ticket is In Review. Do not merge it.
 
 A session that ends with a stale handoff is not finished.

@@ -4,7 +4,7 @@ Creators collect photos on a private Vision Board, sequence them into a full-ble
 
 Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js credentials, `@react-pdf/renderer`, and Stripe subscriptions.
 
-> Build status: the MVP is complete on `cursor/digital-zine-mvp-8439` (PR #1). `docs/agent-handoff.md` tracks status and what is deferred.
+> Status: the MVP is merged into `main` (PR #1). Launch work is tracked in the Linear project Launch readiness. `docs/agent-handoff.md` has the current status and what is deferred.
 
 | Vision Board | Zine editor |
 | --- | --- |
