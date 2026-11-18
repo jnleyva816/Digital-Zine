@@ -2,7 +2,7 @@
 
 Living status for anyone working on Digital Zine in Claude or Cursor. Read this file before changing code. Update it before you stop, including when a session is interrupted. If this file and the code disagree, trust the code, then correct this file in the same change.
 
-Last updated: 18 Nov 2026, 1:40 PM America/New_York (Cursor cloud agent). The MVP is merged (`c70f82a`). DIG-21 is merged (`b3e7e09`, PR #2). DIG-22 (Fujifilm film recipes) is Done: PR #3 merged as `9528683`. The active Linear project is [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-60bb4ca990fd) (P-DIG-3). [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af) (P-DIG-2) is Planned, not active. DIG-23 is In Progress on draft PR #4.
+Last updated: 18 Nov 2026, 1:43 PM America/New_York (Cursor cloud agent). The MVP is merged (`c70f82a`). DIG-21 is merged (`b3e7e09`, PR #2). DIG-22 (Fujifilm film recipes) is Done: PR #3 merged as `9528683`. The active Linear project is [Boards, recipes, and scale](https://linear.app/digital-zine/project/boards-recipes-and-scale-60bb4ca990fd) (P-DIG-3). [Launch readiness](https://linear.app/digital-zine/project/launch-readiness-f71378a4d6af) (P-DIG-2) is Planned, not active. DIG-23 is In Progress on draft PR #4. DIG-30 is In Review on PR #5.
 
 ## Do this first
 
@@ -160,9 +160,9 @@ Multiple Vision Boards, Fujifilm recipe auto-fill and a saved library, an image 
 
 | Issue | Area | State | Remaining work |
 | --- | --- | --- | --- |
-| [DIG-30](https://linear.app/digital-zine/issue/DIG-30/repo-pm-hygiene-fix-agent-handoff-drift-add-agentsmd-prissue-templates) | Docs | In Progress | This change, on draft [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5), branch `joshleyva816/dig-30-repo-pm-hygiene-fix-agent-handoff-drift`. Docs and GitHub config only. The owner has not put this ticket in a project. Next: CI green, then In Review. |
+| [DIG-30](https://linear.app/digital-zine/issue/DIG-30/repo-pm-hygiene-fix-agent-handoff-drift-add-agentsmd-prissue-templates) | Docs | In Review | [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) is ready. CI on `a9bfd75` is green: Build and test ran `npm run build`, `npm test`, and `npm run test:e2e` (50 Playwright tests). The owner merges. This ticket is not in a Linear project. |
 
-Next: DIG-23 is the product issue in progress. DIG-30 is this docs ticket, started because the owner asked for it while DIG-23 was already In Progress. Do not start a third issue. After DIG-30's CI is green, set it to In Review. On DIG-23, the next command is to watch CI on PR #4 and set that issue to In Review when it is green. Ask the owner before treating the Fluorescent 2/3 numbering as settled. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
+Next: the owner merges [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5) (DIG-30). DIG-23 is the product issue in progress. Do not start a third issue. On DIG-23, the next command is to watch CI on PR #4 and set that issue to In Review when it is green. Ask the owner before treating the Fluorescent 2/3 numbering as settled. DIG-19 and DIG-20 still block real users. DIG-18 needs Stripe sandbox keys.
 
 To re-verify a running server: `SMOKE_BASE_URL=<url> npm run smoke`. It creates and deletes its own `@smoke.digitalzine.local` user and rewrites `docs/screenshots/`.
 
@@ -174,6 +174,7 @@ Append a row when you stop. Do not delete earlier rows.
 
 | When (America/New_York) | Tool | What changed | Left unfinished |
 | --- | --- | --- | --- |
+| 18 Nov 2026, 1:43 PM | Cursor cloud agent | DIG-30 CI is green on `a9bfd75` (Build and test, including `npm run build`, `npm test`, and `npm run test:e2e`, 50 Playwright tests). Set the issue to In Review and marked PR #5 ready. | Owner merges PR #5. DIG-23 stays In Progress on draft PR #4. |
 | 18 Nov 2026, 1:40 PM | Cursor cloud agent | DIG-30: rewrote this handoff against Linear and `main` at `9528683` (PR #3 merged, DIG-22 Done, active project P-DIG-3, DIG-23 In Progress on draft PR #4). "Before you stop" now follows one ticket, one branch, one PR. `CLAUDE.md` and `project-management.mdc` no longer name Launch readiness; the active project is only in this file. Added `AGENTS.md`, the pull request template, Bug/Feature/Improvement issue forms, `CODEOWNERS`, and `.github/labels.yml` (defined, not applied). README status line points here. No product code. Draft [PR #5](https://github.com/jnleyva816/Digital-Zine/pull/5). | CI on PR #5, then set DIG-30 to In Review. DIG-23 stays In Progress. |
 | 18 Nov 2026, 9:10 AM | Cursor cloud agent | Pushed foundation commit `698c7bb` and opened draft PR #1. Filed DIG-5 through DIG-12. | All pages, README, build, smoke checks, screenshots. |
 | 18 Nov 2026, 9:15 AM | Cursor cloud agent | Added this handoff plus `CLAUDE.md` and `.cursor/rules/` in `1b5f334`. DIG-13 is Done. | Same product work as above. |
