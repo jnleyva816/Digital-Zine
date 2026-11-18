@@ -1,4 +1,4 @@
-import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { PreparedUpload, StorageDriver } from "./types";
 
@@ -44,19 +44,39 @@ export class S3StorageDriver implements StorageDriver {
     return `https://${this.config.bucket}.s3.${this.config.region}.amazonaws.com/${cleanKey}`;
   }
 
+  async getObjectSize(storageKey: string): Promise<number | null> {
+    try {
+      const head = await this.client.send(new HeadObjectCommand({ Bucket: this.config.bucket, Key: storageKey }));
+      return typeof head.ContentLength === "number" ? head.ContentLength : null;
+    } catch (err) {
+      const status = (err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+      if (status === 404) return null;
+      throw err;
+    }
+  }
+
+  async deleteObject(storageKey: string): Promise<void> {
+    await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: storageKey }));
+  }
+
   async prepareUpload(params: {
     storageKey: string;
     contentType: string;
+    size?: number;
   }): Promise<PreparedUpload> {
     const contentType = params.contentType || "application/octet-stream";
     const command = new PutObjectCommand({
       Bucket: this.config.bucket,
       Key: params.storageKey,
       ContentType: contentType,
+      ...(params.size !== undefined ? { ContentLength: params.size } : {}),
     });
 
+    // Signing Content-Length makes S3 refuse a body of any other size, so the size checked at
+    // presign time is the size that gets stored (DIG-32).
     const uploadUrl = await getSignedUrl(this.client, command, {
       expiresIn: 600,
+      ...(params.size !== undefined ? { signableHeaders: new Set(["content-length"]) } : {}),
     });
 
     return {

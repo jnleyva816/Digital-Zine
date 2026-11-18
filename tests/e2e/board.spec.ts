@@ -196,3 +196,49 @@ test.describe("Vision Board, new creator", () => {
     }
   });
 });
+
+test.describe("storage limits (DIG-32)", () => {
+  test("shows board storage, and refuses an upload once the board is full", async ({ page }) => {
+    const user = await createUser();
+    try {
+      // A board just under 2 GB: one photo row whose recorded size fills almost all of it.
+      const nearlyFull = 2 * 1024 * 1024 * 1024 - 1024;
+      await testDb.mediaAsset.create({
+        data: {
+          ownerId: user.id,
+          storageKey: `users/${user.id}/big.jpg`,
+          publicUrl: `/api/media/users/${user.id}/big.jpg`,
+          originalName: "big.jpg",
+          sizeBytes: nearlyFull,
+        },
+      });
+      await signIn(page, user.email, user.password);
+
+      const meter = page.getByRole("meter", { name: "Board storage" });
+      await expect(meter).toHaveAttribute("aria-valuetext", "2 GB of 2 GB used");
+      await expect(page.getByText("Almost full. Delete photos to make room.")).toBeVisible();
+
+      await page.getByLabel("choose files").setInputFiles(FIXTURE);
+      await expect(page.getByText(/Your board is full: .* of 2 GB left\. Delete photos to make room\./)).toBeVisible();
+      await expect(boardCards(page)).toHaveCount(1);
+    } finally {
+      await deleteUser(user.id);
+    }
+  });
+
+  test("an upload adds its real size to the storage meter", async ({ page }) => {
+    const user = await createUser();
+    try {
+      await signIn(page, user.email, user.password);
+      const meter = page.getByRole("meter", { name: "Board storage" });
+      await expect(meter).toHaveAttribute("aria-valuenow", "0");
+      const created = page.waitForResponse((r) => r.url().endsWith("/api/assets") && r.request().method() === "POST");
+      await page.getByLabel("choose files").setInputFiles(FIXTURE);
+      const { asset } = (await (await created).json()) as { asset: { sizeBytes: number } };
+      expect(asset.sizeBytes).toBeGreaterThan(0);
+      await expect(meter).toHaveAttribute("aria-valuenow", String(asset.sizeBytes));
+    } finally {
+      await deleteUser(user.id);
+    }
+  });
+});

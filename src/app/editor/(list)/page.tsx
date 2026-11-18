@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
 import { StudioHeader } from "@/components/StudioHeader";
 import { NewZineForm } from "@/components/editor/NewZineForm";
@@ -30,6 +31,8 @@ export default async function ZineListPage() {
     },
   });
   const latest = zines[0];
+  const zineLimit = zineLimitFor(user.tier);
+  const limitReached = zineLimit !== null && zines.length >= zineLimit ? zineLimitMessage(zineLimit) : null;
 
   return (
     <>
@@ -43,7 +46,7 @@ export default async function ZineListPage() {
         <p className="mt-1 text-sm text-ink-500">Sequence photos from your board into pages, then publish.</p>
 
         <div className="mt-6">
-          <NewZineForm />
+          <NewZineForm limitReached={limitReached} />
         </div>
 
         {zines.length === 0 ? (

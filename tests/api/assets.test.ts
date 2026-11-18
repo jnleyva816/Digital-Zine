@@ -1,23 +1,45 @@
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { GET, POST } from "@/app/api/assets/route";
 import { DELETE, PATCH } from "@/app/api/assets/[id]/route";
 import { POST as REORDER } from "@/app/api/assets/reorder/route";
-import { createAsset, createTestUser, createZineUsing, deleteTestUser, jsonRequest, params } from "./helpers";
+import { BOARD_STORAGE_BYTES } from "@/lib/limits";
+import { writeLocalObject } from "@/lib/storage/local";
+import {
+  createAsset,
+  createAssetOfSize,
+  createTestUser,
+  createZineUsing,
+  deleteTestUser,
+  jsonRequest,
+  params,
+} from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
 let other: Awaited<ReturnType<typeof createTestUser>>;
+let dir: string;
+
+/** Puts bytes in local storage, as the upload step would, so asset create can measure them. */
+const stored = async (key: string, bytes = 1234) => {
+  await writeLocalObject(key, Buffer.alloc(bytes), "image/jpeg");
+  return key;
+};
 
 beforeAll(async () => {
   me = await createTestUser();
   other = await createTestUser();
+  dir = await fs.mkdtemp(path.join(os.tmpdir(), "dz-assets-"));
 });
 
 afterAll(async () => {
+  await fs.rm(dir, { recursive: true, force: true });
   await deleteTestUser(me.id);
   await deleteTestUser(other.id);
   await prisma.$disconnect();
@@ -25,6 +47,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   mockedUser.mockResolvedValue(me);
+  vi.stubEnv("LOCAL_STORAGE_DIR", dir);
   await prisma.mediaAsset.deleteMany({ where: { ownerId: { in: [me.id, other.id] } } });
   await prisma.zine.deleteMany({ where: { ownerId: { in: [me.id, other.id] } } });
 });
@@ -67,7 +90,7 @@ describe("POST /api/assets", () => {
     await createAsset(me.id, 4);
     const res = await POST(
       jsonRequest("/api/assets", "POST", {
-        storageKey: `users/${me.id}/new.jpg`,
+        storageKey: await stored(`users/${me.id}/new.jpg`),
         originalName: "new.jpg",
         mimeType: "image/jpeg",
         exif: { iso: 800, aperture: "f/4" },
@@ -78,6 +101,31 @@ describe("POST /api/assets", () => {
     expect(asset.sortOrder).toBe(5);
     expect(asset.publicUrl).toBe(`/api/media/users/${me.id}/new.jpg`);
     expect(asset.exif).toEqual({ iso: 800, aperture: "f/4" });
+  });
+
+  it("records the size that is actually in storage, not one the client sends (DIG-32)", async () => {
+    const res = await POST(
+      jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/sized.jpg`, 4321), sizeBytes: 1 })
+    );
+    expect(res.status).toBe(201);
+    const { asset } = (await res.json()) as { asset: { sizeBytes: number } };
+    expect(asset.sizeBytes).toBe(4321);
+  });
+
+  it("refuses with 400 when nothing was uploaded under that key (DIG-32)", async () => {
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: `users/${me.id}/never-uploaded.jpg` }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "The upload was not found. Try uploading the photo again." });
+  });
+
+  it("refuses with 403 and deletes the upload when it would push my board past 2 GB (DIG-32)", async () => {
+    await createAssetOfSize(me.id, BOARD_STORAGE_BYTES - 100);
+    const key = await stored(`users/${me.id}/over.jpg`, 200);
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: key }));
+    expect(res.status).toBe(403);
+    expect(((await res.json()) as { code: string }).code).toBe("over_quota");
+    await expect(fs.access(path.join(dir, key))).rejects.toThrow();
+    expect(await prisma.mediaAsset.count({ where: { storageKey: key } })).toBe(0);
   });
 });
 
@@ -105,7 +153,7 @@ describe("PATCH /api/assets/[id]", () => {
   it("creates an asset with a Fujifilm recipe", async () => {
     const recipe = { name: "Portra 400", filmSimulation: "Classic Neg.", grain: "Weak, Small", shadow: -1 };
     const res = await POST(
-      jsonRequest("/api/assets", "POST", { storageKey: `users/${me.id}/portra.jpg`, kind: "recipe", recipe })
+      jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/portra.jpg`), kind: "recipe", recipe })
     );
     expect(res.status).toBe(201);
     const { asset } = (await res.json()) as { asset: { id: string } };

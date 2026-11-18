@@ -15,11 +15,12 @@ import {
 import type { FoundRecipe } from "@/lib/fuji-makernote";
 import type { RecipeData } from "@/lib/types";
 import { assetLabel, exifBadges, moveItem } from "./board-utils";
+import { checkUpload, formatBytes, MAX_UPLOAD_BYTES } from "@/lib/limits";
 import type { PreparedUpload } from "@/lib/storage/types";
+import { StorageMeter } from "./StorageMeter";
 import { RecipeEditor } from "./RecipeEditor";
 import {
   ACCEPTED_IMAGE_TYPES,
-  MAX_UPLOAD_BYTES,
   readApiError,
   toBoardAsset,
   type BoardAsset,
@@ -55,7 +56,7 @@ async function uploadOne(
   const presign = await fetch("/api/uploads/presign", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ filename: file.name, contentType: file.type }),
+    body: JSON.stringify({ filename: file.name, contentType: file.type, size: file.size }),
   });
   if (!presign.ok) {
     throw new Error(await readApiError(presign, "Could not prepare the upload."));
@@ -92,6 +93,7 @@ async function uploadOne(
 
 export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) {
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
+  const usedBytes = assets.reduce((sum, a) => sum + a.sizeBytes, 0);
   /** Recipes read from a photo at upload, held until the creator names and saves one. */
   const [foundRecipes, setFoundRecipes] = useState<Record<string, FoundRecipe>>({});
   const [uploads, setUploads] = useState<UploadItem[]>([]);
@@ -163,16 +165,20 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
 
   function enqueue(files: FileList | File[]) {
     const items: UploadItem[] = [];
+    // The server has the final say; this saves uploading a file it would refuse.
+    let committedBytes = usedBytes;
     for (const file of Array.from(files)) {
       const id = `${file.name}-${file.size}-${crypto.randomUUID()}`;
       if (!(ACCEPTED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
         items.push({ id, name: file.name, stage: "error", error: "Only JPEG, PNG, WebP, GIF, or AVIF images." });
         continue;
       }
-      if (file.size > MAX_UPLOAD_BYTES) {
-        items.push({ id, name: file.name, stage: "error", error: "Larger than the 25 MB limit." });
+      const check = checkUpload({ size: file.size, usedBytes: committedBytes });
+      if (!check.ok) {
+        items.push({ id, name: file.name, stage: "error", error: check.message });
         continue;
       }
+      committedBytes += file.size;
       items.push({ id, name: file.name, stage: "queued" });
       queueRef.current.push({ id, file });
     }
@@ -311,7 +317,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
           .
         </p>
         <p className="mt-1 text-xs text-ink-500">
-          JPEG, PNG, WebP, GIF, or AVIF up to 25 MB. Camera EXIF is read on your device before upload.
+          JPEG, PNG, WebP, GIF, or AVIF up to {formatBytes(MAX_UPLOAD_BYTES)}. Camera EXIF is read on your device before upload.
         </p>
         <input
           ref={fileInputRef}
@@ -326,6 +332,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
           }}
         />
       </section>
+      <StorageMeter usedBytes={usedBytes} />
 
       {uploads.length > 0 ? (
         <ul aria-label="Uploads" className="space-y-2">

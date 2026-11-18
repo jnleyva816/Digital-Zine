@@ -41,6 +41,12 @@ export async function createAsset(ownerId: string, sortOrder: number, name = `ph
   });
 }
 
+/** One board photo that already takes up `sizeBytes` of the owner's storage (DIG-32). */
+export async function createAssetOfSize(ownerId: string, sizeBytes: number) {
+  const asset = await createAsset(ownerId, 0, "big.jpg");
+  return prisma.mediaAsset.update({ where: { id: asset.id }, data: { sizeBytes } });
+}
+
 export async function createZineUsing(ownerId: string, assetId: string, title = "Test Zine") {
   return prisma.zine.create({
     data: {

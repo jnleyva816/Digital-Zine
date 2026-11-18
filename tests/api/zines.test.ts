@@ -23,7 +23,9 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  mockedUser.mockResolvedValue(me);
+  // Several tests here need more than one zine, which Free no longer allows (DIG-32). The limit
+  // tests at the end set the tier they test.
+  mockedUser.mockResolvedValue({ ...me, tier: "pro" });
   await prisma.zine.deleteMany({ where: { ownerId: { in: [me.id, other.id] } } });
   await prisma.mediaAsset.deleteMany({ where: { ownerId: { in: [me.id, other.id] } } });
 });
@@ -213,5 +215,34 @@ describe("DELETE", () => {
     expect((await DELETE(jsonRequest("/", "DELETE"), params({ id: zine.id }))).status).toBe(200);
     expect(await prisma.zine.findUnique({ where: { id: zine.id } })).toBeNull();
     expect(await prisma.zinePage.count({ where: { zineId: zine.id } })).toBe(0);
+  });
+});
+
+describe("POST /api/zines zine limit (DIG-32)", () => {
+  const create = (title: string) => CREATE(jsonRequest("/api/zines", "POST", { title }));
+
+  it("lets a Free creator make one zine, then refuses a second with 403", async () => {
+    mockedUser.mockResolvedValue({ ...me, tier: "free" });
+    expect((await create("First")).status).toBe(201);
+    const res = await create("Second");
+    expect(res.status).toBe(403);
+    expect(await res.json()).toEqual({
+      error: "Free includes 1 zine. Upgrade to Pro for unlimited zines.",
+      code: "zine_limit",
+    });
+    expect(await prisma.zine.count({ where: { ownerId: me.id } })).toBe(1);
+  });
+
+  it("lets a Pro creator make as many zines as they like", async () => {
+    mockedUser.mockResolvedValue({ ...me, tier: "pro" });
+    for (const title of ["One", "Two", "Three"]) {
+      expect((await create(title)).status).toBe(201);
+    }
+  });
+
+  it("holds an admin viewing as Free to the Free limit", async () => {
+    mockedUser.mockResolvedValue({ ...me, tier: "free", role: "admin", viewingAsFree: true });
+    expect((await create("First")).status).toBe(201);
+    expect((await create("Second")).status).toBe(403);
   });
 });

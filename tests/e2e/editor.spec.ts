@@ -159,3 +159,25 @@ test("the editor fits a 390px phone screen", async ({ page }) => {
   await expect(pages(page).first()).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth)).toBe(false);
 });
+
+test("a Free creator with one zine is offered Pro instead of a second zine (DIG-32)", async ({ page }) => {
+  const { user, assets } = await createUserWithPhotos();
+  try {
+    await testDb.zine.create({
+      data: {
+        ownerId: user.id,
+        title: "Only zine",
+        slug: `only-${user.id}`,
+        pages: { create: [{ pageNumber: 1, content: { assetId: assets[0]!.id, caption: "" } }] },
+      },
+    });
+    await signIn(page, user.email, user.password);
+    await page.goto("/editor");
+    await expect(page.getByText("Free includes 1 zine. Upgrade to Pro for unlimited zines.")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Upgrade to Pro" })).toHaveAttribute("href", "/billing");
+    await expect(page.getByRole("button", { name: "Create zine" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Only zine/ })).toBeVisible();
+  } finally {
+    await deleteUser(user.id);
+  }
+});
