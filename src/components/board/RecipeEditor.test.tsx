@@ -3,6 +3,7 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { FujiRecipe } from "@/lib/fuji-recipe";
+import type { FoundRecipe } from "@/lib/fuji-makernote";
 import { RecipeEditor } from "./RecipeEditor";
 
 function setup(props: Partial<React.ComponentProps<typeof RecipeEditor>> = {}) {
@@ -128,5 +129,51 @@ describe("RecipeEditor", () => {
     const { onSave, user } = setup({ initial: { name: "Portra 400", filmSimulation: "Classic Neg." } });
     await user.click(screen.getByRole("button", { name: "Remove recipe" }));
     expect(onSave).toHaveBeenCalledWith(null);
+  });
+
+  it("prefills settings found in the photo, leaves the name empty, and saves only after the creator names it", async () => {
+    const prefill: FoundRecipe = {
+      filmSimulation: "Classic Chrome",
+      dynamicRange: "DR200",
+      grain: "Weak, Large",
+      colorChrome: "Strong",
+      colorChromeFxBlue: "Weak",
+      whiteBalance: { mode: "Kelvin", kelvin: 5200, red: 2, blue: -4 },
+      highlight: 0.5,
+      shadow: -2,
+      color: 2,
+      sharpness: -1,
+      clarity: -3,
+      noiseReduction: -4,
+    };
+    const { onSave, user } = setup({ prefill });
+
+    expect(screen.getByRole("dialog", { name: "Add a film recipe" })).toBeInTheDocument();
+    expect(screen.getByText(/found in this photo/i)).toBeInTheDocument();
+    expect(screen.getByLabelText("Recipe name")).toHaveValue("");
+    expect(screen.getByLabelText("Film simulation")).toHaveDisplayValue("Classic Chrome");
+    expect(screen.getByLabelText("Dynamic range")).toHaveDisplayValue("DR200");
+    expect(screen.getByLabelText("Grain effect")).toHaveDisplayValue("Weak, Large");
+    expect(screen.getByLabelText("Color Chrome Effect")).toHaveDisplayValue("Strong");
+    expect(screen.getByLabelText("Color Chrome FX Blue")).toHaveDisplayValue("Weak");
+    expect(screen.getByLabelText("White balance")).toHaveDisplayValue("Kelvin");
+    expect(screen.getByLabelText("Kelvin")).toHaveValue(5200);
+    expect(screen.getByLabelText("White balance red shift")).toHaveDisplayValue("+2");
+    expect(screen.getByLabelText("White balance blue shift")).toHaveDisplayValue("-4");
+    expect(screen.getByLabelText("Highlight")).toHaveDisplayValue("+0.5");
+    expect(screen.getByLabelText("Shadow")).toHaveDisplayValue("-2");
+    expect(screen.getByLabelText("Color")).toHaveDisplayValue("+2");
+    expect(screen.getByLabelText("Sharpness")).toHaveDisplayValue("-1");
+    expect(screen.getByLabelText("Clarity")).toHaveDisplayValue("-3");
+    expect(screen.getByLabelText("Noise Reduction")).toHaveDisplayValue("-4");
+    expect(screen.queryByRole("button", { name: "Remove recipe" })).not.toBeInTheDocument();
+
+    await user.click(save());
+    expect(screen.getByRole("alert")).toHaveTextContent("Give the recipe a name.");
+    expect(onSave).not.toHaveBeenCalled();
+
+    await user.type(screen.getByLabelText("Recipe name"), "Sunday Chrome");
+    await user.click(save());
+    expect(onSave).toHaveBeenCalledWith({ name: "Sunday Chrome", ...prefill });
   });
 });

@@ -12,6 +12,7 @@ import {
   Trash2,
   SlidersHorizontal,
 } from "lucide-react";
+import type { FoundRecipe } from "@/lib/fuji-makernote";
 import type { RecipeData } from "@/lib/types";
 import { assetLabel, exifBadges, moveItem } from "./board-utils";
 import type { PreparedUpload } from "@/lib/storage/types";
@@ -41,11 +42,14 @@ const STAGE_LABEL: Record<UploadStage, string> = {
   error: "Failed",
 };
 
-async function uploadOne(file: File, onStage: (stage: UploadStage) => void): Promise<BoardAsset> {
+async function uploadOne(
+  file: File,
+  onStage: (stage: UploadStage) => void,
+): Promise<{ asset: BoardAsset; foundRecipe: FoundRecipe | null }> {
   onStage("reading");
   // Loaded on demand so exifreader stays out of the board's initial bundle.
   const { extractExifFromFile } = await import("@/lib/exif-client");
-  const exif = await extractExifFromFile(file);
+  const { exif, foundRecipe } = await extractExifFromFile(file);
 
   onStage("uploading");
   const presign = await fetch("/api/uploads/presign", {
@@ -83,11 +87,13 @@ async function uploadOne(file: File, onStage: (stage: UploadStage) => void): Pro
     throw new Error(await readApiError(created, "The photo uploaded but could not be saved."));
   }
   const body = (await created.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
-  return toBoardAsset(body.asset);
+  return { asset: toBoardAsset(body.asset), foundRecipe };
 }
 
 export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) {
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
+  /** Recipes read from a photo at upload, held until the creator names and saves one. */
+  const [foundRecipes, setFoundRecipes] = useState<Record<string, FoundRecipe>>({});
   const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [announcement, setAnnouncement] = useState("");
   const [boardError, setBoardError] = useState<string | null>(null);
@@ -107,6 +113,15 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
 
   const isUploading = uploads.some((u) => u.stage !== "error");
 
+  function forgetFound(id: string) {
+    setFoundRecipes((prev) => {
+      if (!(id in prev)) return prev;
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+  }
+
   const updateUpload = (id: string, patch: Partial<UploadItem>) =>
     setUploads((prev) => prev.map((u) => (u.id === id ? { ...u, ...patch } : u)));
 
@@ -115,11 +130,16 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
     if (uploadingRef.current) return;
     uploadingRef.current = true;
     let added = 0;
+    let found = 0;
     while (queueRef.current.length > 0) {
       const { id, file } = queueRef.current.shift()!;
       try {
-        const asset = await uploadOne(file, (stage) => updateUpload(id, { stage }));
+        const { asset, foundRecipe } = await uploadOne(file, (stage) => updateUpload(id, { stage }));
         setAssets((prev) => [...prev, asset]);
+        if (foundRecipe) {
+          found += 1;
+          setFoundRecipes((prev) => ({ ...prev, [asset.id]: foundRecipe }));
+        }
         setUploads((prev) => prev.filter((u) => u.id !== id));
         added += 1;
       } catch (err) {
@@ -131,7 +151,13 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
     }
     uploadingRef.current = false;
     if (added > 0) {
-      setAnnouncement(`${added} photo${added === 1 ? "" : "s"} added to the board.`);
+      const review =
+        found === 0
+          ? ""
+          : found === 1
+            ? " A film recipe was found in one photo. Review it before saving."
+            : ` Film recipes were found in ${found} photos. Review them before saving.`;
+      setAnnouncement(`${added} photo${added === 1 ? "" : "s"} added to the board.${review}`);
     }
   }, []);
 
@@ -221,6 +247,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
       const body = (await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
       const updated = toBoardAsset(body.asset);
       setAssets((prev) => prev.map((a) => (a.id === assetId ? updated : a)));
+      forgetFound(assetId);
       setEditingId(null);
       setAnnouncement(recipe ? "Recipe saved." : "Recipe removed.");
       return null;
@@ -236,6 +263,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
       const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await readApiError(res, "Could not delete the photo."));
       setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+      forgetFound(asset.id);
       setAnnouncement(`${assetLabel(asset, index)} deleted.`);
     } catch (err) {
       setBoardError(err instanceof Error ? err.message : "Could not delete the photo.");
@@ -384,6 +412,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
               const showDropAfter = dragId !== null && dropIndex === assets.length && index === assets.length - 1;
               const confirming = confirmDeleteId === asset.id;
               const busy = busyId === asset.id;
+              const foundRecipe = asset.recipe ? undefined : foundRecipes[asset.id];
 
               return (
                 <li
@@ -513,7 +542,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                             className="inline-flex items-center gap-1 rounded-lg border border-paper-300 px-2.5 py-1.5 text-xs font-medium text-ink-800 transition hover:bg-paper-100"
                           >
                             <SlidersHorizontal className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
-                            {asset.recipe ? "Edit recipe" : "Add recipe"}
+                            {asset.recipe ? "Edit recipe" : foundRecipe ? "Review recipe found in photo" : "Add recipe"}
                             <span className="sr-only"> for {label}</span>
                           </button>
                           <button
@@ -539,6 +568,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
         open={editing !== null}
         assetLabel={editing ? assetLabel(editing, editingIndex) : ""}
         initial={editing?.recipe ?? null}
+        prefill={editing && !editing.recipe ? (foundRecipes[editing.id] ?? null) : null}
         onClose={() => setEditingId(null)}
         onSave={(recipe) => (editing ? saveRecipe(editing.id, recipe) : Promise.resolve(null))}
       />
