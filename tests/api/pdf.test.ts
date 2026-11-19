@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { writeLocalObject } from "@/lib/storage/local";
 import { GET } from "@/app/api/pdf/[slug]/route";
 import { processAsset } from "@/lib/media/process";
-import { createTestUser, defaultBoardId, deleteTestUser, params } from "./helpers";
+import { createTestUser, defaultBoardId, deleteTestUser, params, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -29,6 +29,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   mockedUser.mockResolvedValue(pro);
   const ids = [pro.id, free.id, otherPro.id];
   await prisma.zine.deleteMany({ where: { ownerId: { in: ids } } });

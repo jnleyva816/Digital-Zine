@@ -8,7 +8,7 @@ import { processAsset } from "@/lib/media/process";
 import { writeLocalObject } from "@/lib/storage/local";
 import { revalidateTag } from "next/cache";
 import { publicZineTag } from "@/lib/public-zine";
-import { createAsset, createTestUser, defaultBoardId, deleteTestUser } from "./helpers";
+import { createAsset, createTestUser, defaultBoardId, deleteTestUser, resetRateLimits } from "./helpers";
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
 let dir: string;
@@ -25,6 +25,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   vi.stubEnv("LOCAL_STORAGE_DIR", dir);
   await prisma.mediaAsset.deleteMany({ where: { ownerId: me.id } });
 });

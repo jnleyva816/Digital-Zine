@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { GET as LIST, POST as CREATE } from "@/app/api/boards/route";
 import { DELETE, PATCH } from "@/app/api/boards/[id]/route";
 import { POST as REORDER } from "@/app/api/boards/reorder/route";
-import { createAsset, createBoard, createTestUser, createZineUsing, deleteTestUser, jsonRequest, params } from "./helpers";
+import { createAsset, createBoard, createTestUser, createZineUsing, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -25,6 +25,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   // Most tests need several boards, which only Pro allows. The limit tests set Free.
   mockedUser.mockResolvedValue({ ...me, tier: "pro" });
   const ids = [me.id, other.id];

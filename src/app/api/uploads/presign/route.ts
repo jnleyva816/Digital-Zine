@@ -5,6 +5,7 @@ import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { buildStorageKey, getStorageDriver } from "@/lib/storage";
 import { getAccountUsageBytes } from "@/lib/usage";
+import { limitRequest } from "@/lib/rate-limit";
 
 const presignSchema = z.object({
   filename: z.string().min(1).max(255),
@@ -19,6 +20,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("upload", user.id);
+  if (limited) return limited;
 
   const body = await req.json().catch(() => null);
   const parsed = presignSchema.safeParse(body);

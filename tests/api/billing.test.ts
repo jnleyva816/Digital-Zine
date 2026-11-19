@@ -7,7 +7,7 @@ import { getStripeClient } from "@/lib/stripe";
 import { POST as CHECKOUT } from "@/app/api/billing/checkout/route";
 import { POST as PORTAL } from "@/app/api/billing/portal/route";
 import { POST as WEBHOOK } from "@/app/api/billing/webhook/route";
-import { createTestUser, deleteTestUser } from "./helpers";
+import { createTestUser, deleteTestUser, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 vi.mock("@/lib/stripe", async (importOriginal) => ({
@@ -57,6 +57,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   stripe = fakeStripe();
   mockedStripe.mockReturnValue(stripe as unknown as Stripe);
   vi.stubEnv("STRIPE_WEBHOOK_SECRET", WEBHOOK_SECRET);

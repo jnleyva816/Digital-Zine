@@ -5,6 +5,7 @@ import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
+import { limitRequest } from "@/lib/rate-limit";
 import { readLocalObject } from "@/lib/storage/local";
 import { parseExif, parsePageContent, parseRecipe } from "@/lib/types";
 
@@ -64,6 +65,10 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
       { status: 403 }
     );
   }
+
+  // Each export is CPU-heavy (DIG-28).
+  const limited = await limitRequest("pdf", user.id);
+  if (limited) return limited;
 
   const { slug } = await context.params;
   // Owner-only: someone else's zine is indistinguishable from a missing one.

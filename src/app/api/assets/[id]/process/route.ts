@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { enqueueProcessing } from "@/lib/media/queue";
 import { prisma } from "@/lib/prisma";
+import { limitRequest } from "@/lib/rate-limit";
 
 /** Retries a photo whose processing failed (DIG-26). */
 export async function POST(_req: Request, context: { params: Promise<{ id: string }> }) {
@@ -9,6 +10,8 @@ export async function POST(_req: Request, context: { params: Promise<{ id: strin
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.mediaAsset.findFirst({ where: { id, ownerId: user.id }, select: { status: true } });

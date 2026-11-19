@@ -90,3 +90,8 @@ export const params = <T extends Record<string, unknown>>(value: T) => ({ params
 export async function createSavedRecipe(ownerId: string, name = "Kodachrome 64", settings: Record<string, unknown> = { filmSimulation: "Classic Chrome" }) {
   return prisma.recipe.create({ data: { ownerId, name, settings: settings as Prisma.InputJsonValue } });
 }
+
+/** Clears every rate-limit counter (DIG-28), so one test's requests never count against the next. */
+export async function resetRateLimits() {
+  await prisma.rateLimit.deleteMany({});
+}

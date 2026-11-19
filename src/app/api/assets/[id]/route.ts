@@ -10,6 +10,7 @@ import { readImageSize } from "@/lib/media/variants";
 import { isDefaultEdit, photoEditSchema } from "@/lib/photo-edit";
 import { getStorageDriver } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
+import { limitRequest } from "@/lib/rate-limit";
 
 const updateAssetSchema = z.object({
   kind: z.enum(["photo", "recipe"]).optional(),
@@ -37,6 +38,8 @@ export async function PATCH(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.mediaAsset.findFirst({
@@ -129,6 +132,8 @@ export async function DELETE(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.mediaAsset.findFirst({

@@ -8,7 +8,7 @@ import { DELETE as DELETE_ZINE, PATCH as PATCH_ZINE } from "@/app/api/zines/[id]
 import { PATCH as PATCH_ASSET } from "@/app/api/assets/[id]/route";
 import { PATCH as PATCH_RECIPE } from "@/app/api/recipes/[id]/route";
 import { publicZineTag } from "@/lib/public-zine";
-import { createAsset, createSavedRecipe, createTestUser, defaultBoardId, deleteTestUser, jsonRequest, params } from "./helpers";
+import { createAsset, createSavedRecipe, createTestUser, defaultBoardId, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -26,6 +26,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   mockedUser.mockResolvedValue({ ...me, tier: "pro" });
   await prisma.zine.deleteMany({ where: { ownerId: me.id } });
   await prisma.mediaAsset.deleteMany({ where: { ownerId: me.id } });

@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { POST as PRESIGN } from "@/app/api/uploads/presign/route";
 import { PUT } from "@/app/api/uploads/local/[...key]/route";
 import { ACCOUNT_STORAGE_BYTES, MAX_UPLOAD_BYTES } from "@/lib/limits";
-import { createAssetOfSize, createTestUser, deleteTestUser, jsonRequest, params } from "./helpers";
+import { createAssetOfSize, createTestUser, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -27,6 +27,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   mockedUser.mockResolvedValue(me);
   vi.stubEnv("LOCAL_STORAGE_DIR", dir);
   await prisma.mediaAsset.deleteMany({ where: { ownerId: me.id } });

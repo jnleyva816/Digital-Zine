@@ -157,3 +157,11 @@ model ZinePage {
   @@unique([zineId, pageNumber])
   @@index([zineId, pageNumber])
 }
+
+/// DIG-28: fixed-window request counters, keyed like "write:<userId>" or "signin-ip:<ip>".
+/// Kept in Postgres so every app instance shares them.
+model RateLimit {
+  key         String   @id
+  count       Int
+  windowStart DateTime
+}

@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { GET as LIST, POST as CREATE } from "@/app/api/recipes/route";
 import { DELETE, PATCH } from "@/app/api/recipes/[id]/route";
 import { PATCH as PATCH_ASSET } from "@/app/api/assets/[id]/route";
-import { createAsset, createSavedRecipe, createTestUser, deleteTestUser, jsonRequest, params } from "./helpers";
+import { createAsset, createSavedRecipe, createTestUser, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -25,6 +25,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   mockedUser.mockResolvedValue(me);
   const ids = [me.id, other.id];
   await prisma.mediaAsset.deleteMany({ where: { ownerId: { in: ids } } });

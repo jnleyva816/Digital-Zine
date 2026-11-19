@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicZines } from "@/lib/public-zine-cache";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
+import { limitRequest } from "@/lib/rate-limit";
 
 const pageInputSchema = z.object({
   assetId: z.string().min(1),
@@ -56,6 +57,8 @@ export async function PATCH(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.zine.findFirst({
@@ -214,6 +217,8 @@ export async function DELETE(
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.zine.findFirst({
