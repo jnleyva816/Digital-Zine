@@ -39,7 +39,11 @@ function fakeStripe() {
         create: vi.fn(async (_params: Stripe.BillingPortal.SessionCreateParams) => ({ url: "https://billing.stripe.test/portal" })),
       },
     },
-    subscriptions: { retrieve: vi.fn<(id: string) => Promise<unknown>>() },
+    subscriptions: {
+      retrieve: vi.fn<(id: string) => Promise<unknown>>(),
+      // The customer's subscriptions (DIG-39). Empty unless a test sets them.
+      list: vi.fn<(params: Stripe.SubscriptionListParams) => Promise<{ data: unknown[] }>>(async () => ({ data: [] })),
+    },
   };
 }
 let stripe: ReturnType<typeof fakeStripe>;
@@ -352,3 +356,71 @@ describe("POST /api/billing/webhook", () => {
     expect(stripe.subscriptions.retrieve).not.toHaveBeenCalled();
   });
 });
+
+describe("several subscriptions for one customer (DIG-39)", () => {
+  beforeEach(() => {
+    // An earlier test in this file makes `me` an admin; these tests are about a regular creator.
+    me = { ...me, role: "user", viewingAsFree: false, tier: "free" };
+  });
+
+  function signed(event: { type: string; data: { object: unknown } }) {
+    const payload = JSON.stringify({ id: `evt_${randomUUID()}`, object: "event", ...event });
+    const header = realStripe.webhooks.generateTestHeaderString({ payload, secret: WEBHOOK_SECRET });
+    return new Request("http://test.local/api/billing/webhook", {
+      method: "POST",
+      headers: { "stripe-signature": header },
+      body: payload,
+    });
+  }
+  const sub = (id: string, status: Stripe.Subscription.Status, created = 1) => ({
+    id,
+    object: "subscription",
+    status,
+    customer: "cus_multi",
+    created,
+    metadata: {},
+  });
+  const stored = () => prisma.user.findUniqueOrThrow({ where: { id: me.id } });
+
+  it("keeps a paying creator Pro when a late event arrives for their old, cancelled subscription", async () => {
+    await prisma.user.update({
+      where: { id: me.id },
+      data: { stripeCustomerId: "cus_multi", tier: "pro", subscriptionStatus: "active", stripeSubscriptionId: "sub_new" },
+    });
+    const oldSub = sub("sub_old", "canceled", 100);
+    stripe.subscriptions.retrieve.mockResolvedValue(oldSub);
+    stripe.subscriptions.list.mockResolvedValue({ data: [sub("sub_new", "active", 200), oldSub] });
+
+    const res = await WEBHOOK(signed({ type: "customer.subscription.deleted", data: { object: oldSub } }));
+    expect(res.status).toBe(200);
+    expect(stripe.subscriptions.list).toHaveBeenCalledWith(expect.objectContaining({ customer: "cus_multi", status: "all" }));
+    expect(await stored()).toMatchObject({ tier: "pro", subscriptionStatus: "active", stripeSubscriptionId: "sub_new" });
+  });
+
+  it("drops to Free when every subscription has ended", async () => {
+    await prisma.user.update({ where: { id: me.id }, data: { stripeCustomerId: "cus_multi", tier: "pro" } });
+    const ended = sub("sub_b", "canceled", 200);
+    stripe.subscriptions.retrieve.mockResolvedValue(ended);
+    stripe.subscriptions.list.mockResolvedValue({ data: [ended, sub("sub_a", "canceled", 100)] });
+    await WEBHOOK(signed({ type: "customer.subscription.deleted", data: { object: ended } }));
+    expect(await stored()).toMatchObject({ tier: "free", subscriptionStatus: "canceled" });
+  });
+
+  it("refuses a second Checkout with 409 when Stripe already has a live subscription, even if the app says Free", async () => {
+    await prisma.user.update({ where: { id: me.id }, data: { stripeCustomerId: "cus_multi" } });
+    me = { ...me, stripeCustomerId: "cus_multi" };
+    stripe.subscriptions.list.mockResolvedValue({ data: [sub("sub_live", "active", 200)] });
+    const res = await CHECKOUT(post("/api/billing/checkout"));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "You already have Pro. Use Manage subscription to change or cancel it." });
+    expect(stripe.checkout.sessions.create).not.toHaveBeenCalled();
+  });
+
+  it("still lets a customer whose old subscription ended subscribe again", async () => {
+    await prisma.user.update({ where: { id: me.id }, data: { stripeCustomerId: "cus_multi" } });
+    me = { ...me, stripeCustomerId: "cus_multi" };
+    stripe.subscriptions.list.mockResolvedValue({ data: [sub("sub_old", "canceled", 100)] });
+    expect((await CHECKOUT(post("/api/billing/checkout"))).status).toBe(200);
+  });
+});
+

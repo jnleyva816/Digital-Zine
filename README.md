@@ -162,7 +162,8 @@ To turn it on:
 
 How it behaves:
 
-- The webhook re-reads each subscription from Stripe instead of trusting the event payload, so events that arrive out of order are handled. It finds users only by their linked Stripe customer.
+- The webhook re-reads the customer's subscriptions from Stripe instead of trusting the event payload, and the plan follows the best of them (active, then trialing, then past due, newest first). So events that arrive out of order, or a late event for an old subscription, cannot downgrade a paying creator (DIG-39). It finds users only by their linked Stripe customer.
+- Checkout asks Stripe first and refuses (409) when the customer already has a live subscription, even if the app has not caught up yet.
 - `active`, `trialing`, and `past_due` count as Pro. While Stripe retries a failed renewal, the creator keeps Pro and sees a warning on `/billing`. They drop to Free when the subscription becomes `unpaid` or `canceled`.
 - Without `STRIPE_SECRET_KEY` or `NEXT_PUBLIC_APP_URL`, `/billing` says billing is not set up and the billing APIs return 503. The rest of the app is unaffected.
 - Not handled yet: refund, dispute, and early-fraud-warning events (DIG-15).

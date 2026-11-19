@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { tierForStatus } from "@/lib/billing";
+import { decidingSubscription, tierForStatus } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -10,9 +10,10 @@ const idOf = (value: string | { id: string } | null | undefined) =>
   typeof value === "string" ? value : (value?.id ?? null);
 
 /**
- * Re-reads the subscription from Stripe and stores its current status. Events can arrive out of
- * order, so the payload's own status is never trusted. Users are found by their linked Stripe
- * customer, never by metadata.
+ * Re-reads the customer's subscriptions from Stripe and stores the plan they add up to. Events can
+ * arrive out of order, so the payload's own status is never trusted, and the event's subscription
+ * is not assumed to be the current one (DIG-39). Users are found by their linked Stripe customer,
+ * never by metadata.
  */
 async function syncSubscription(stripe: Stripe, subscriptionId: string) {
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
@@ -22,12 +23,14 @@ async function syncSubscription(stripe: Stripe, subscriptionId: string) {
     console.warn(`Stripe webhook: no user for customer ${customerId ?? "(none)"}; subscription ${subscription.id} ignored`);
     return;
   }
+  const { data: all } = await stripe.subscriptions.list({ customer: customerId!, status: "all", limit: 10 });
+  const current = decidingSubscription([subscription, ...all.filter((s) => s.id !== subscription.id)]) ?? subscription;
   await prisma.user.update({
     where: { id: user.id },
     data: {
-      tier: tierForStatus(subscription.status),
-      subscriptionStatus: subscription.status,
-      stripeSubscriptionId: subscription.id,
+      tier: tierForStatus(current.status),
+      subscriptionStatus: current.status,
+      stripeSubscriptionId: current.id,
     },
   });
 }
