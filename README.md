@@ -71,15 +71,27 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
 | `npm run dev` | Development server |
 | `npm run build` | `prisma generate` followed by `next build` |
 | `npm start` | Serves the production build |
-| `npm run db:push` | Applies `prisma/schema.prisma` to the database |
+| `npm run db:migrate -- --name <change>` | After editing `prisma/schema.prisma`: writes a new migration in `prisma/migrations/` and applies it to your dev database (`prisma migrate dev`) |
+| `npm run db:deploy` | Applies pending migrations (`prisma migrate deploy`). Production runs this on every deploy |
+| `npm run db:check-migrations` | Proves the migrations build a database that matches `schema.prisma`, on a fresh database and on a `db push` one. CI runs it |
+| `npm run db:push` | Applies the schema without migrations. Only for the test database and quick local experiments |
 | `npm run db:seed` | Reseeds the sample user, assets, and zine |
-| `npm run db:setup` | `db:push` followed by `db:seed` |
+| `npm run db:setup` | `db:deploy` followed by `db:seed` |
 | `npm test` | Unit, component, and API tests (Vitest) against the test database |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Builds the app, starts it on port 3417, and runs the Playwright browser tests against the test database |
 | `npm run test:db:reset` | Applies the schema to the test database, empties it, and reseeds it |
 | `npm run admin:create -- --email <email>` | Creates an admin account, or promotes an existing one (see "Admin accounts") |
 | `npm run smoke` | Smoke-checks a running server and refreshes `docs/screenshots/` (set `SMOKE_BASE_URL`) |
+
+## Schema changes and migrations
+
+Production schema changes ship as Prisma migrations in `prisma/migrations/` (DIG-19). The first one, `20261119000000_baseline`, is the whole schema as of 19 Nov 2026.
+
+- **Changing the schema:** edit `prisma/schema.prisma`, run `npm run db:migrate -- --name <short-change-name>`, and commit the new folder in `prisma/migrations/` with the schema. Never edit a migration that has been merged.
+- **A database set up with `db push` before migrations existed** (any local dev database from before 19 Nov 2026): run `npx prisma migrate resolve --applied 20261119000000_baseline` once, then `npm run db:deploy`.
+- **The test database** keeps `db push`: `npm test` and `npm run test:e2e` reset it that way. Migrations are proven separately by `npm run db:check-migrations`, which CI runs.
+- **Production:** run `npm run db:deploy` before starting the new version.
 
 ## Testing
 
@@ -128,7 +140,7 @@ npm run admin:create -- --email you@example.com            # create, or promote 
 npm run admin:create -- --email you@example.com --reset    # set a new password
 ```
 
-A new account, or `--reset`, gets a random password that is printed once. Store it in a password manager. Promoting an existing account keeps its password. The command works against whatever database `DATABASE_URL` points to. Run `npm run db:push` first after pulling the change that added `User.role`.
+A new account, or `--reset`, gets a random password that is printed once. Store it in a password manager. Promoting an existing account keeps its password. The command works against whatever database `DATABASE_URL` points to. Run `npm run db:deploy` first so the database is up to date.
 
 Signed-in admins see an "Admin" badge and a **View as Free** switch in the studio header. Turning it on shows the app exactly as a Free user sees it: the PDF upsell, a 403 from the PDF API, and the Free plan on `/billing`. A banner stays up until you switch back. The setting lives in an httpOnly cookie, so it survives reloads. It can only remove access: regular users can't use it, and admins can never start a Stripe checkout.
 
