@@ -15,9 +15,33 @@ afterEach(() => {
   push.mockReset();
 });
 
+const BOARDS = [
+  { id: "home", name: "Home" },
+  { id: "tokyo", name: "Tokyo" },
+];
+
+describe("NewZineForm (DIG-25)", () => {
+  it("builds the new zine from the board I pick", async () => {
+    fetchMock.mockResolvedValue(Response.json({ zine: { id: "z1" } }, { status: 201 }));
+    render(<NewZineForm boards={BOARDS} limitReached={null} />);
+    const select = screen.getByLabelText("Board");
+    expect(select).toHaveValue("home");
+    await userEvent.selectOptions(select, "Tokyo");
+    await userEvent.type(screen.getByLabelText("Title"), "Tokyo Issue");
+    await userEvent.click(screen.getByRole("button", { name: "Create zine" }));
+    await waitFor(() => expect(push).toHaveBeenCalledWith("/editor/z1"));
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ title: "Tokyo Issue", boardId: "tokyo" });
+  });
+
+  it("starts on the board it is given, such as the one I came from", () => {
+    render(<NewZineForm boards={BOARDS} initialBoardId="tokyo" limitReached={null} />);
+    expect(screen.getByLabelText("Board")).toHaveValue("tokyo");
+  });
+});
+
 describe("NewZineForm (DIG-32)", () => {
   it("replaces the form with an upgrade path when the zine limit is reached", () => {
-    render(<NewZineForm limitReached="Free includes 1 zine. Upgrade to Pro for unlimited zines." />);
+    render(<NewZineForm boards={BOARDS} limitReached="Free includes 1 zine. Upgrade to Pro for unlimited zines." />);
     expect(screen.queryByLabelText("Title")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Create zine" })).not.toBeInTheDocument();
     expect(screen.getByText("Free includes 1 zine. Upgrade to Pro for unlimited zines.")).toBeInTheDocument();
@@ -31,7 +55,7 @@ describe("NewZineForm (DIG-32)", () => {
         { status: 403 }
       )
     );
-    render(<NewZineForm limitReached={null} />);
+    render(<NewZineForm boards={BOARDS} limitReached={null} />);
     await userEvent.type(screen.getByLabelText("Title"), "Second");
     await userEvent.click(screen.getByRole("button", { name: "Create zine" }));
     await waitFor(() =>

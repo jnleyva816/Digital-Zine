@@ -9,6 +9,9 @@ import { getOrCreateDefaultBoard } from "../../src/lib/boards";
 
 export const SEEDED = { email: "creator@digitalzine.local", password: "zine1234" } as const;
 
+/** One Vision Board's page. `/board` redirects to the creator's first board (DIG-25). */
+export const BOARD_URL = /\/boards\/[a-z0-9-]+$/;
+
 /** Prisma client bound to the test database, for arranging data the UI cannot create. */
 const testEnv = loadTestEnv();
 export const testDb = new PrismaClient({ datasourceUrl: testEnv.DATABASE_URL });
@@ -25,7 +28,7 @@ export async function signIn(page: Page, email: string = SEEDED.email, password:
   await page.getByLabel("Studio Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: /sign in to studio/i }).click();
-  await expect(page).toHaveURL("/board");
+  await expect(page).toHaveURL(BOARD_URL);
 }
 
 export async function createUser(password = "test-pass-123") {

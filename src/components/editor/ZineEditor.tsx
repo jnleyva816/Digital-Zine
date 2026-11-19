@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-react";
 import { readApiError, type BoardAsset } from "@/components/board/types";
+import { ZineBoardPicker } from "./ZineBoardPicker";
 import { assetLabel } from "@/components/board/board-utils";
 import { DeleteZineDialog } from "./DeleteZineDialog";
 import { PdfExport } from "./PdfExport";
@@ -40,11 +41,20 @@ const iconButton =
 
 export function ZineEditor({
   zine,
+  board,
+  boards,
   boardAssets,
+  pageAssets = [],
   tier,
 }: {
   zine: EditorZine;
+  /** The board the zine is built from, and all of the creator's boards (DIG-25). */
+  board: { id: string; name: string };
+  boards: { id: string; name: string }[];
+  /** Photos on the zine's board: the ones that can be added as pages. */
   boardAssets: BoardAsset[];
+  /** Photos already on pages that have since moved to another board. */
+  pageAssets?: BoardAsset[];
   tier: "free" | "pro";
 }) {
   const router = useRouter();
@@ -63,7 +73,10 @@ export function ZineEditor({
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
 
-  const assetsById = useMemo(() => new Map(boardAssets.map((a, i) => [a.id, { asset: a, index: i }])), [boardAssets]);
+  const assetsById = useMemo(
+    () => new Map([...boardAssets, ...pageAssets].map((a, i) => [a.id, { asset: a, index: i }])),
+    [boardAssets, pageAssets]
+  );
   const labelFor = (assetId: string) => {
     const entry = assetsById.get(assetId);
     return entry ? assetLabel(entry.asset, entry.index) : "Photo unavailable";
@@ -307,6 +320,13 @@ export function ZineEditor({
         </div>
       </section>
 
+      <ZineBoardPicker
+        zineId={zine.id}
+        boardId={board.id}
+        boards={boards}
+        canChange={saved.pages.length === 0 && draft.pages.length === 0}
+      />
+
       {/* Pages */}
       <section aria-labelledby={`${id}-pages`} className="space-y-3">
         <h2 id={`${id}-pages`} className="font-serif text-lg font-bold">
@@ -391,9 +411,9 @@ export function ZineEditor({
         </h2>
         {boardAssets.length === 0 ? (
           <p className="text-sm text-ink-500">
-            Your Vision Board is empty.{" "}
-            <Link href="/board" className="font-medium text-vermilion-600 underline underline-offset-2">
-              Add photos to your board
+            “{board.name}” has no photos yet.{" "}
+            <Link href={`/boards/${board.id}`} className="font-medium text-vermilion-600 underline underline-offset-2">
+              Add photos to {board.name}
             </Link>{" "}
             first.
           </p>

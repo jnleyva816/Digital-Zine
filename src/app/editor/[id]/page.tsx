@@ -18,19 +18,34 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
   const user = await getAuthenticatedUser();
   if (!user) redirect("/signin?callbackUrl=%2Feditor");
 
-  const [zine, assets] = await Promise.all([
-    prisma.zine.findFirst({
-      where: { id, ownerId: user.id },
-      include: { pages: { orderBy: { pageNumber: "asc" } } },
-    }),
-    prisma.mediaAsset.findMany({
-      where: { ownerId: user.id },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: { id: true, publicUrl: true, originalName: true, kind: true, exif: true, recipe: true },
-    }),
-  ]);
+  const zine = await prisma.zine.findFirst({
+    where: { id, ownerId: user.id },
+    include: { pages: { orderBy: { pageNumber: "asc" } }, board: { select: { id: true, name: true } } },
+  });
   // The layout already 404s for missing or foreign zines; this covers a delete mid-request.
   if (!zine) notFound();
+
+  const pageAssetIds = zine.pages
+    .map((p) => (p.content as { assetId?: unknown } | null)?.assetId)
+    .filter((v): v is string => typeof v === "string");
+  const assetSelect = { id: true, publicUrl: true, originalName: true, kind: true, exif: true, recipe: true } as const;
+  const [assets, movedPageAssets, boards] = await Promise.all([
+    prisma.mediaAsset.findMany({
+      where: { boardId: zine.boardId },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: assetSelect,
+    }),
+    // A page keeps its photo when the photo moves to another board (DIG-25).
+    prisma.mediaAsset.findMany({
+      where: { ownerId: user.id, id: { in: pageAssetIds }, boardId: { not: zine.boardId } },
+      select: assetSelect,
+    }),
+    prisma.board.findMany({
+      where: { ownerId: user.id },
+      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+      select: { id: true, name: true },
+    }),
+  ]);
 
   return (
     <>
@@ -54,7 +69,10 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
             publishedAt: zine.publishedAt?.toISOString() ?? null,
             pages: zine.pages.map((p) => ({ pageNumber: p.pageNumber, flipEnabled: p.flipEnabled, content: p.content })),
           }}
+          board={zine.board}
+          boards={boards}
           boardAssets={assets.map(toBoardAsset)}
+          pageAssets={movedPageAssets.map(toBoardAsset)}
           tier={user.tier}
         />
       </main>

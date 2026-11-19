@@ -4,6 +4,8 @@ import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
+import { listBoards } from "@/lib/boards";
+import { withUserLock } from "@/lib/usage";
 import { StudioHeader } from "@/components/StudioHeader";
 import { NewZineForm } from "@/components/editor/NewZineForm";
 
@@ -18,18 +20,22 @@ export default async function ZineListPage() {
   const user = await getAuthenticatedUser();
   if (!user) redirect("/signin?callbackUrl=%2Feditor");
 
-  const zines = await prisma.zine.findMany({
-    where: { ownerId: user.id },
-    orderBy: { updatedAt: "desc" },
-    select: {
-      id: true,
-      title: true,
-      slug: true,
-      published: true,
-      updatedAt: true,
-      _count: { select: { pages: true } },
-    },
-  });
+  const [zines, boards] = await Promise.all([
+    prisma.zine.findMany({
+      where: { ownerId: user.id },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        published: true,
+        updatedAt: true,
+        board: { select: { name: true } },
+        _count: { select: { pages: true } },
+      },
+    }),
+    withUserLock(user.id, (tx) => listBoards(user.id, tx)),
+  ]);
   const latest = zines[0];
   const zineLimit = zineLimitFor(user.tier);
   const limitReached = zineLimit !== null && zines.length >= zineLimit ? zineLimitMessage(zineLimit) : null;
@@ -46,7 +52,7 @@ export default async function ZineListPage() {
         <p className="mt-1 text-sm text-ink-500">Sequence photos from your board into pages, then publish.</p>
 
         <div className="mt-6">
-          <NewZineForm limitReached={limitReached} />
+          <NewZineForm boards={boards.map((b) => ({ id: b.id, name: b.name }))} limitReached={limitReached} />
         </div>
 
         {zines.length === 0 ? (
@@ -67,7 +73,7 @@ export default async function ZineListPage() {
                   <span className="min-w-0">
                     <span className="block truncate font-serif text-lg font-bold text-ink-900">{zine.title}</span>
                     <span className="block text-xs text-ink-500">
-                      {zine._count.pages} {zine._count.pages === 1 ? "page" : "pages"} · Updated{" "}
+                      {zine._count.pages} {zine._count.pages === 1 ? "page" : "pages"} · {zine.board.name} · Updated{" "}
                       {dateFormat.format(zine.updatedAt)}
                     </span>
                   </span>

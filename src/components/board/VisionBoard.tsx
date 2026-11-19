@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   ArrowRight,
   Camera,
+  FolderInput,
   GripVertical,
   ImagePlus,
   Loader2,
@@ -19,6 +20,7 @@ import { assetLabel, exifBadges, moveItem } from "./board-utils";
 import { checkUpload, formatBytes, MAX_UPLOAD_BYTES } from "@/lib/limits";
 import type { PreparedUpload } from "@/lib/storage/types";
 import { StorageMeter } from "./StorageMeter";
+import { MovePhotoPanel } from "./MovePhotoPanel";
 import { RecipeEditor } from "./RecipeEditor";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -46,6 +48,7 @@ const STAGE_LABEL: Record<UploadStage, string> = {
 
 async function uploadOne(
   file: File,
+  boardId: string,
   onStage: (stage: UploadStage) => void,
 ): Promise<{ asset: BoardAsset; foundRecipe: FoundRecipe | null }> {
   onStage("reading");
@@ -83,6 +86,7 @@ async function uploadOne(
       mimeType: file.type,
       kind: "photo",
       exif,
+      boardId,
     }),
   });
   if (!created.ok) {
@@ -92,9 +96,23 @@ async function uploadOne(
   return { asset: toBoardAsset(body.asset), foundRecipe };
 }
 
-export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) {
+export interface VisionBoardProps {
+  /** The board on screen (DIG-25). Uploads land here. */
+  boardId: string;
+  initialAssets: BoardAsset[];
+  /** The creator's other boards, for moving photos. */
+  otherBoards: { id: string; name: string }[];
+  /** Bytes stored on the other boards; storage is one quota for the account. */
+  otherBoardsBytes: number;
+  /** Titles of the zines whose pages use each photo, by photo id. */
+  usedIn: Record<string, string[]>;
+}
+
+export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBytes, usedIn }: VisionBoardProps) {
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
-  const usedBytes = assets.reduce((sum, a) => sum + a.sizeBytes, 0);
+  const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const usedBytes = elsewhereBytes + assets.reduce((sum, a) => sum + a.sizeBytes, 0);
 
   // While any photo is processing, check the server every few seconds and swap in the result
   // (DIG-26). Only processing photos are touched, so local edits are never overwritten.
@@ -107,7 +125,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
     let stopped = false;
     const timer = setInterval(async () => {
       try {
-        const res = await fetch("/api/assets", { cache: "no-store" });
+        const res = await fetch(`/api/assets?boardId=${encodeURIComponent(boardId)}`, { cache: "no-store" });
         if (!res.ok || stopped) return;
         const body = (await res.json()) as { assets: Parameters<typeof toBoardAsset>[0][] };
         const fresh = new Map(body.assets.map((raw) => [raw.id, toBoardAsset(raw)]));
@@ -134,7 +152,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
       stopped = true;
       clearInterval(timer);
     };
-  }, [pendingIds]);
+  }, [pendingIds, boardId]);
 
   async function retryProcessing(asset: BoardAsset) {
     setBoardError(null);
@@ -190,7 +208,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
     while (queueRef.current.length > 0) {
       const { id, file } = queueRef.current.shift()!;
       try {
-        const { asset, foundRecipe } = await uploadOne(file, (stage) => updateUpload(id, { stage }));
+        const { asset, foundRecipe } = await uploadOne(file, boardId, (stage) => updateUpload(id, { stage }));
         setAssets((prev) => [...prev, asset]);
         if (foundRecipe) {
           found += 1;
@@ -215,7 +233,7 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
             : ` Film recipes were found in ${found} photos. Review them before saving.`;
       setAnnouncement(`${added} photo${added === 1 ? "" : "s"} added to the board.${review}`);
     }
-  }, []);
+  }, [boardId]);
 
   function enqueue(files: FileList | File[]) {
     const items: UploadItem[] = [];
@@ -331,6 +349,26 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
       setBusyId(null);
       setConfirmDeleteId(null);
     }
+  }
+
+  async function moveAsset(asset: BoardAsset, index: number, targetId: string): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ boardId: targetId }),
+      });
+      if (!res.ok) return await readApiError(res, "Could not move the photo.");
+    } catch {
+      return "Could not reach the server. Check your connection and try again.";
+    }
+    const target = otherBoards.find((b) => b.id === targetId);
+    setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+    setElsewhereBytes((bytes) => bytes + asset.sizeBytes);
+    forgetFound(asset.id);
+    setMovingId(null);
+    setAnnouncement(`${assetLabel(asset, index)} moved to ${target?.name ?? "another board"}.`);
+    return null;
   }
 
   const editingIndex = assets.findIndex((a) => a.id === editingId);
@@ -624,6 +662,17 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
+                          {otherBoards.length > 0 ? (
+                            <button
+                              type="button"
+                              onClick={() => setMovingId(movingId === asset.id ? null : asset.id)}
+                              aria-label={`Move ${label} to another board`}
+                              aria-expanded={movingId === asset.id}
+                              className="rounded-lg border border-paper-300 p-1.5 text-ink-700 transition hover:bg-paper-100"
+                            >
+                              <FolderInput className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => setEditingId(asset.id)}
@@ -644,6 +693,15 @@ export function VisionBoard({ initialAssets }: { initialAssets: BoardAsset[] }) 
                         </div>
                       )}
                     </div>
+                    {movingId === asset.id ? (
+                      <MovePhotoPanel
+                        label={label}
+                        boards={otherBoards}
+                        usedIn={usedIn[asset.id] ?? []}
+                        onMove={(targetId) => moveAsset(asset, index, targetId)}
+                        onCancel={() => setMovingId(null)}
+                      />
+                    ) : null}
                   </div>
                 </li>
               );
