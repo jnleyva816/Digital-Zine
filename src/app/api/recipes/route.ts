@@ -6,6 +6,7 @@ import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { prisma } from "@/lib/prisma";
 import { duplicateNameMessage, listSavedRecipes, recipeNameTaken, settingsOf, toSavedRecipe } from "@/lib/recipes";
 import { withUserLock } from "@/lib/usage";
+import { limitRequest } from "@/lib/rate-limit";
 
 const createSchema = z.object({
   recipe: fujiRecipeSchema,
@@ -23,6 +24,8 @@ export async function GET() {
 export async function POST(req: Request) {
   const user = await getAuthenticatedUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const parsed = createSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { withUserLock } from "@/lib/usage";
 import { getOrCreateDefaultBoard } from "@/lib/boards";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
+import { limitRequest } from "@/lib/rate-limit";
 
 const createZineSchema = z.object({
   title: z.string().min(1).max(140),
@@ -40,6 +41,8 @@ export async function POST(req: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const body = await req.json().catch(() => null);
   const parsed = createZineSchema.safeParse(body);

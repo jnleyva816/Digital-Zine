@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { prisma } from "@/lib/prisma";
 import { processAsset } from "@/lib/media/process";
 import { writeLocalObject } from "@/lib/storage/local";
-import { createAsset, createTestUser, deleteTestUser } from "./helpers";
+import { createAsset, createTestUser, deleteTestUser, resetRateLimits } from "./helpers";
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
 let dir: string;
@@ -23,6 +23,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   vi.stubEnv("LOCAL_STORAGE_DIR", dir);
   await prisma.mediaAsset.deleteMany({ where: { ownerId: me.id } });
 });

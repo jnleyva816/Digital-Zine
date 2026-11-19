@@ -5,6 +5,7 @@ import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { prisma } from "@/lib/prisma";
 import { duplicateNameMessage, recipeNameTaken, settingsOf, syncLinkedPhotos, toSavedRecipe } from "@/lib/recipes";
 import { withUserLock } from "@/lib/usage";
+import { limitRequest } from "@/lib/rate-limit";
 
 const updateSchema = z.object({ recipe: fujiRecipeSchema });
 type Context = { params: Promise<{ id: string }> };
@@ -13,6 +14,8 @@ type Context = { params: Promise<{ id: string }> };
 export async function PATCH(req: Request, context: Context) {
   const user = await getAuthenticatedUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.recipe.findFirst({ where: { id, ownerId: user.id }, select: { id: true } });
@@ -43,6 +46,8 @@ export async function PATCH(req: Request, context: Context) {
 export async function DELETE(_req: Request, context: Context) {
   const user = await getAuthenticatedUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const limited = await limitRequest("write", user.id);
+  if (limited) return limited;
 
   const { id } = await context.params;
   const existing = await prisma.recipe.findFirst({ where: { id, ownerId: user.id }, select: { id: true } });

@@ -22,6 +22,7 @@ import {
   deleteTestUser,
   jsonRequest,
   params,
+  resetRateLimits,
 } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
@@ -54,6 +55,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   mockedUser.mockResolvedValue(me);
   vi.stubEnv("LOCAL_STORAGE_DIR", dir);
   await prisma.mediaAsset.deleteMany({ where: { ownerId: { in: [me.id, other.id] } } });

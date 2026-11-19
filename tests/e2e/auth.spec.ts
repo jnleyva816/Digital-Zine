@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { BOARD_URL, SEEDED, signIn } from "./helpers";
+import { BOARD_URL, SEEDED, createUser, deleteUser, signIn } from "./helpers";
 
 test.describe("signed out", () => {
   test("/, /board, and /boards send visitors to sign-in with an HTTP redirect", async ({ request }) => {
@@ -31,6 +31,27 @@ test.describe("signed out", () => {
     await page.getByRole("button", { name: /sign in to studio/i }).click();
     await expect(page.getByRole("alert").filter({ hasText: "did not match" })).toBeVisible();
     await expect(page).toHaveURL(/\/signin/);
+  });
+
+  test("after 5 wrong passwords the form says to wait, even for the right one (DIG-28)", async ({ page }) => {
+    const user = await createUser();
+    try {
+      await page.goto("/signin");
+      await page.getByLabel("Studio Email").fill(user.email);
+      for (let i = 0; i < 5; i++) {
+        await page.getByLabel("Password").fill(`wrong-${i}`);
+        await page.getByRole("button", { name: /sign in to studio/i }).click();
+        await expect(page.getByRole("alert").filter({ hasText: "did not match" })).toBeVisible();
+      }
+      await page.getByLabel("Password").fill(user.password);
+      await page.getByRole("button", { name: /sign in to studio/i }).click();
+      await expect(
+        page.getByRole("alert").filter({ hasText: "Too many sign-in attempts. Wait 15 minutes, then try again." })
+      ).toBeVisible();
+      await expect(page).toHaveURL(/\/signin/);
+    } finally {
+      await deleteUser(user.id);
+    }
   });
 
   test("an off-site callbackUrl is ignored", async ({ page }) => {

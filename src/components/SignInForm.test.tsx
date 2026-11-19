@@ -79,4 +79,14 @@ describe("SignInForm", () => {
     await submit("a@b.co", "pw");
     expect(push).toHaveBeenCalledWith("/board");
   });
+
+  it("says to wait when there have been too many failed sign-ins (DIG-28)", async () => {
+    signIn.mockResolvedValue({ ok: false, error: "CredentialsSignin", code: "rate_limited", status: 200, url: null });
+    render(<SignInForm showDevCredentials={false} />);
+    await submit("a@b.co", "pw");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Too many sign-in attempts. Wait 15 minutes, then try again."
+    );
+    expect(push).not.toHaveBeenCalled();
+  });
 });

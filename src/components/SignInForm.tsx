@@ -43,7 +43,12 @@ export function SignInForm({ showDevCredentials }: SignInFormProps) {
     }
 
     if (!res || res.error) {
-      setError("That email and password did not match an account.");
+      // DIG-28: after too many failed tries the server refuses sign-in for up to 15 minutes.
+      setError(
+        res?.code === "rate_limited"
+          ? "Too many sign-in attempts. Wait 15 minutes, then try again."
+          : "That email and password did not match an account."
+      );
       setLoading(false);
       return;
     }

@@ -11,6 +11,7 @@ import {
   deleteTestUser,
   jsonRequest,
   params,
+  resetRateLimits,
 } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
@@ -31,6 +32,7 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  await resetRateLimits();
   // Several tests here need more than one zine, which Free no longer allows (DIG-32). The limit
   // tests at the end set the tier they test.
   mockedUser.mockResolvedValue({ ...me, tier: "pro" });
