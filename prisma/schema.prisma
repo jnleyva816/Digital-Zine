@@ -75,6 +75,8 @@ model MediaAsset {
   storageKey      String      @unique
   publicUrl       String
   originalName    String?
+  /// A name the creator gives the photo in the app (DIG-34). Null means "use the file name".
+  name            String?
   mimeType        String      @default("image/jpeg")
   /// Bytes in storage, read from the storage driver at create time, never from the client (DIG-32).
   /// Rows from before DIG-32 are 0.

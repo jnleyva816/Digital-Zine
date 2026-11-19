@@ -15,6 +15,9 @@ export const ACCOUNT_STORAGE_BYTES = 2 * GB;
 /** AVIF quality for every stored copy (owner, 18 Nov: q50 looked right on a 40MP X-T5 JPEG). */
 export const AVIF_QUALITY = 50;
 
+/** Longest photo name, in characters (DIG-34). */
+export const PHOTO_NAME_MAX = 80;
+
 /** Widths, in px, of the smaller copies that pages load instead of the full-resolution one. */
 export const VARIANT_WIDTHS: readonly number[] = [480, 960, 1600];
 

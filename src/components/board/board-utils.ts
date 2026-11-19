@@ -2,7 +2,7 @@ import type { ExifData } from "@/lib/types";
 import type { BoardAsset } from "./types";
 
 export function assetLabel(asset: BoardAsset, index: number): string {
-  return asset.originalName?.trim() || `Photo ${index + 1}`;
+  return asset.name?.trim() || asset.originalName?.trim() || `Photo ${index + 1}`;
 }
 
 export function exifBadges(exif: ExifData | null): string[] {

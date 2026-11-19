@@ -230,6 +230,44 @@ describe("PATCH /api/assets/[id]", () => {
   });
 });
 
+describe("naming a photo (DIG-34)", () => {
+  const rename = (id: string, name: unknown) => PATCH(jsonRequest("/", "PATCH", { name }), params({ id }));
+
+  it("saves a trimmed name and keeps the original file name", async () => {
+    const photo = await createAsset(me.id, 0, "DSCF1368.JPG");
+    const res = await rename(photo.id, "  Harbor at dusk ");
+    expect(res.status).toBe(200);
+    expect(await prisma.mediaAsset.findUnique({ where: { id: photo.id } })).toMatchObject({
+      name: "Harbor at dusk",
+      originalName: "DSCF1368.JPG",
+    });
+  });
+
+  it("clears the name with null or a blank string", async () => {
+    const photo = await createAsset(me.id, 0);
+    await rename(photo.id, "Something");
+    expect((await rename(photo.id, null)).status).toBe(200);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.name).toBeNull();
+    await rename(photo.id, "Something");
+    expect((await rename(photo.id, "   ")).status).toBe(200);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.name).toBeNull();
+  });
+
+  it("rejects a name over 80 characters, or not a string, with 400", async () => {
+    const photo = await createAsset(me.id, 0);
+    const res = await rename(photo.id, "x".repeat(81));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Photo names can be up to 80 characters." });
+    expect((await rename(photo.id, 42)).status).toBe(400);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.name).toBeNull();
+  });
+
+  it("returns 404 when naming another creator's photo", async () => {
+    const theirs = await createAsset(other.id, 0);
+    expect((await rename(theirs.id, "Mine now")).status).toBe(404);
+  });
+});
+
 describe("moving a photo to another board (DIG-25)", () => {
   const move = (id: string, boardId: string) => PATCH(jsonRequest("/", "PATCH", { boardId }), params({ id }));
 

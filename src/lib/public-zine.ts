@@ -26,6 +26,8 @@ export function shareDescription({
 
 export interface PublicZinePage {
   pageNumber: number;
+  /** The creator's name for the photo, or null. Never the camera's file name (DIG-34). */
+  name: string | null;
   imageUrl: string;
   /** JPEG for link previews (DIG-26). */
   shareImageUrl: string;
@@ -70,7 +72,7 @@ export const getPublicZine = cache(async (slug: string): Promise<PublicZine | nu
   // Only the owner's own assets may appear on their zine.
   const assets = await prisma.mediaAsset.findMany({
     where: { id: { in: assetIds }, ownerId: zine.ownerId },
-    select: { id: true, publicUrl: true, blurDataUrl: true, kind: true, exif: true, recipe: true },
+    select: { id: true, name: true, publicUrl: true, blurDataUrl: true, kind: true, exif: true, recipe: true },
   });
   const byId = new Map(assets.map((a) => [a.id, a]));
 
@@ -82,6 +84,7 @@ export const getPublicZine = cache(async (slug: string): Promise<PublicZine | nu
     if (!asset) return;
     pages.push({
       pageNumber: pages.length + 1,
+      name: asset.name?.trim() || null,
       imageUrl: asset.publicUrl,
       shareImageUrl: shareImageUrl(asset.publicUrl),
       blurDataUrl: asset.blurDataUrl,

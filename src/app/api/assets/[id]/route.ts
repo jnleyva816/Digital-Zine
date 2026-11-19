@@ -3,11 +3,19 @@ import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { PHOTO_NAME_MAX } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
 
 const updateAssetSchema = z.object({
   kind: z.enum(["photo", "recipe"]).optional(),
   recipe: fujiRecipeSchema.nullable().optional(),
+  /** The creator's name for the photo (DIG-34). Blank or null clears it. */
+  name: z
+    .string({ invalid_type_error: "The photo name must be text." })
+    .trim()
+    .max(PHOTO_NAME_MAX, `Photo names can be up to ${PHOTO_NAME_MAX} characters.`)
+    .nullable()
+    .optional(),
   /** Moves the photo to the end of another of the owner's boards (DIG-25). */
   boardId: z.string().min(1).optional(),
 });
@@ -48,6 +56,9 @@ export async function PATCH(
       : Prisma.DbNull;
   }
 
+  if (parsed.data.name !== undefined) {
+    data.name = parsed.data.name || null;
+  }
   if (parsed.data.boardId !== undefined && parsed.data.boardId !== existing.boardId) {
     const target = await prisma.board.findFirst({
       where: { id: parsed.data.boardId, ownerId: user.id },

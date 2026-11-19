@@ -10,6 +10,7 @@ import {
   GripVertical,
   ImagePlus,
   Loader2,
+  Pencil,
   RotateCw,
   Trash2,
   SlidersHorizontal,
@@ -21,6 +22,7 @@ import { checkUpload, formatBytes, MAX_UPLOAD_BYTES } from "@/lib/limits";
 import type { PreparedUpload } from "@/lib/storage/types";
 import { StorageMeter } from "./StorageMeter";
 import { MovePhotoPanel } from "./MovePhotoPanel";
+import { PhotoNameForm } from "./PhotoNameForm";
 import { RecipeEditor } from "./RecipeEditor";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -112,6 +114,7 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
   const [movingId, setMovingId] = useState<string | null>(null);
+  const [namingId, setNamingId] = useState<string | null>(null);
   const usedBytes = elsewhereBytes + assets.reduce((sum, a) => sum + a.sizeBytes, 0);
 
   // While any photo is processing, check the server every few seconds and swap in the result
@@ -349,6 +352,23 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
       setBusyId(null);
       setConfirmDeleteId(null);
     }
+  }
+
+  async function saveName(asset: BoardAsset, name: string | null): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) return await readApiError(res, "Could not save the name.");
+    } catch {
+      return "Could not reach the server. Check your connection and try again.";
+    }
+    setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, name } : a)));
+    setNamingId(null);
+    setAnnouncement(name ? `Photo named “${name}”.` : "Photo name cleared.");
+    return null;
   }
 
   async function moveAsset(asset: BoardAsset, index: number, targetId: string): Promise<string | null> {
@@ -594,6 +614,11 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
                       <p className="truncate text-sm font-medium text-ink-900" title={label}>
                         {label}
                       </p>
+                      {asset.name?.trim() && asset.originalName ? (
+                        <p className="truncate font-mono text-[11px] text-ink-500" title={asset.originalName}>
+                          {asset.originalName}
+                        </p>
+                      ) : null}
                       {asset.kind === "recipe" && asset.recipe ? (
                         <p className="truncate font-serif text-sm text-ink-700" title={`${asset.recipe.name} · ${asset.recipe.filmSimulation}`}>
                           {asset.recipe.name} <span className="font-sans text-xs text-ink-500">· {asset.recipe.filmSimulation}</span>
@@ -662,10 +687,25 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setMovingId(null);
+                              setNamingId(namingId === asset.id ? null : asset.id);
+                            }}
+                            aria-label={`Rename ${label}`}
+                            aria-expanded={namingId === asset.id}
+                            className="rounded-lg border border-paper-300 p-1.5 text-ink-700 transition hover:bg-paper-100"
+                          >
+                            <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                          </button>
                           {otherBoards.length > 0 ? (
                             <button
                               type="button"
-                              onClick={() => setMovingId(movingId === asset.id ? null : asset.id)}
+                              onClick={() => {
+                                setNamingId(null);
+                                setMovingId(movingId === asset.id ? null : asset.id);
+                              }}
                               aria-label={`Move ${label} to another board`}
                               aria-expanded={movingId === asset.id}
                               className="rounded-lg border border-paper-300 p-1.5 text-ink-700 transition hover:bg-paper-100"
@@ -693,6 +733,14 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
                         </div>
                       )}
                     </div>
+                    {namingId === asset.id ? (
+                      <PhotoNameForm
+                        fileName={asset.originalName}
+                        initialName={asset.name}
+                        onSave={(name) => saveName(asset, name)}
+                        onCancel={() => setNamingId(null)}
+                      />
+                    ) : null}
                     {movingId === asset.id ? (
                       <MovePhotoPanel
                         label={label}
