@@ -64,13 +64,8 @@ export function toBoardAsset(raw: RawAsset): BoardAsset {
   };
 }
 
-export const ACCEPTED_IMAGE_TYPES = [
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-] as const;
+/** Uploads are JPEG only (owner, 19 Nov; DIG-36). The server refuses anything else. */
+export const ACCEPTED_IMAGE_TYPES = ["image/jpeg"] as const;
 
 /** Reads `{ error }` from a JSON error response, falling back to a generic message. */
 export async function readApiError(res: Response, fallback: string): Promise<string> {

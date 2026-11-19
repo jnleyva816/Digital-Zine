@@ -42,7 +42,7 @@ describe("POST /api/uploads/presign", () => {
   it("rejects non-image types with 400", async () => {
     const res = await PRESIGN(jsonRequest("/", "POST", { filename: "a.pdf", contentType: "application/pdf", size: 10 }));
     expect(res.status).toBe(400);
-    expect(await res.json()).toEqual({ error: "Only image files are supported" });
+    expect(await res.json()).toEqual({ error: "Only JPEG photos can be uploaded." });
   });
 
   it("returns a local PUT target inside my folder", async () => {

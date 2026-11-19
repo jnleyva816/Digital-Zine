@@ -106,7 +106,7 @@ test.describe("Vision Board, seeded creator", () => {
 
   test("rejects files that are not images", async ({ page }) => {
     await page.getByLabel("choose files").setInputFiles({ name: "notes.txt", mimeType: "text/plain", buffer: Buffer.from("hi") });
-    await expect(page.getByRole("list", { name: "Uploads" })).toContainText("Only JPEG, PNG, WebP, GIF, or AVIF images.");
+    await expect(page.getByRole("list", { name: "Uploads" })).toContainText("Only JPEG photos can be uploaded.");
     await expect(boardCards(page)).toHaveCount(5);
   });
 

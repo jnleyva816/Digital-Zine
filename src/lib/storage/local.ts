@@ -91,28 +91,24 @@ export async function readLocalObject(
 ): Promise<{ bytes: Buffer; contentType: string } | null> {
   const filePath = resolveSafePath(storageKey);
   try {
+    // The type comes from the extension, never from the sidecar a client could write (DIG-36).
+    // Only the types the app itself stores are ever served.
+    const contentType = contentTypeForKey(storageKey);
+    if (!contentType) return null;
     const bytes = await fs.readFile(filePath);
-    let contentType = guessContentType(storageKey);
-    try {
-      const metaRaw = await fs.readFile(`${filePath}.meta.json`, "utf8");
-      const parsed = JSON.parse(metaRaw) as { contentType?: string };
-      if (parsed.contentType) {
-        contentType = parsed.contentType;
-      }
-    } catch {
-      // Metadata sidecar is optional (e.g. seeded files).
-    }
     return { bytes, contentType };
   } catch {
     return null;
   }
 }
 
-function guessContentType(key: string): string {
+/**
+ * The content type of a stored file, from its extension, or null for anything the app does not
+ * store (DIG-36): uploads are JPEG, and the worker writes AVIF copies and a JPEG share image.
+ */
+export function contentTypeForKey(key: string): "image/jpeg" | "image/avif" | null {
   const lower = key.toLowerCase();
-  if (lower.endsWith(".png")) return "image/png";
-  if (lower.endsWith(".webp")) return "image/webp";
-  if (lower.endsWith(".gif")) return "image/gif";
+  if (lower.endsWith(".jpg") || lower.endsWith(".jpeg")) return "image/jpeg";
   if (lower.endsWith(".avif")) return "image/avif";
-  return "image/jpeg";
+  return null;
 }
