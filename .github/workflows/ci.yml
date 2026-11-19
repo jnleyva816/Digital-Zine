@@ -75,6 +75,11 @@ jobs:
       - name: Build (type check and lint included)
         run: npm run build
 
+      # Production applies prisma/migrations with `migrate deploy` (DIG-19). This fails when
+      # schema.prisma changed without a migration, on a fresh database and on a db-push one.
+      - name: Migrations match the schema
+        run: npm run db:check-migrations
+
       - name: Unit, component, and API tests
         run: npm test
 
