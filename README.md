@@ -93,6 +93,12 @@ Production schema changes ship as Prisma migrations in `prisma/migrations/` (DIG
 - **The test database** keeps `db push`: `npm test` and `npm run test:e2e` reset it that way. Migrations are proven separately by `npm run db:check-migrations`, which CI runs.
 - **Production:** run `npm run db:deploy` before starting the new version.
 
+## Sign-in rate limits and the client IP
+
+Failed sign-ins are limited to 5 per email from one IP and 20 per IP, per 15 minutes (DIG-28, DIG-37). Counting an email per IP means someone else's failures cannot lock a creator out.
+
+The client IP is read from `X-Forwarded-For`. Each proxy in front of the app appends the address that connected to it, so the real client is the entry `TRUSTED_PROXY_HOPS` places from the right (default `1`). Anything further left came from the client and may be forged. Set `TRUSTED_PROXY_HOPS` to the number of proxies your host puts in front of the app: usually `1`, or `2` behind a CDN and a load balancer.
+
 ## Testing
 
 This project is test-driven. Write a failing test, make it pass, then refactor. `CLAUDE.md` and `.cursor/rules/test-driven.mdc` hold the full rules.

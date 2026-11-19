@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
 export type RateLimitRule = "signin-email" | "signin-ip" | "upload" | "write" | "pdf";
 
 export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: number }> = {
-  /** Failed sign-in tries per email address. */
+  /** Failed sign-in tries per email address from one IP (DIG-37). */
   "signin-email": { limit: 5, windowSeconds: 15 * 60 },
   /** Failed sign-in tries per client IP, across all emails. */
   "signin-ip": { limit: 20, windowSeconds: 15 * 60 },
