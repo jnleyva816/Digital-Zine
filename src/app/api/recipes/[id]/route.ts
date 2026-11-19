@@ -5,6 +5,7 @@ import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { prisma } from "@/lib/prisma";
 import { duplicateNameMessage, recipeNameTaken, settingsOf, syncLinkedPhotos, toSavedRecipe } from "@/lib/recipes";
 import { withUserLock } from "@/lib/usage";
+import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
 
 const updateSchema = z.object({ recipe: fujiRecipeSchema });
 type Context = { params: Promise<{ id: string }> };
@@ -36,6 +37,10 @@ export async function PATCH(req: Request, context: Context) {
     await syncLinkedPhotos(tx, existing.id, recipe);
     return { status: 200, body: { recipe: toSavedRecipe(row) } };
   });
+  if (result.status === 200) {
+    const linked = await prisma.mediaAsset.findMany({ where: { recipeId: existing.id }, select: { id: true } });
+    await revalidateZinesUsingAssets(linked.map((a) => a.id));
+  }
   return NextResponse.json(result.body, { status: result.status });
 }
 
