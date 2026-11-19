@@ -107,6 +107,14 @@ describe("S3StorageDriver (DIG-32)", () => {
   const driver = () =>
     new S3StorageDriver({ bucket: "b", region: "us-east-1", accessKeyId: "AKIDTEST", secretAccessKey: "secret" });
 
+  it("signs Content-Type too, so an upload cannot be stored as HTML (DIG-43)", async () => {
+    const prepared = await driver().prepareUpload({ storageKey: "users/u1/a.jpg", contentType: "image/jpeg", size: 5000 });
+    const signed = (new URL(prepared.uploadUrl).searchParams.get("X-Amz-SignedHeaders") ?? "").split(";");
+    expect(signed).toEqual(expect.arrayContaining(["content-length", "content-type"]));
+    // The browser must send exactly the signed type.
+    expect(prepared.headers["Content-Type"]).toBe("image/jpeg");
+  });
+
   it("signs the exact Content-Length so S3 rejects a body of any other size", async () => {
     const prepared = await driver().prepareUpload({
       storageKey: "users/u1/a.jpg",

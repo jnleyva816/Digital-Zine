@@ -99,7 +99,9 @@ export class S3StorageDriver implements StorageDriver {
     // presign time is the size that gets stored (DIG-32).
     const uploadUrl = await getSignedUrl(this.client, command, {
       expiresIn: 600,
-      ...(params.size !== undefined ? { signableHeaders: new Set(["content-length"]) } : {}),
+      // Sign the size and the type: S3 then refuses a body of any other length (DIG-32) or a
+      // different Content-Type, so an upload can never be stored as HTML (DIG-43).
+      signableHeaders: new Set(params.size !== undefined ? ["content-length", "content-type"] : ["content-type"]),
     });
 
     return {
