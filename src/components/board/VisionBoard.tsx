@@ -26,6 +26,7 @@ import { PhotoNameForm } from "./PhotoNameForm";
 import { PhotoEditor } from "./PhotoEditor";
 import { EditedPhoto } from "@/components/EditedPhoto";
 import type { PhotoEdit } from "@/lib/photo-edit";
+import type { SavedRecipe } from "@/lib/recipe-library";
 import { RecipeEditor } from "./RecipeEditor";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -111,9 +112,19 @@ export interface VisionBoardProps {
   otherBoardsBytes: number;
   /** Titles of the zines whose pages use each photo, by photo id. */
   usedIn: Record<string, string[]>;
+  /** The creator's recipe library (DIG-24). */
+  savedRecipes?: SavedRecipe[];
 }
 
-export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBytes, usedIn }: VisionBoardProps) {
+export function VisionBoard({
+  boardId,
+  initialAssets,
+  otherBoards,
+  otherBoardsBytes,
+  usedIn,
+  savedRecipes: initialSavedRecipes = [],
+}: VisionBoardProps) {
+  const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(initialSavedRecipes);
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
   const [movingId, setMovingId] = useState<string | null>(null);
@@ -335,6 +346,54 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
       forgetFound(assetId);
       setEditingId(null);
       setAnnouncement(recipe ? "Recipe saved." : "Recipe removed.");
+      return null;
+    } catch {
+      return "Could not reach the server. Check your connection and try again.";
+    }
+  }
+
+  /** Links a photo to a saved recipe, or unlinks it with null (DIG-24). */
+  async function linkRecipe(assetId: string, recipeId: string | null): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(assetId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipeId }),
+      });
+      if (!res.ok) return await readApiError(res, "Could not use the saved recipe.");
+      const updated = toBoardAsset(((await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] }).asset);
+      setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, kind: updated.kind, recipe: updated.recipe, recipeId: updated.recipeId } : a)));
+      setSavedRecipes((prev) =>
+        prev.map((r) => {
+          const before = assets.find((a) => a.id === assetId)?.recipeId;
+          if (r.id === recipeId) return { ...r, photoCount: r.photoCount + 1 };
+          if (r.id === before) return { ...r, photoCount: Math.max(0, r.photoCount - 1) };
+          return r;
+        })
+      );
+      forgetFound(assetId);
+      setEditingId(null);
+      setAnnouncement(recipeId ? "Saved recipe used." : "Recipe unlinked. This photo keeps its own copy.");
+      return null;
+    } catch {
+      return "Could not reach the server. Check your connection and try again.";
+    }
+  }
+
+  /** Saves a photo's recipe to the library and links the photo to it (DIG-24). */
+  async function saveRecipeToLibrary(assetId: string, recipe: RecipeData): Promise<string | null> {
+    try {
+      const res = await fetch("/api/recipes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ recipe, linkAssetId: assetId }),
+      });
+      if (!res.ok) return await readApiError(res, "Could not save the recipe to your library.");
+      const { recipe: saved } = (await res.json()) as { recipe: SavedRecipe };
+      setSavedRecipes((prev) => [...prev, saved].sort((a, b) => a.recipe.name.localeCompare(b.recipe.name)));
+      setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, kind: "recipe", recipe: saved.recipe, recipeId: saved.id } : a)));
+      setEditingId(null);
+      setAnnouncement(`“${saved.recipe.name}” saved to your recipes.`);
       return null;
     } catch {
       return "Could not reach the server. Check your connection and try again.";
@@ -821,6 +880,10 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
         prefill={editing && !editing.recipe ? (foundRecipes[editing.id] ?? null) : null}
         onClose={() => setEditingId(null)}
         onSave={(recipe) => (editing ? saveRecipe(editing.id, recipe) : Promise.resolve(null))}
+        savedRecipes={savedRecipes}
+        linkedRecipeId={editing?.recipeId ?? null}
+        onLink={(recipeId) => (editing ? linkRecipe(editing.id, recipeId) : Promise.resolve(null))}
+        onSaveToLibrary={(recipe) => (editing ? saveRecipeToLibrary(editing.id, recipe) : Promise.resolve(null))}
       />
     </div>
   );

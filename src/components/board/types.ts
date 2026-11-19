@@ -11,6 +11,8 @@ export interface BoardAsset {
   kind: "photo" | "recipe";
   exif: ExifData | null;
   recipe: RecipeData | null;
+  /** The saved recipe this photo is linked to (DIG-24); `recipe` holds a copy of it. */
+  recipeId: string | null;
   /** Bytes in storage (DIG-32). */
   sizeBytes: number;
   /** DIG-26: `processing` until the AVIF copies exist. */
@@ -32,6 +34,7 @@ interface RawAsset {
   kind: string;
   exif?: unknown;
   recipe?: unknown;
+  recipeId?: string | null;
   sizeBytes?: number;
   status?: string;
   processingError?: string | null;
@@ -50,6 +53,7 @@ export function toBoardAsset(raw: RawAsset): BoardAsset {
     kind: raw.kind === "recipe" ? "recipe" : "photo",
     exif: parseExif(raw.exif),
     recipe: parseRecipe(raw.recipe),
+    recipeId: raw.recipeId ?? null,
     sizeBytes: raw.sizeBytes ?? 0,
     status: raw.status === "processing" || raw.status === "failed" ? raw.status : "ready",
     processingError: raw.processingError ?? null,
