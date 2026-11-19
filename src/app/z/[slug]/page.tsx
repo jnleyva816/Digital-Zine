@@ -30,7 +30,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description,
       url,
       images,
-      publishedTime: zine.publishedAt?.toISOString(),
+      publishedTime: zine.publishedAt ?? undefined,
       authors: zine.ownerName ? [zine.ownerName] : undefined,
     },
     twitter: {
@@ -73,7 +73,7 @@ export default async function PublicZinePage({ params }: Props) {
               </>
             ) : null}
             {zine.publishedAt ? (
-              <time dateTime={zine.publishedAt.toISOString()}>{dateFormat.format(zine.publishedAt)}</time>
+              <time dateTime={zine.publishedAt}>{dateFormat.format(new Date(zine.publishedAt))}</time>
             ) : null}
             <span aria-hidden="true">·</span>
             <span>

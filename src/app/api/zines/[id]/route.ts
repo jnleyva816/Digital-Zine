@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { revalidatePublicZines } from "@/lib/public-zine-cache";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
 import { limitRequest } from "@/lib/rate-limit";
 
@@ -203,6 +204,8 @@ export async function PATCH(
     });
   });
 
+  // Readers see the change on their next view, including a 404 right after unpublishing (DIG-27).
+  await revalidatePublicZines([existing.slug, updated.slug]);
   return NextResponse.json({ zine: updated });
 }
 
@@ -226,5 +229,6 @@ export async function DELETE(
   }
 
   await prisma.zine.delete({ where: { id: existing.id } });
+  await revalidatePublicZines([existing.slug]);
   return NextResponse.json({ ok: true });
 }

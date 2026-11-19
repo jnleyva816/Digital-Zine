@@ -1,6 +1,14 @@
 import "@testing-library/jest-dom/vitest";
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, vi } from "vitest";
+
+// Route handlers and libraries run outside Next here, so there is no data cache: cached
+// functions run every time, and revalidations are recorded for tests to check (DIG-27).
+vi.mock("next/cache", () => ({
+  unstable_cache: <T extends (...args: never[]) => unknown>(fn: T) => fn,
+  revalidateTag: vi.fn(),
+  revalidatePath: vi.fn(),
+}));
 
 afterEach(() => {
   cleanup();

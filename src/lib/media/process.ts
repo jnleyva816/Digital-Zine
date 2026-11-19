@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getStorageDriver } from "@/lib/storage";
 import { renderVariants, variantKeys } from "./variants";
+import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
 
 const MISSING = "The uploaded file is missing. Delete this photo and upload it again.";
 const UNREADABLE = "This file could not be read as an image.";
@@ -66,5 +67,8 @@ export async function processAsset(assetId: string): Promise<void> {
     await removeOutputs();
     return;
   }
+  // Zines showing this photo now point at the AVIF; refresh their cached pages before the
+  // original goes away (DIG-27).
+  await revalidateZinesUsingAssets([asset.id]);
   await driver.deleteObject(asset.storageKey);
 }

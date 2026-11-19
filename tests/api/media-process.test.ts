@@ -6,7 +6,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { prisma } from "@/lib/prisma";
 import { processAsset } from "@/lib/media/process";
 import { writeLocalObject } from "@/lib/storage/local";
-import { createAsset, createTestUser, deleteTestUser, resetRateLimits } from "./helpers";
+import { revalidateTag } from "next/cache";
+import { publicZineTag } from "@/lib/public-zine";
+import { createAsset, createTestUser, defaultBoardId, deleteTestUser, resetRateLimits } from "./helpers";
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
 let dir: string;
@@ -119,3 +121,24 @@ describe("processAsset (DIG-26)", () => {
     expect(await exists(`${base}/w480.avif`)).toBe(false);
   });
 });
+
+describe("public pages after processing (DIG-27)", () => {
+  it("refreshes the cached page of a zine that shows the photo, since its image address changes", async () => {
+    const asset = await uploaded(await photo(800, 600), "cached.jpg");
+    const zine = await prisma.zine.create({
+      data: {
+        ownerId: me.id,
+        boardId: await defaultBoardId(me.id),
+        title: "Fresh",
+        slug: `fresh-${asset.id}`,
+        published: true,
+        publishedAt: new Date(),
+        pages: { create: [{ pageNumber: 1, content: { assetId: asset.id, caption: "" } }] },
+      },
+    });
+    vi.mocked(revalidateTag).mockClear();
+    await processAsset(asset.id);
+    expect(vi.mocked(revalidateTag).mock.calls.map(([t]) => t)).toContain(publicZineTag(zine.slug));
+  });
+});
+

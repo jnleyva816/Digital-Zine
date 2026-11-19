@@ -5,6 +5,7 @@ import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { PHOTO_NAME_MAX } from "@/lib/limits";
 import { toSavedRecipe } from "@/lib/recipes";
+import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
 import { readImageSize } from "@/lib/media/variants";
 import { isDefaultEdit, photoEditSchema } from "@/lib/photo-edit";
 import { getStorageDriver } from "@/lib/storage";
@@ -117,6 +118,8 @@ export async function PATCH(
     where: { id: existing.id },
     data,
   });
+  // The name, crop, frame, and recipe all show on public pages (DIG-27).
+  await revalidateZinesUsingAssets([existing.id]);
 
   return NextResponse.json({ asset });
 }
