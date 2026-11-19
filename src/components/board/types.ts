@@ -5,6 +5,8 @@ export interface BoardAsset {
   id: string;
   publicUrl: string;
   originalName: string | null;
+  /** The creator's name for the photo, or null to use the file name (DIG-34). */
+  name: string | null;
   kind: "photo" | "recipe";
   exif: ExifData | null;
   recipe: RecipeData | null;
@@ -20,6 +22,7 @@ interface RawAsset {
   id: string;
   publicUrl: string;
   originalName?: string | null;
+  name?: string | null;
   kind: string;
   exif?: unknown;
   recipe?: unknown;
@@ -34,6 +37,7 @@ export function toBoardAsset(raw: RawAsset): BoardAsset {
     id: raw.id,
     publicUrl: raw.publicUrl,
     originalName: raw.originalName ?? null,
+    name: raw.name ?? null,
     kind: raw.kind === "recipe" ? "recipe" : "photo",
     exif: parseExif(raw.exif),
     recipe: parseRecipe(raw.recipe),

@@ -30,6 +30,13 @@ describe("assetLabel", () => {
     expect(assetLabel({ ...base, originalName: " cellar.jpg " }, 0)).toBe("cellar.jpg");
     expect(assetLabel(base, 2)).toBe("Photo 3");
   });
+
+  it("prefers the name given in the app over the file name (DIG-34)", () => {
+    const base = toBoardAsset({ id: "1", publicUrl: "/x", kind: "photo", originalName: "DSCF1368.JPG" });
+    expect(assetLabel({ ...base, name: " Harbor at dusk " }, 0)).toBe("Harbor at dusk");
+    expect(assetLabel({ ...base, name: "   " }, 0)).toBe("DSCF1368.JPG");
+    expect(toBoardAsset({ id: "1", publicUrl: "/x", kind: "photo", name: "Fog" }).name).toBe("Fog");
+  });
 });
 
 describe("toBoardAsset", () => {

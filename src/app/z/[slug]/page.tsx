@@ -102,6 +102,7 @@ export default async function PublicZinePage({ params }: Props) {
                   pageNumber={page.pageNumber}
                   totalPages={total}
                   imageUrl={page.imageUrl}
+                  name={page.name}
                   blurDataUrl={page.blurDataUrl}
                   caption={page.caption || undefined}
                   flipEnabled={page.flipEnabled}

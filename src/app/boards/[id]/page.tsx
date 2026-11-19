@@ -30,6 +30,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
         id: true,
         publicUrl: true,
         originalName: true,
+        name: true,
         kind: true,
         exif: true,
         recipe: true,

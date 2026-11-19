@@ -10,6 +10,8 @@ export interface FlipCardProps {
   pageNumber: number;
   totalPages: number;
   imageUrl: string;
+  /** The creator's name for the photo (DIG-34): its description and the title on the back. */
+  name?: string | null;
   /** Tiny inline image shown while the photo loads (DIG-26). */
   blurDataUrl?: string | null;
   caption?: string;
@@ -25,6 +27,7 @@ export function FlipCard({
   pageNumber,
   totalPages,
   imageUrl,
+  name,
   blurDataUrl,
   caption,
   flipEnabled,
@@ -79,7 +82,7 @@ export function FlipCard({
           <div className="flip-face overflow-hidden rounded-2xl bg-ink-900" aria-hidden={isFlipped || undefined}>
             <Image
               src={imageUrl}
-              alt={caption || `Page ${pageNumber} of ${totalPages}`}
+              alt={name || caption || `Page ${pageNumber} of ${totalPages}`}
               fill
               priority={priority}
               sizes="(max-width: 768px) 100vw, 680px"
@@ -136,6 +139,7 @@ export function FlipCard({
                     Flip to Photo
                   </span>
                 </div>
+                {name ? <h2 className="mt-4 font-serif text-xl font-bold text-ink-900">{name}</h2> : null}
 
                 {showRecipePrimary && recipe ? (
                   <div className="mt-5 space-y-4">
