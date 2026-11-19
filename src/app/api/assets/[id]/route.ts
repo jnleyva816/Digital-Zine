@@ -4,6 +4,7 @@ import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { PHOTO_NAME_MAX } from "@/lib/limits";
+import { toSavedRecipe } from "@/lib/recipes";
 import { readImageSize } from "@/lib/media/variants";
 import { isDefaultEdit, photoEditSchema } from "@/lib/photo-edit";
 import { getStorageDriver } from "@/lib/storage";
@@ -21,6 +22,8 @@ const updateAssetSchema = z.object({
     .optional(),
   /** Crop, frame, and card size (DIG-33). Null, or the defaults, clears the edit. */
   edit: photoEditSchema.nullable().optional(),
+  /** Links the photo to a saved recipe (DIG-24), copying its settings; null unlinks and keeps the copy. */
+  recipeId: z.string().min(1).nullable().optional(),
   /** Moves the photo to the end of another of the owner's boards (DIG-25). */
   boardId: z.string().min(1).optional(),
 });
@@ -59,6 +62,23 @@ export async function PATCH(
     data.recipe = parsed.data.recipe
       ? (parsed.data.recipe as Prisma.InputJsonValue)
       : Prisma.DbNull;
+    // Changing the photo's own recipe makes it a one-off, no longer tied to a saved recipe.
+    data.savedRecipe = { disconnect: true };
+  }
+  if (parsed.data.recipeId === null) {
+    data.savedRecipe = { disconnect: true };
+  } else if (parsed.data.recipeId !== undefined) {
+    const saved = await prisma.recipe.findFirst({
+      where: { id: parsed.data.recipeId, ownerId: user.id },
+      select: { id: true, name: true, settings: true },
+    });
+    const recipe = saved ? toSavedRecipe(saved)?.recipe : null;
+    if (!saved || !recipe) {
+      return NextResponse.json({ error: "Recipe not found" }, { status: 404 });
+    }
+    data.savedRecipe = { connect: { id: saved.id } };
+    data.recipe = recipe as Prisma.InputJsonValue;
+    data.kind = "recipe";
   }
 
   if (parsed.data.edit !== undefined) {

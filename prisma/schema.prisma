@@ -46,6 +46,23 @@ model User {
   assets               MediaAsset[]
   zines                Zine[]
   boards               Board[]
+  recipes              Recipe[]
+}
+
+/// DIG-24: a creator's saved Fujifilm recipe. Linked photos keep their own copy in
+/// `MediaAsset.recipe`, rewritten when this is edited; deleting it leaves the copies.
+model Recipe {
+  id        String       @id @default(cuid())
+  ownerId   String
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  /// The recipe's settings without its name; see `src/lib/fuji-recipe.ts`.
+  settings  Json         @db.JsonB
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  assets    MediaAsset[]
+
+  @@unique([ownerId, name])
 }
 
 /// DIG-25: a creator keeps several Vision Boards. Every photo is on one board and every zine is
@@ -95,6 +112,9 @@ model MediaAsset {
   kind            AssetKind   @default(photo)
   exif            Json?       @db.JsonB
   recipe          Json?       @db.JsonB
+  /// The saved recipe this photo uses (DIG-24). `recipe` holds a copy of its settings.
+  recipeId        String?
+  savedRecipe     Recipe?     @relation(fields: [recipeId], references: [id], onDelete: SetNull)
   sortOrder       Int         @default(0)
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt

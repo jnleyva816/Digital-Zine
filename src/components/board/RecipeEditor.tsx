@@ -2,6 +2,7 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
+import { matchSavedRecipe, type SavedRecipe } from "@/lib/recipe-library";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
 import {
   COLOR_CHROME_LEVELS,
@@ -32,6 +33,16 @@ interface RecipeEditorProps {
   onClose: () => void;
   /** Persist the recipe. `null` removes it. Resolve with an error message to keep the dialog open. */
   onSave: (recipe: FujiRecipe | null) => Promise<string | null>;
+  /** The creator's saved recipes (DIG-24). Without them, no library controls show. */
+  savedRecipes?: SavedRecipe[];
+  /** The saved recipe this photo is linked to, if any. */
+  linkedRecipeId?: string | null;
+  /** Link the photo to a saved recipe, or unlink it with null. Resolve with an error message. */
+  onLink?: (recipeId: string | null) => Promise<string | null>;
+  /** Save the recipe in the form to the library and link the photo. Resolve with an error message. */
+  onSaveToLibrary?: (recipe: FujiRecipe) => Promise<string | null>;
+  /** Show "Remove recipe" for an existing recipe. Off when editing the library itself. */
+  allowRemove?: boolean;
 }
 
 /** Form state: every select holds a string, and "" means "Not set". */
@@ -167,13 +178,47 @@ function Select({
   );
 }
 
-export function RecipeEditor({ assetLabel, initial, prefill = null, open, onClose, onSave }: RecipeEditorProps) {
+export function RecipeEditor({
+  assetLabel,
+  initial,
+  prefill = null,
+  open,
+  onClose,
+  onSave,
+  savedRecipes = [],
+  linkedRecipeId = null,
+  onLink,
+  onSaveToLibrary,
+  allowRemove = true,
+}: RecipeEditorProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const id = useId();
   const [form, setForm] = useState<FormState>(() => toForm(initial ?? (prefill ? { ...prefill, name: "" } : null)));
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const reviewingFound = prefill !== null && initial === null;
+  const linked = linkedRecipeId ? savedRecipes.find((r) => r.id === linkedRecipeId) ?? null : null;
+  const match = reviewingFound && !linked ? matchSavedRecipe(prefill, savedRecipes) : null;
+  const [pick, setPick] = useState(savedRecipes[0]?.id ?? "");
+  const pickId = savedRecipes.some((r) => r.id === pick) ? pick : (savedRecipes[0]?.id ?? "");
+
+  /** Runs a library action, keeping the dialog open with the error if it fails. */
+  async function act(action: () => Promise<string | null>) {
+    setSaving(true);
+    setError(null);
+    const message = await action();
+    setSaving(false);
+    if (message) setError(message);
+  }
+
+  function saveToLibrary() {
+    const result = fromForm(form);
+    if ("error" in result) {
+      setError(result.error);
+      return;
+    }
+    if (onSaveToLibrary) void act(() => onSaveToLibrary(result.recipe));
+  }
 
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -252,6 +297,62 @@ export function RecipeEditor({ assetLabel, initial, prefill = null, open, onClos
             <p className="rounded-xl border border-paper-300 bg-paper-100 px-3.5 py-2.5 text-xs text-ink-700">
               Found in this photo. Give it a name and save it. Nothing is kept until you do.
             </p>
+          ) : null}
+
+          {linked && onLink ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-paper-300 bg-paper-100 px-3.5 py-2.5 text-xs text-ink-700">
+              <span>
+                Linked to your saved recipe “{linked.recipe.name}”. Changes on the Recipes page apply to every photo using it;
+                saving changes here makes this photo&apos;s recipe its own.
+              </span>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void act(() => onLink(null))}
+                className="font-semibold text-ink-900 underline underline-offset-2 disabled:opacity-50"
+              >
+                Unlink
+              </button>
+            </div>
+          ) : null}
+
+          {match && onLink ? (
+            <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-vermilion-500/40 bg-vermilion-500/5 px-3.5 py-2.5 text-xs text-ink-800">
+              <span>These settings match your saved recipe “{match.recipe.name}”.</span>
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void act(() => onLink(match.id))}
+                className="rounded-lg bg-ink-900 px-3 py-1.5 font-semibold text-paper-50 disabled:opacity-50"
+              >
+                Use {match.recipe.name}
+              </button>
+            </div>
+          ) : null}
+
+          {savedRecipes.length > 0 && !linked && onLink ? (
+            <div className="flex flex-wrap items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <label htmlFor={`${id}-saved`} className={labelClass}>
+                  Use a saved recipe
+                </label>
+                <select id={`${id}-saved`} value={pickId} onChange={(e) => setPick(e.target.value)} className={inputClass}>
+                  {savedRecipes.map((r) => (
+                    <option key={r.id} value={r.id}>
+                      {r.recipe.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                disabled={saving || !pickId}
+                onClick={() => void act(() => onLink(pickId))}
+                className="rounded-xl border border-paper-300 bg-white px-4 py-2 text-sm font-medium text-ink-800 transition hover:bg-paper-100 disabled:opacity-50"
+              >
+                Use saved recipe
+              </button>
+            </div>
           ) : null}
 
           <div className="grid gap-4 sm:grid-cols-2">
@@ -350,18 +451,28 @@ export function RecipeEditor({ assetLabel, initial, prefill = null, open, onClos
         </div>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-paper-300 px-5 py-4 sm:px-6">
-          {initial ? (
-            <button
-              type="button"
-              disabled={saving}
-              onClick={() => void submit(null)}
-              className="text-sm font-medium text-red-700 underline-offset-2 hover:underline disabled:opacity-50"
-            >
-              Remove recipe
-            </button>
-          ) : (
-            <span />
-          )}
+          <div className="flex flex-wrap items-center gap-4">
+            {initial && allowRemove ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={() => void submit(null)}
+                className="text-sm font-medium text-red-700 underline-offset-2 hover:underline disabled:opacity-50"
+              >
+                Remove recipe
+              </button>
+            ) : null}
+            {initial && !linked && onSaveToLibrary ? (
+              <button
+                type="button"
+                disabled={saving}
+                onClick={saveToLibrary}
+                className="text-sm font-medium text-ink-800 underline underline-offset-2 disabled:opacity-50"
+              >
+                Save to library
+              </button>
+            ) : null}
+          </div>
           <div className="flex gap-2">
             <button
               type="button"

@@ -7,6 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { StudioHeader } from "@/components/StudioHeader";
 import { VisionBoard } from "@/components/board/VisionBoard";
 import { toBoardAsset } from "@/components/board/types";
+import { listSavedRecipes } from "@/lib/recipes";
 
 export const metadata: Metadata = {
   title: "Vision Board",
@@ -22,7 +23,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const board = await prisma.board.findFirst({ where: { id, ownerId: user.id }, select: { id: true, name: true } });
   if (!board) notFound();
 
-  const [assets, otherBoards, elsewhere, pages, latestZine] = await Promise.all([
+  const [assets, otherBoards, elsewhere, pages, latestZine, savedRecipes] = await Promise.all([
     prisma.mediaAsset.findMany({
       where: { boardId: board.id },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
@@ -34,6 +35,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
         kind: true,
         exif: true,
         recipe: true,
+        recipeId: true,
         sizeBytes: true,
         status: true,
         processingError: true,
@@ -62,6 +64,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
       orderBy: { updatedAt: "desc" },
       select: { id: true, slug: true, published: true },
     }),
+    listSavedRecipes(prisma, user.id),
   ]);
 
   // Which zines use each photo, so moving one can say so first.
@@ -99,6 +102,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
           otherBoards={otherBoards}
           otherBoardsBytes={elsewhere._sum.sizeBytes ?? 0}
           usedIn={usedIn}
+          savedRecipes={savedRecipes}
         />
       </main>
     </>

@@ -177,3 +177,58 @@ describe("RecipeEditor", () => {
     expect(onSave).toHaveBeenCalledWith({ name: "Sunday Chrome", ...prefill });
   });
 });
+
+describe("RecipeEditor and the saved-recipe library (DIG-24)", () => {
+  const kodachrome: FujiRecipe = { name: "Kodachrome 64", filmSimulation: "Classic Chrome", shadow: -1 };
+  const agfa: FujiRecipe = { name: "Agfa Vista", filmSimulation: "Classic Neg." };
+  const library = [
+    { id: "k", recipe: kodachrome, photoCount: 2 },
+    { id: "a", recipe: agfa, photoCount: 0 },
+  ];
+
+  it("links the photo to a saved recipe picked from the library", async () => {
+    const onLink = vi.fn().mockResolvedValue(null);
+    const { user } = setup({ savedRecipes: library, onLink });
+    await user.selectOptions(screen.getByLabelText("Use a saved recipe"), "Agfa Vista");
+    await user.click(screen.getByRole("button", { name: "Use saved recipe" }));
+    expect(onLink).toHaveBeenCalledWith("a");
+  });
+
+  it("says when the photo uses a saved recipe, and can unlink it", async () => {
+    const onLink = vi.fn().mockResolvedValue(null);
+    const { user } = setup({ initial: kodachrome, linkedRecipeId: "k", savedRecipes: library, onLink });
+    expect(screen.getByText(/Linked to your saved recipe “Kodachrome 64”\./)).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Save to library" })).not.toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Unlink" }));
+    expect(onLink).toHaveBeenCalledWith(null);
+  });
+
+  it("saves a photo's own recipe to the library", async () => {
+    const onSaveToLibrary = vi.fn().mockResolvedValue(null);
+    const { user } = setup({ initial: { name: "My Chrome", filmSimulation: "Classic Chrome" }, savedRecipes: [], onSaveToLibrary });
+    await user.click(screen.getByRole("button", { name: "Save to library" }));
+    expect(onSaveToLibrary).toHaveBeenCalledWith({ name: "My Chrome", filmSimulation: "Classic Chrome" });
+  });
+
+  it("suggests the saved recipe whose settings match those found in the photo", async () => {
+    const onLink = vi.fn().mockResolvedValue(null);
+    const { name: _name, ...found } = kodachrome;
+    const { user } = setup({ prefill: found, savedRecipes: library, onLink });
+    expect(screen.getByText("These settings match your saved recipe “Kodachrome 64”.")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "Use Kodachrome 64" }));
+    expect(onLink).toHaveBeenCalledWith("k");
+  });
+
+  it("shows why a link failed", async () => {
+    const onLink = vi.fn().mockResolvedValue("Recipe not found");
+    const { user } = setup({ savedRecipes: library, onLink });
+    await user.click(screen.getByRole("button", { name: "Use saved recipe" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent("Recipe not found");
+  });
+
+  it("can hide Remove, for editing a recipe in the library itself", () => {
+    setup({ initial: kodachrome, allowRemove: false });
+    expect(screen.queryByRole("button", { name: "Remove recipe" })).not.toBeInTheDocument();
+  });
+});
+

@@ -85,3 +85,8 @@ export function jsonRequest(url: string, method: string, body?: unknown): Reques
 }
 
 export const params = <T extends Record<string, unknown>>(value: T) => ({ params: Promise.resolve(value) });
+
+/** A saved recipe in the owner's library (DIG-24). */
+export async function createSavedRecipe(ownerId: string, name = "Kodachrome 64", settings: Record<string, unknown> = { filmSimulation: "Classic Chrome" }) {
+  return prisma.recipe.create({ data: { ownerId, name, settings: settings as Prisma.InputJsonValue } });
+}

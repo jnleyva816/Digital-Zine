@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { BookOpen, CreditCard, ExternalLink, Layers, LogOut, ShieldCheck, Sparkles } from "lucide-react";
+import { BookOpen, CreditCard, ExternalLink, Layers, LogOut, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
 import { AdminViewBanner, AdminViewToggle } from "./AdminViewToggle";
 
 interface StudioHeaderProps {
@@ -65,6 +65,17 @@ export function StudioHeader({
             >
               <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="sr-only sm:not-sr-only">Zine Editor</span>
+            </Link>
+            <Link
+              href="/recipes"
+              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition ${
+                pathname.startsWith("/recipes")
+                  ? "bg-ink-900 text-paper-50 shadow-sm"
+                  : "text-ink-700 hover:text-ink-900"
+              }`}
+            >
+              <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Recipes</span>
             </Link>
             <Link
               href="/billing"
