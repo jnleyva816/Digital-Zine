@@ -91,7 +91,9 @@ async function loadPublicZine(slug: string): Promise<PublicZine | null> {
   const assetIds = contents.map((c) => c.assetId).filter(Boolean);
   // Only the owner's own assets may appear on their zine.
   const assets = await prisma.mediaAsset.findMany({
-    where: { id: { in: assetIds }, ownerId: zine.ownerId },
+    // Only processed photos: an unprocessed original still carries all its EXIF, GPS included
+    // (DIG-38). A page whose photo is processing or failed is skipped, like a missing one.
+    where: { id: { in: assetIds }, ownerId: zine.ownerId, status: "ready" },
     select: {
       id: true,
       name: true,
