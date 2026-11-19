@@ -4,6 +4,8 @@ import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { BOARD_ORDER, BOARD_PAGE_MAX } from "@/lib/board-pages";
+import { boardPhotoPage } from "@/lib/board-photos";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { enqueueProcessing } from "@/lib/media/queue";
@@ -46,13 +48,33 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const query = new URL(req.url).searchParams;
+  // `?ids=` returns just those photos, for checking on ones still processing (DIG-29).
+  const ids = query.get("ids");
+  if (ids !== null) {
+    const wanted = ids.split(",").filter(Boolean).slice(0, BOARD_PAGE_MAX);
+    const assets = await prisma.mediaAsset.findMany({ where: { ownerId: user.id, id: { in: wanted } } });
+    return NextResponse.json({ assets });
+  }
+
   // `?boardId=` narrows the list to one board (DIG-25); ownership still comes from the session.
-  const boardId = new URL(req.url).searchParams.get("boardId");
+  const boardId = query.get("boardId");
+  const limitParam = query.get("limit");
+  if (limitParam !== null) {
+    // One page at a time (DIG-29).
+    const limit = Number(limitParam);
+    if (!boardId || !Number.isInteger(limit) || limit < 1 || limit > BOARD_PAGE_MAX) {
+      return NextResponse.json({ error: `Ask for 1 to ${BOARD_PAGE_MAX} photos of one board.` }, { status: 400 });
+    }
+    const page = await boardPhotoPage(user.id, boardId, limit, query.get("cursor"));
+    if (!page) return NextResponse.json({ error: "That page of photos was not found." }, { status: 400 });
+    return NextResponse.json(page);
+  }
+
   const assets = await prisma.mediaAsset.findMany({
     where: { ownerId: user.id, ...(boardId ? { boardId } : {}) },
-    orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+    orderBy: [...BOARD_ORDER],
   });
-
   return NextResponse.json({ assets });
 }
 

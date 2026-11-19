@@ -25,6 +25,8 @@ import { MovePhotoPanel } from "./MovePhotoPanel";
 import { PhotoNameForm } from "./PhotoNameForm";
 import { PhotoEditor } from "./PhotoEditor";
 import { EditedPhoto } from "@/components/EditedPhoto";
+import { Windowed } from "@/components/Windowed";
+import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
 import type { PhotoEdit } from "@/lib/photo-edit";
 import type { SavedRecipe } from "@/lib/recipe-library";
 import { RecipeEditor } from "./RecipeEditor";
@@ -108,8 +110,12 @@ export interface VisionBoardProps {
   initialAssets: BoardAsset[];
   /** The creator's other boards, for moving photos. */
   otherBoards: { id: string; name: string }[];
-  /** Bytes stored on the other boards; storage is one quota for the account. */
+  /** Bytes stored in the account outside `initialAssets`; storage is one quota for the account. */
   otherBoardsBytes: number;
+  /** Cursor for the next page of this board's photos, or null when all are loaded (DIG-29). */
+  initialCursor?: string | null;
+  /** How many photos the board holds in all. */
+  initialTotal?: number;
   /** Titles of the zines whose pages use each photo, by photo id. */
   usedIn: Record<string, string[]>;
   /** The creator's recipe library (DIG-24). */
@@ -123,9 +129,19 @@ export function VisionBoard({
   otherBoardsBytes,
   usedIn,
   savedRecipes: initialSavedRecipes = [],
+  initialCursor = null,
+  initialTotal,
 }: VisionBoardProps) {
+  const [cursor, setCursor] = useState<string | null>(initialCursor);
+  const [total, setTotal] = useState(initialTotal ?? initialAssets.length);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  const loadingMoreRef = useRef(false);
+  const sentinelRef = useRef<HTMLDivElement>(null);
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(initialSavedRecipes);
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
+  const assetsRef = useRef(assets);
+  assetsRef.current = assets;
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [namingId, setNamingId] = useState<string | null>(null);
@@ -143,7 +159,8 @@ export function VisionBoard({
     let stopped = false;
     const timer = setInterval(async () => {
       try {
-        const res = await fetch(`/api/assets?boardId=${encodeURIComponent(boardId)}`, { cache: "no-store" });
+        // Only the photos still processing, not the whole board (DIG-29).
+        const res = await fetch(`/api/assets?ids=${encodeURIComponent(pendingIds)}`, { cache: "no-store" });
         if (!res.ok || stopped) return;
         const body = (await res.json()) as { assets: Parameters<typeof toBoardAsset>[0][] };
         const fresh = new Map(body.assets.map((raw) => [raw.id, toBoardAsset(raw)]));
@@ -228,6 +245,7 @@ export function VisionBoard({
       try {
         const { asset, foundRecipe } = await uploadOne(file, boardId, (stage) => updateUpload(id, { stage }));
         setAssets((prev) => [...prev, asset]);
+        setTotal((t) => t + 1);
         if (foundRecipe) {
           found += 1;
           setFoundRecipes((prev) => ({ ...prev, [asset.id]: foundRecipe }));
@@ -407,6 +425,8 @@ export function VisionBoard({
       const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await readApiError(res, "Could not delete the photo."));
       setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+    setTotal((t) => Math.max(0, t - 1));
+      setTotal((t) => Math.max(0, t - 1));
       forgetFound(asset.id);
       setAnnouncement(`${assetLabel(asset, index)} deleted.`);
     } catch (err) {
@@ -475,6 +495,46 @@ export function VisionBoard({
     setAnnouncement(`${assetLabel(asset, index)} moved to ${target?.name ?? "another board"}.`);
     return null;
   }
+
+  /** Loads the next page of the board's photos (DIG-29). */
+  const loadMore = useCallback(async () => {
+    if (!cursor || loadingMoreRef.current) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    try {
+      const res = await fetch(
+        `/api/assets?boardId=${encodeURIComponent(boardId)}&limit=${BOARD_PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) throw new Error(await readApiError(res, "Could not load more photos."));
+      const page = (await res.json()) as { assets: Parameters<typeof toBoardAsset>[0][]; nextCursor: string | null; total: number };
+      // A photo uploaded while the rest of the board wasn't loaded is already on screen.
+      const have = new Set(assetsRef.current.map((a) => a.id));
+      const added = page.assets.map(toBoardAsset).filter((a) => !have.has(a.id));
+      setAssets((prev) => [...prev, ...added.filter((a) => !prev.some((p) => p.id === a.id))]);
+      // These photos' bytes were counted as "elsewhere" until now.
+      setElsewhereBytes((bytes) => Math.max(0, bytes - added.reduce((sum, a) => sum + a.sizeBytes, 0)));
+      setCursor(page.nextCursor);
+      setTotal(page.total);
+    } catch (err) {
+      setLoadMoreError(err instanceof Error ? err.message : "Could not load more photos.");
+    } finally {
+      loadingMoreRef.current = false;
+      setLoadingMore(false);
+    }
+  }, [boardId, cursor]);
+
+  // Load the next page as the end of the list comes near.
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !cursor || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting) void loadMore();
+    }, { rootMargin: "800px 0px" });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [cursor, loadMore]);
 
   const photoEditingIndex = assets.findIndex((a) => a.id === photoEditId);
   const photoEditing = photoEditingIndex >= 0 ? assets[photoEditingIndex] : null;
@@ -594,7 +654,10 @@ export function VisionBoard({
       ) : (
         <>
           <p className="text-xs text-ink-500" id={`${inputId}-order-hint`}>
-            {assets.length} photo{assets.length === 1 ? "" : "s"}. Drag a card, or use its arrow buttons, to change the order.
+            {assets.length < total
+              ? `Showing ${assets.length} of ${total.toLocaleString("en-US")} photos.`
+              : `${assets.length} photo${assets.length === 1 ? "" : "s"}.`}{" "}
+            Drag a card, or use its arrow buttons, to change the order.
           </p>
           <ol
             aria-label="Vision Board photos"
@@ -650,6 +713,7 @@ export function VisionBoard({
                     showDropAfter ? "ring-2 ring-vermilion-500 ring-offset-2 ring-offset-paper-50" : ""
                   } border-paper-300`}
                 >
+                  <Windowed label={label}>
                   <div className="relative bg-ink-900">
                     {asset.status === "ready" ? (
                       <EditedPhoto
@@ -852,10 +916,30 @@ export function VisionBoard({
                       />
                     ) : null}
                   </div>
+                  </Windowed>
                 </li>
               );
             })}
           </ol>
+          {cursor ? (
+            <div ref={sentinelRef} className="flex flex-col items-center gap-2 py-4">
+              {loadMoreError ? (
+                <p role="alert" className="text-sm text-red-800">
+                  {loadMoreError}
+                </p>
+              ) : null}
+              <button
+                type="button"
+                onClick={() => void loadMore()}
+                disabled={loadingMore}
+                aria-busy={loadingMore}
+                className="inline-flex items-center gap-2 rounded-xl border border-paper-300 bg-white px-5 py-2.5 text-sm font-medium text-ink-800 shadow-sm transition hover:bg-paper-100 disabled:opacity-60"
+              >
+                {loadingMore ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
+                {loadingMore ? "Loading…" : "Load more photos"}
+              </button>
+            </div>
+          ) : null}
         </>
       )}
 

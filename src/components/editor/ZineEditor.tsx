@@ -4,7 +4,8 @@ import { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-react";
-import { readApiError, type BoardAsset } from "@/components/board/types";
+import { readApiError, toBoardAsset, type BoardAsset } from "@/components/board/types";
+import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
 import { ZineBoardPicker } from "./ZineBoardPicker";
 import { EditedPhoto } from "@/components/EditedPhoto";
 
@@ -45,7 +46,9 @@ export function ZineEditor({
   zine,
   board,
   boards,
-  boardAssets,
+  boardAssets: initialBoardAssets,
+  boardCursor = null,
+  boardTotal,
   pageAssets = [],
   tier,
 }: {
@@ -55,6 +58,10 @@ export function ZineEditor({
   boards: { id: string; name: string }[];
   /** Photos on the zine's board: the ones that can be added as pages. */
   boardAssets: BoardAsset[];
+  /** Cursor for the next page of the board's photos, or null when all are loaded (DIG-29). */
+  boardCursor?: string | null;
+  /** How many photos the board holds in all. */
+  boardTotal?: number;
   /** Photos already on pages that have since moved to another board. */
   pageAssets?: BoardAsset[];
   tier: "free" | "pro";
@@ -74,6 +81,36 @@ export function ZineEditor({
   const dirty = isDirty(saved, draft);
   const dirtyRef = useRef(dirty);
   dirtyRef.current = dirty;
+
+  // The picker loads the board a page at a time (DIG-29).
+  const [boardAssets, setBoardAssets] = useState(initialBoardAssets);
+  const [cursor, setCursor] = useState(boardCursor);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
+  useEffect(() => {
+    setBoardAssets(initialBoardAssets);
+    setCursor(boardCursor);
+  }, [initialBoardAssets, boardCursor]);
+
+  async function loadMore() {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
+    setLoadMoreError(null);
+    try {
+      const res = await fetch(
+        `/api/assets?boardId=${encodeURIComponent(board.id)}&limit=${BOARD_PAGE_SIZE}&cursor=${encodeURIComponent(cursor)}`,
+        { cache: "no-store" }
+      );
+      if (!res.ok) throw new Error(await readApiError(res, "Could not load more photos."));
+      const page = (await res.json()) as { assets: Parameters<typeof toBoardAsset>[0][]; nextCursor: string | null };
+      setBoardAssets((prev) => [...prev, ...page.assets.map(toBoardAsset).filter((a) => !prev.some((p) => p.id === a.id))]);
+      setCursor(page.nextCursor);
+    } catch (err) {
+      setLoadMoreError(err instanceof Error ? err.message : "Could not load more photos.");
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   const assetsById = useMemo(
     () => new Map([...boardAssets, ...pageAssets].map((a, i) => [a.id, { asset: a, index: i }])),
@@ -460,6 +497,27 @@ export function ZineEditor({
             })}
           </ul>
         )}
+        {cursor ? (
+          <div className="flex flex-col items-center gap-2 pt-2">
+            <p className="text-xs text-ink-500">
+              Showing {boardAssets.length} of {(boardTotal ?? boardAssets.length).toLocaleString("en-US")} photos on this board.
+            </p>
+            {loadMoreError ? (
+              <p role="alert" className="text-sm text-red-800">
+                {loadMoreError}
+              </p>
+            ) : null}
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              disabled={loadingMore}
+              aria-busy={loadingMore}
+              className="rounded-xl border border-paper-300 bg-white px-5 py-2 text-sm font-medium text-ink-800 shadow-sm transition hover:bg-paper-100 disabled:opacity-60"
+            >
+              {loadingMore ? "Loading…" : "Load more photos"}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       {/* Danger zone */}
