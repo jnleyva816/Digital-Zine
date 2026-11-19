@@ -10,6 +10,10 @@ export interface BoardAsset {
   recipe: RecipeData | null;
   /** Bytes in storage (DIG-32). */
   sizeBytes: number;
+  /** DIG-26: `processing` until the AVIF copies exist. */
+  status: "processing" | "ready" | "failed";
+  processingError: string | null;
+  blurDataUrl: string | null;
 }
 
 interface RawAsset {
@@ -20,6 +24,9 @@ interface RawAsset {
   exif?: unknown;
   recipe?: unknown;
   sizeBytes?: number;
+  status?: string;
+  processingError?: string | null;
+  blurDataUrl?: string | null;
 }
 
 export function toBoardAsset(raw: RawAsset): BoardAsset {
@@ -31,6 +38,9 @@ export function toBoardAsset(raw: RawAsset): BoardAsset {
     exif: parseExif(raw.exif),
     recipe: parseRecipe(raw.recipe),
     sizeBytes: raw.sizeBytes ?? 0,
+    status: raw.status === "processing" || raw.status === "failed" ? raw.status : "ready",
+    processingError: raw.processingError ?? null,
+    blurDataUrl: raw.blurDataUrl ?? null,
   };
 }
 

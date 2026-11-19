@@ -79,3 +79,34 @@ export async function deleteUser(id: string) {
 export async function makePro(id: string) {
   await testDb.user.update({ where: { id }, data: { tier: "pro", subscriptionStatus: "active" } });
 }
+
+/** A plain landscape JPEG, wide enough that the processed copies include 480, 960, and 1600 px. */
+export async function wideJpeg(width = 2400, height = 1600) {
+  const sharp = (await import("sharp")).default;
+  return sharp({ create: { width, height, channels: 3, background: { r: 40, g: 110, b: 170 } } })
+    .jpeg({ quality: 92 })
+    .toBuffer();
+}
+
+/**
+ * Uploads one photo on the board and waits until the worker has made its AVIF copies (DIG-26).
+ * Returns the saved asset as the database has it once processing is done.
+ */
+export async function uploadAndProcess(page: Page, ownerId: string, name = "wide.jpg") {
+  await page.getByLabel("choose files").setInputFiles({ name, mimeType: "image/jpeg", buffer: await wideJpeg() });
+  await expect(page.getByRole("status").filter({ hasText: `Processing ${name}` })).toBeHidden({ timeout: 20_000 });
+  await expect
+    .poll(async () => (await testDb.mediaAsset.findFirst({ where: { ownerId, originalName: name } }))?.status, {
+      timeout: 20_000,
+    })
+    .toBe("ready");
+  return testDb.mediaAsset.findFirstOrThrow({ where: { ownerId, originalName: name } });
+}
+
+/** Whether a file exists in the test server's storage. */
+export function storedFileExists(storageKey: string) {
+  return fs.access(path.join(storageRoot, storageKey)).then(
+    () => true,
+    () => false
+  );
+}

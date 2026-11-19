@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     pageCount: zine.pages.length,
   });
   const cover = zine.pages[0];
-  const images = cover ? [{ url: cover.imageUrl, alt: cover.caption || zine.title }] : undefined;
+  const images = cover ? [{ url: cover.shareImageUrl, alt: cover.caption || zine.title }] : undefined;
   const url = `/z/${zine.slug}`;
 
   return {
@@ -102,6 +102,7 @@ export default async function PublicZinePage({ params }: Props) {
                   pageNumber={page.pageNumber}
                   totalPages={total}
                   imageUrl={page.imageUrl}
+                  blurDataUrl={page.blurDataUrl}
                   caption={page.caption || undefined}
                   flipEnabled={page.flipEnabled}
                   kind={page.kind}

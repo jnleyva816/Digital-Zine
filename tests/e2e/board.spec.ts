@@ -3,7 +3,16 @@ import sharp from "sharp";
 import { expect, test } from "@playwright/test";
 import { loadTestEnv } from "../../scripts/test-db";
 import { CLASSIC_CHROME_TAGS, buildFujiMakerNote, withMakerNote } from "../fixtures/fuji-jpeg";
-import { boardCards, createUser, deleteUser, signIn, testDb, waitForReorder } from "./helpers";
+import {
+  boardCards,
+  createUser,
+  deleteUser,
+  signIn,
+  storedFileExists,
+  testDb,
+  uploadAndProcess,
+  waitForReorder,
+} from "./helpers";
 
 // The seed writes real-EXIF JPEGs into the test storage directory.
 const FIXTURE = path.resolve(loadTestEnv().LOCAL_STORAGE_DIR, "seed/plate-02-morning-fog.jpg");
@@ -237,6 +246,58 @@ test.describe("storage limits (DIG-32)", () => {
       const { asset } = (await (await created).json()) as { asset: { sizeBytes: number } };
       expect(asset.sizeBytes).toBeGreaterThan(0);
       await expect(meter).toHaveAttribute("aria-valuenow", String(asset.sizeBytes));
+    } finally {
+      await deleteUser(user.id);
+    }
+  });
+});
+
+test.describe("image processing (DIG-26)", () => {
+  test("an upload becomes AVIF copies, the original is deleted, and the board loads a small copy", async ({ page }) => {
+    const user = await createUser();
+    try {
+      await signIn(page, user.email, user.password);
+      const small = page.waitForResponse((r) => /\/w480\.avif/.test(r.url()), { timeout: 20_000 });
+      const asset = await uploadAndProcess(page, user.id);
+
+      expect(asset.storageKey).toMatch(/\/full\.avif$/);
+      expect([asset.width, asset.height]).toEqual([2400, 1600]);
+      const original = asset.storageKey.replace(/\/full\.avif$/, ".jpg");
+      expect(await storedFileExists(original)).toBe(false);
+
+      // A board card is about 300 px wide at this viewport, so the 480 px copy is enough.
+      const res = await small;
+      expect(res.headers()["content-type"]).toBe("image/avif");
+      expect((await res.body()).length).toBeLessThan(100_000);
+      const img = boardCards(page).first().getByRole("img", { name: "wide.jpg" });
+      await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.currentSrc)).toMatch(/\/w480\.avif/);
+
+      // The meter now counts the copies, not the deleted original.
+      await expect(page.getByRole("meter", { name: "Board storage" })).toHaveAttribute(
+        "aria-valuenow",
+        String(asset.sizeBytes)
+      );
+    } finally {
+      await deleteUser(user.id);
+    }
+  });
+
+  test("a file that cannot be processed says why and offers a retry", async ({ page }) => {
+    const user = await createUser();
+    try {
+      await signIn(page, user.email, user.password);
+      await page.getByLabel("choose files").setInputFiles({
+        name: "broken.jpg",
+        mimeType: "image/jpeg",
+        buffer: Buffer.from("this is not really a jpeg"),
+      });
+      const card = boardCards(page).first();
+      await expect(card.getByText("This file could not be read as an image.")).toBeVisible({ timeout: 20_000 });
+
+      const retried = page.waitForResponse((r) => r.url().endsWith("/process") && r.request().method() === "POST");
+      await card.getByRole("button", { name: "Retry processing broken.jpg" }).click();
+      expect((await retried).status()).toBe(202);
+      await expect(card.getByText("This file could not be read as an image.")).toBeVisible({ timeout: 20_000 });
     } finally {
       await deleteUser(user.id);
     }

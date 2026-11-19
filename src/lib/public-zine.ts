@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { shareImageUrl } from "@/lib/media/variant-urls";
 import { prisma } from "@/lib/prisma";
 import { parseExif, parsePageContent, parseRecipe, type ExifData, type RecipeData } from "@/lib/types";
 
@@ -26,6 +27,9 @@ export function shareDescription({
 export interface PublicZinePage {
   pageNumber: number;
   imageUrl: string;
+  /** JPEG for link previews (DIG-26). */
+  shareImageUrl: string;
+  blurDataUrl: string | null;
   caption: string;
   flipEnabled: boolean;
   kind: "photo" | "recipe";
@@ -66,7 +70,7 @@ export const getPublicZine = cache(async (slug: string): Promise<PublicZine | nu
   // Only the owner's own assets may appear on their zine.
   const assets = await prisma.mediaAsset.findMany({
     where: { id: { in: assetIds }, ownerId: zine.ownerId },
-    select: { id: true, publicUrl: true, kind: true, exif: true, recipe: true },
+    select: { id: true, publicUrl: true, blurDataUrl: true, kind: true, exif: true, recipe: true },
   });
   const byId = new Map(assets.map((a) => [a.id, a]));
 
@@ -79,6 +83,8 @@ export const getPublicZine = cache(async (slug: string): Promise<PublicZine | nu
     pages.push({
       pageNumber: pages.length + 1,
       imageUrl: asset.publicUrl,
+      shareImageUrl: shareImageUrl(asset.publicUrl),
+      blurDataUrl: asset.blurDataUrl,
       caption: contents[i].caption?.trim() ?? "",
       flipEnabled: p.flipEnabled,
       kind: asset.kind === "recipe" ? "recipe" : "photo",

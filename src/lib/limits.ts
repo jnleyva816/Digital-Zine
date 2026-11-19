@@ -15,6 +15,12 @@ export const MAX_UPLOAD_BYTES = 75 * MB;
  */
 export const BOARD_STORAGE_BYTES = 2 * GB;
 
+/** AVIF quality for every stored copy (owner, 18 Nov: q50 looked right on a 40MP X-T5 JPEG). */
+export const AVIF_QUALITY = 50;
+
+/** Widths, in px, of the smaller copies that pages load instead of the full-resolution one. */
+export const VARIANT_WIDTHS: readonly number[] = [480, 960, 1600];
+
 const ZINE_LIMITS: Record<"free" | "pro", number | null> = { free: 1, pro: null };
 
 /** How many zines a tier may own. `null` means no limit. */

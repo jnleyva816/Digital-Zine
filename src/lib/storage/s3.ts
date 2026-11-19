@@ -1,4 +1,4 @@
-import { DeleteObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { PreparedUpload, StorageDriver } from "./types";
 
@@ -53,6 +53,29 @@ export class S3StorageDriver implements StorageDriver {
       if (status === 404) return null;
       throw err;
     }
+  }
+
+  async getObject(storageKey: string): Promise<Buffer | null> {
+    try {
+      const res = await this.client.send(new GetObjectCommand({ Bucket: this.config.bucket, Key: storageKey }));
+      return res.Body ? Buffer.from(await res.Body.transformToByteArray()) : null;
+    } catch (err) {
+      if ((err as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return null;
+      throw err;
+    }
+  }
+
+  async putObject(storageKey: string, bytes: Buffer, contentType: string): Promise<void> {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.config.bucket,
+        Key: storageKey,
+        Body: bytes,
+        ContentType: contentType,
+        // Variant keys never change content, so browsers and CDNs may keep them forever.
+        CacheControl: "public, max-age=31536000, immutable",
+      })
+    );
   }
 
   async deleteObject(storageKey: string): Promise<void> {

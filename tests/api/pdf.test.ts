@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { writeLocalObject } from "@/lib/storage/local";
 import { GET } from "@/app/api/pdf/[slug]/route";
+import { processAsset } from "@/lib/media/process";
 import { createTestUser, deleteTestUser, params } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
@@ -112,6 +113,19 @@ describe("GET /api/pdf/[slug]", () => {
     const bytes = Buffer.from(await res.arrayBuffer());
     expect(bytes.subarray(0, 5).toString()).toBe("%PDF-");
     expect(pdfPageCount(bytes)).toBe(3);
+  });
+
+  it("exports a processed photo from its AVIF copy, after the original is deleted (DIG-26)", async () => {
+    const asset = await photo(pro.id);
+    await prisma.mediaAsset.update({ where: { id: asset.id }, data: { status: "processing" } });
+    await processAsset(asset.id);
+    const processed = await prisma.mediaAsset.findUniqueOrThrow({ where: { id: asset.id } });
+    expect(processed.storageKey).toMatch(/\/full\.avif$/);
+
+    const res = await get((await zine(pro.id, [asset.id])).slug);
+    expect(res.status).toBe(200);
+    // A cover plus the photo page: the page would be left out if the image could not be read.
+    expect(pdfPageCount(Buffer.from(await res.arrayBuffer()))).toBe(2);
   });
 
   it("renders a page whose photo carries a Fujifilm recipe", async () => {
