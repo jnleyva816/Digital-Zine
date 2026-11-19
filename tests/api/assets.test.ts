@@ -11,6 +11,7 @@ import { POST as PROCESS } from "@/app/api/assets/[id]/process/route";
 import { enqueueProcessing } from "@/lib/media/queue";
 import { ACCOUNT_STORAGE_BYTES } from "@/lib/limits";
 import { writeLocalObject } from "@/lib/storage/local";
+import sharp from "sharp";
 import {
   createAsset,
   createAssetOfSize,
@@ -227,6 +228,56 @@ describe("PATCH /api/assets/[id]", () => {
     res = await PATCH(jsonRequest("/", "PATCH", { kind: "photo", recipe: null }), params({ id: mine.id }));
     expect(res.status).toBe(200);
     expect(await prisma.mediaAsset.findUnique({ where: { id: mine.id } })).toMatchObject({ kind: "photo", recipe: null });
+  });
+});
+
+describe("editing a photo (DIG-33)", () => {
+  const save = (id: string, edit: unknown) => PATCH(jsonRequest("/", "PATCH", { edit }), params({ id }));
+  const squarePolaroid = { ratio: "1:1", zoom: 1.5, x: 0.3, y: 0.6, frame: "polaroid", cardSize: "large" };
+
+  it("saves the crop, frame, and card size as settings on the photo", async () => {
+    const photo = await createAsset(me.id, 0);
+    await prisma.mediaAsset.update({ where: { id: photo.id }, data: { width: 600, height: 400 } });
+    const res = await save(photo.id, squarePolaroid);
+    expect(res.status).toBe(200);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.edit).toEqual(squarePolaroid);
+  });
+
+  it("stores no edit when the settings are the defaults, or when cleared with null", async () => {
+    const photo = await createAsset(me.id, 0);
+    await prisma.mediaAsset.update({ where: { id: photo.id }, data: { width: 600, height: 400 } });
+    await save(photo.id, squarePolaroid);
+    const defaults = { ratio: "4:5", zoom: 1, x: 0.5, y: 0.5, frame: "none", cardSize: "normal" };
+    expect((await save(photo.id, defaults)).status).toBe(200);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.edit).toBeNull();
+    await save(photo.id, squarePolaroid);
+    expect((await save(photo.id, null)).status).toBe(200);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.edit).toBeNull();
+  });
+
+  it("rejects an unknown ratio or frame, or zoom and position out of range, with 400", async () => {
+    const photo = await createAsset(me.id, 0);
+    for (const over of [{ ratio: "5:4" }, { frame: "gold" }, { zoom: 9 }, { x: 2 }, { cardSize: "huge" }]) {
+      const res = await save(photo.id, { ...squarePolaroid, ...over });
+      expect(res.status, JSON.stringify(over)).toBe(400);
+    }
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.edit).toBeNull();
+  });
+
+  it("returns 404 when editing another creator's photo", async () => {
+    const theirs = await createAsset(other.id, 0);
+    expect((await save(theirs.id, squarePolaroid)).status).toBe(404);
+  });
+
+  it("records the photo's size on first edit when it was uploaded before sizes were kept", async () => {
+    const key = `users/${me.id}/legacy-${Date.now()}.jpg`;
+    const jpeg = await sharp({ create: { width: 300, height: 200, channels: 3, background: "#336699" } }).jpeg().toBuffer();
+    await writeLocalObject(key, jpeg, "image/jpeg");
+    const photo = await prisma.mediaAsset.create({
+      data: { ownerId: me.id, boardId: await defaultBoardId(me.id), storageKey: key, publicUrl: `/api/media/${key}` },
+    });
+    expect((await save(photo.id, squarePolaroid)).status).toBe(200);
+    expect(await prisma.mediaAsset.findUnique({ where: { id: photo.id } })).toMatchObject({ width: 300, height: 200 });
   });
 });
 

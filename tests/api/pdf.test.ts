@@ -135,6 +135,32 @@ describe("GET /api/pdf/[slug]", () => {
     expect(pdfPageCount(Buffer.from(await res.arrayBuffer()))).toBe(2);
   });
 
+  it("prints an edited photo with its crop and frame (DIG-33)", async () => {
+    // The fixture photo is 40×50. A 1:1 crop is 40×40; a Polaroid frame adds 2 px on three
+    // sides (5% of 40) and 8 px at the bottom (20%), so the printed image is 44×50.
+    const edited = await photo(pro.id);
+    await prisma.mediaAsset.update({
+      where: { id: edited.id },
+      data: {
+        width: 40,
+        height: 50,
+        edit: { ratio: "1:1", zoom: 1, x: 0.5, y: 0.5, frame: "polaroid", cardSize: "normal" },
+      },
+    });
+    const res = await get((await zine(pro.id, [edited.id])).slug);
+    expect(res.status).toBe(200);
+    const pdf = Buffer.from(await res.arrayBuffer()).toString("latin1");
+    expect(pdf).toMatch(/\/Width 44\b/);
+    expect(pdf).toMatch(/\/Height 50\b/);
+  });
+
+  it("prints an unedited photo whole, as before", async () => {
+    const res = await get((await zine(pro.id, [(await photo(pro.id)).id])).slug);
+    const pdf = Buffer.from(await res.arrayBuffer()).toString("latin1");
+    expect(pdf).toMatch(/\/Width 40\b/);
+    expect(pdf).toMatch(/\/Height 50\b/);
+  });
+
   it("renders a page whose photo carries a Fujifilm recipe", async () => {
     const withRecipe = await photo(pro.id);
     await prisma.mediaAsset.update({

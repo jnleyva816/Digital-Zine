@@ -21,3 +21,10 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   next.splice(to, 0, item);
   return next;
 }
+
+/** "“A”", "“A” and “B”", "“A”, “B”, and “C”". */
+export function quoteList(titles: string[]): string {
+  const quoted = titles.map((t) => `“${t}”`);
+  if (quoted.length <= 2) return quoted.join(" and ");
+  return `${quoted.slice(0, -1).join(", ")}, and ${quoted.at(-1)}`;
+}

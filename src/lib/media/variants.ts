@@ -16,6 +16,18 @@ async function encode(pipeline: sharp.Sharp): Promise<RenderedImage> {
   return { bytes: data, width: info.width, height: info.height };
 }
 
+/** Pixel size of an image once the camera's rotation is applied, or null if it cannot be read. */
+export async function readImageSize(input: Buffer): Promise<{ width: number; height: number } | null> {
+  try {
+    const meta = await sharp(input).metadata();
+    if (!meta.width || !meta.height) return null;
+    const swap = (meta.orientation ?? 1) >= 5;
+    return swap ? { width: meta.height, height: meta.width } : { width: meta.width, height: meta.height };
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Renders every copy of a photo. The camera's rotation is applied, and sharp drops EXIF and other
  * metadata unless asked to keep it, so no output carries the original's EXIF. Widths at or above

@@ -32,3 +32,24 @@ describe("FlipCard photo name (DIG-34)", () => {
     expect(screen.getByRole("img", { name: "Page 1 of 3" })).toBeInTheDocument();
   });
 });
+
+describe("FlipCard photo edit (DIG-33)", () => {
+  it("shows the photo with its crop and frame, and shapes the card to match", () => {
+    render(
+      <FlipCard
+        {...base}
+        edit={{ ratio: "1:1", zoom: 1, x: 0.5, y: 0.5, frame: "polaroid", cardSize: "normal" }}
+        dims={{ width: 6000, height: 4000 }}
+      />
+    );
+    expect(screen.getByTestId("edited-photo")).toHaveAttribute("data-frame", "polaroid");
+    const card = screen.getByTestId("zine-flip-card-1").firstElementChild as HTMLElement;
+    expect(card.style.aspectRatio).toMatch(/^0.88( \/ 1)?$/);
+  });
+
+  it("keeps the 4:5 card for an unedited photo", () => {
+    render(<FlipCard {...base} />);
+    const card = screen.getByTestId("zine-flip-card-1").firstElementChild as HTMLElement;
+    expect(card.style.aspectRatio).toMatch(/^0.8( \/ 1)?$/);
+  });
+});

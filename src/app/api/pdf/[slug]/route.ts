@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
+import { readImageSize } from "@/lib/media/variants";
+import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
 import { readLocalObject } from "@/lib/storage/local";
 import { parseExif, parsePageContent, parseRecipe } from "@/lib/types";
@@ -15,7 +17,7 @@ const REMOTE_IMAGE_TIMEOUT_MS = 10_000;
  * storage key. Only absolute https URLs (the S3 driver's public URLs, stored at upload time) are
  * fetched; nothing is ever fetched from a host taken from the request.
  */
-async function loadPageImage(storageKey: string, publicUrl: string): Promise<Buffer | null> {
+async function loadPageImage(storageKey: string, publicUrl: string, edit: PhotoEdit | null): Promise<Buffer | null> {
   try {
     let raw: Buffer | null = null;
     const local = await readLocalObject(storageKey);
@@ -26,7 +28,18 @@ async function loadPageImage(storageKey: string, publicUrl: string): Promise<Buf
       if (res.ok) raw = Buffer.from(await res.arrayBuffer());
     }
     if (!raw) return null;
-    return await sharp(raw).rotate().jpeg({ quality: 88 }).toBuffer();
+    const upright = await sharp(raw).rotate().toBuffer();
+    if (!edit) return await sharp(upright).jpeg({ quality: 88 }).toBuffer();
+
+    // The same crop the web shows (DIG-33), from the image's real size, then the frame.
+    const size = await readImageSize(upright);
+    if (!size) return null;
+    const { extract, border } = cropPixels(edit, size);
+    let pipeline = sharp(upright).extract(extract);
+    if (border) {
+      pipeline = pipeline.extend({ top: border.top, right: border.right, bottom: border.bottom, left: border.left, background: border.color });
+    }
+    return await pipeline.jpeg({ quality: 88 }).toBuffer();
   } catch (error) {
     console.error(`PDF export: could not load image ${storageKey}`, error);
     return null;
@@ -79,13 +92,16 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     pageContents.map(async ({ page, content }) => {
       const asset = assetMap.get(content.assetId);
       if (!asset) return null;
-      const image = await loadPageImage(asset.storageKey, asset.publicUrl);
+      const edit = parsePhotoEdit(asset.edit);
+      const image = await loadPageImage(asset.storageKey, asset.publicUrl, edit);
       if (!image) return null;
       return {
         caption: content.caption?.trim() ?? "",
         flipEnabled: page.flipEnabled,
         assetKind: asset.kind,
         imageSrc: { data: image, format: "jpg" as const },
+        // An edited photo is already cropped and framed, so it is printed whole.
+        imageFit: edit ? ("contain" as const) : ("cover" as const),
         exif: parseExif(asset.exif),
         recipe: parseRecipe(asset.recipe),
       };

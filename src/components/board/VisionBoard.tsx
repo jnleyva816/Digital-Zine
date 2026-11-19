@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
-import Image from "next/image";
 import {
   ArrowLeft,
   ArrowRight,
   Camera,
+  Crop,
   FolderInput,
   GripVertical,
   ImagePlus,
@@ -23,6 +23,9 @@ import type { PreparedUpload } from "@/lib/storage/types";
 import { StorageMeter } from "./StorageMeter";
 import { MovePhotoPanel } from "./MovePhotoPanel";
 import { PhotoNameForm } from "./PhotoNameForm";
+import { PhotoEditor } from "./PhotoEditor";
+import { EditedPhoto } from "@/components/EditedPhoto";
+import type { PhotoEdit } from "@/lib/photo-edit";
 import { RecipeEditor } from "./RecipeEditor";
 import {
   ACCEPTED_IMAGE_TYPES,
@@ -115,6 +118,7 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
   const [movingId, setMovingId] = useState<string | null>(null);
   const [namingId, setNamingId] = useState<string | null>(null);
+  const [photoEditId, setPhotoEditId] = useState<string | null>(null);
   const usedBytes = elsewhereBytes + assets.reduce((sum, a) => sum + a.sizeBytes, 0);
 
   // While any photo is processing, check the server every few seconds and swap in the result
@@ -354,6 +358,28 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
     }
   }
 
+  async function savePhotoEdit(asset: BoardAsset, edit: PhotoEdit | null): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ edit }),
+      });
+      if (!res.ok) return await readApiError(res, "Could not save the edit.");
+      const body = (await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
+      const updated = toBoardAsset(body.asset);
+      // The response may carry a size read for the first time, which crops need.
+      setAssets((prev) =>
+        prev.map((a) => (a.id === asset.id ? { ...a, edit: updated.edit, width: updated.width, height: updated.height } : a))
+      );
+    } catch {
+      return "Could not reach the server. Check your connection and try again.";
+    }
+    setPhotoEditId(null);
+    setAnnouncement(edit ? "Photo edit saved." : "Photo edit reset.");
+    return null;
+  }
+
   async function saveName(asset: BoardAsset, name: string | null): Promise<string | null> {
     try {
       const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, {
@@ -391,6 +417,8 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
     return null;
   }
 
+  const photoEditingIndex = assets.findIndex((a) => a.id === photoEditId);
+  const photoEditing = photoEditingIndex >= 0 ? assets[photoEditingIndex] : null;
   const editingIndex = assets.findIndex((a) => a.id === editingId);
   const editing = editingIndex >= 0 ? assets[editingIndex] : null;
 
@@ -556,27 +584,31 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
                     if (dropIndexRef.current !== gap) setDrop(gap);
                   }}
                   className={`relative flex flex-col overflow-hidden rounded-2xl border bg-white shadow-sm transition ${
+                    asset.edit?.cardSize === "large" ? "sm:col-span-2" : ""
+                  } ${
                     isDragging ? "opacity-40" : ""
                   } ${showDropBefore ? "ring-2 ring-vermilion-500 ring-offset-2 ring-offset-paper-50" : ""} ${
                     showDropAfter ? "ring-2 ring-vermilion-500 ring-offset-2 ring-offset-paper-50" : ""
                   } border-paper-300`}
                 >
-                  <div className="relative aspect-[4/5] bg-ink-900">
+                  <div className="relative bg-ink-900">
                     {asset.status === "ready" ? (
-                      <Image
+                      <EditedPhoto
                         src={asset.publicUrl}
                         alt={label}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
-                        className="object-cover"
-                        draggable={false}
-                        placeholder={asset.blurDataUrl ? "blur" : "empty"}
-                        blurDataURL={asset.blurDataUrl ?? undefined}
+                        edit={asset.edit}
+                        dims={asset.width && asset.height ? { width: asset.width, height: asset.height } : null}
+                        sizes={
+                          asset.edit?.cardSize === "large"
+                            ? "(max-width: 640px) 100vw, (max-width: 1280px) 66vw, 50vw"
+                            : "(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                        }
+                        blurDataUrl={asset.blurDataUrl}
                       />
                     ) : asset.status === "processing" ? (
                       <div
                         role="status"
-                        className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center text-paper-50"
+                        className="flex aspect-[4/5] flex-col items-center justify-center gap-2 px-4 text-center text-paper-50"
                       >
                         <Loader2 className="h-6 w-6 animate-spin" aria-hidden="true" />
                         <span className="text-xs">
@@ -584,7 +616,7 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
                         </span>
                       </div>
                     ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 px-4 text-center text-paper-50">
+                      <div className="flex aspect-[4/5] flex-col items-center justify-center gap-3 px-4 text-center text-paper-50">
                         <p className="text-xs">{asset.processingError ?? "This photo could not be processed."}</p>
                         <button
                           type="button"
@@ -687,6 +719,16 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
                         </div>
                       ) : (
                         <div className="flex items-center gap-1">
+                          {asset.status === "ready" ? (
+                            <button
+                              type="button"
+                              onClick={() => setPhotoEditId(asset.id)}
+                              aria-label={`Edit ${label}`}
+                              className="rounded-lg border border-paper-300 p-1.5 text-ink-700 transition hover:bg-paper-100"
+                            >
+                              <Crop className="h-3.5 w-3.5" aria-hidden="true" />
+                            </button>
+                          ) : null}
                           <button
                             type="button"
                             onClick={() => {
@@ -757,6 +799,20 @@ export function VisionBoard({ boardId, initialAssets, otherBoards, otherBoardsBy
           </ol>
         </>
       )}
+
+      {photoEditing ? (
+        <PhotoEditor
+          open
+          label={assetLabel(photoEditing, photoEditingIndex)}
+          src={photoEditing.publicUrl}
+          blurDataUrl={photoEditing.blurDataUrl}
+          dims={photoEditing.width && photoEditing.height ? { width: photoEditing.width, height: photoEditing.height } : null}
+          initial={photoEditing.edit}
+          usedIn={usedIn[photoEditing.id] ?? []}
+          onClose={() => setPhotoEditId(null)}
+          onSave={(edit) => savePhotoEdit(photoEditing, edit)}
+        />
+      ) : null}
 
       <RecipeEditor
         open={editing !== null}

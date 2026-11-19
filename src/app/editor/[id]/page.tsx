@@ -28,7 +28,7 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
   const pageAssetIds = zine.pages
     .map((p) => (p.content as { assetId?: unknown } | null)?.assetId)
     .filter((v): v is string => typeof v === "string");
-  const assetSelect = { id: true, publicUrl: true, originalName: true, name: true, kind: true, exif: true, recipe: true } as const;
+  const assetSelect = { id: true, publicUrl: true, originalName: true, name: true, kind: true, exif: true, recipe: true, blurDataUrl: true, edit: true, width: true, height: true } as const;
   const [assets, movedPageAssets, boards] = await Promise.all([
     prisma.mediaAsset.findMany({
       where: { boardId: zine.boardId },

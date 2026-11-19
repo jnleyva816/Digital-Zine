@@ -1,11 +1,5 @@
 import { useId, useState } from "react";
-
-/** "“A”", "“A” and “B”", "“A”, “B”, and “C”". */
-function quoteList(titles: string[]): string {
-  const quoted = titles.map((t) => `“${t}”`);
-  if (quoted.length <= 2) return quoted.join(" and ");
-  return `${quoted.slice(0, -1).join(", ")}, and ${quoted.at(-1)}`;
-}
+import { quoteList } from "./board-utils";
 
 /**
  * Moves one photo to another of the creator's boards (DIG-25). When zines use the photo, it says
