@@ -8,6 +8,9 @@ import { StudioHeader } from "@/components/StudioHeader";
 import { VisionBoard } from "@/components/board/VisionBoard";
 import { toBoardAsset } from "@/components/board/types";
 import { listSavedRecipes } from "@/lib/recipes";
+import { boardPhotoPage } from "@/lib/board-photos";
+import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
+import { getAccountUsageBytes } from "@/lib/usage";
 
 export const metadata: Metadata = {
   title: "Vision Board",
@@ -23,38 +26,16 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const board = await prisma.board.findFirst({ where: { id, ownerId: user.id }, select: { id: true, name: true } });
   if (!board) notFound();
 
-  const [assets, otherBoards, elsewhere, pages, latestZine, savedRecipes] = await Promise.all([
-    prisma.mediaAsset.findMany({
-      where: { boardId: board.id },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        publicUrl: true,
-        originalName: true,
-        name: true,
-        kind: true,
-        exif: true,
-        recipe: true,
-        recipeId: true,
-        sizeBytes: true,
-        status: true,
-        processingError: true,
-        blurDataUrl: true,
-        edit: true,
-        width: true,
-        height: true,
-      },
-    }),
+  const [firstPage, otherBoards, accountBytes, pages, latestZine, savedRecipes] = await Promise.all([
+    // The first page only; the board loads more as it scrolls (DIG-29).
+    boardPhotoPage(user.id, board.id, BOARD_PAGE_SIZE, null),
     prisma.board.findMany({
       where: { ownerId: user.id, id: { not: board.id } },
       orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
       select: { id: true, name: true },
     }),
-    // Storage is one quota for the account, so the meter counts the other boards too.
-    prisma.mediaAsset.aggregate({
-      where: { ownerId: user.id, boardId: { not: board.id } },
-      _sum: { sizeBytes: true },
-    }),
+    // Storage is one quota for the account, so the meter counts everything stored.
+    getAccountUsageBytes(user.id),
     prisma.zinePage.findMany({
       where: { zine: { ownerId: user.id } },
       select: { content: true, zine: { select: { id: true, title: true } } },
@@ -66,6 +47,8 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
     }),
     listSavedRecipes(prisma, user.id),
   ]);
+
+  const assets = firstPage?.assets ?? [];
 
   // Which zines use each photo, so moving one can say so first.
   const usedIn: Record<string, string[]> = {};
@@ -100,7 +83,9 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
           boardId={board.id}
           initialAssets={assets.map(toBoardAsset)}
           otherBoards={otherBoards}
-          otherBoardsBytes={elsewhere._sum.sizeBytes ?? 0}
+          otherBoardsBytes={Math.max(0, accountBytes - assets.reduce((sum, a) => sum + a.sizeBytes, 0))}
+          initialCursor={firstPage?.nextCursor ?? null}
+          initialTotal={firstPage?.total ?? 0}
           usedIn={usedIn}
           savedRecipes={savedRecipes}
         />

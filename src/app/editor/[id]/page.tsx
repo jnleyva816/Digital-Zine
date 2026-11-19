@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { BOARD_ASSET_SELECT, boardPhotoPage } from "@/lib/board-photos";
+import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
 import { StudioHeader } from "@/components/StudioHeader";
 import { toBoardAsset } from "@/components/board/types";
 import { ZineEditor } from "@/components/editor/ZineEditor";
@@ -28,17 +30,14 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
   const pageAssetIds = zine.pages
     .map((p) => (p.content as { assetId?: unknown } | null)?.assetId)
     .filter((v): v is string => typeof v === "string");
-  const assetSelect = { id: true, publicUrl: true, originalName: true, name: true, kind: true, exif: true, recipe: true, blurDataUrl: true, edit: true, width: true, height: true } as const;
-  const [assets, movedPageAssets, boards] = await Promise.all([
+  const [firstPage, pagePhotos, boards] = await Promise.all([
+    // The picker loads the board a page at a time (DIG-29).
+    boardPhotoPage(user.id, zine.boardId, BOARD_PAGE_SIZE, null),
+    // Every photo on the zine's pages, wherever it is: later on the board, or moved to another
+    // board (DIG-25).
     prisma.mediaAsset.findMany({
-      where: { boardId: zine.boardId },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      select: assetSelect,
-    }),
-    // A page keeps its photo when the photo moves to another board (DIG-25).
-    prisma.mediaAsset.findMany({
-      where: { ownerId: user.id, id: { in: pageAssetIds }, boardId: { not: zine.boardId } },
-      select: assetSelect,
+      where: { ownerId: user.id, id: { in: pageAssetIds } },
+      select: BOARD_ASSET_SELECT,
     }),
     prisma.board.findMany({
       where: { ownerId: user.id },
@@ -71,8 +70,10 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
           }}
           board={zine.board}
           boards={boards}
-          boardAssets={assets.map(toBoardAsset)}
-          pageAssets={movedPageAssets.map(toBoardAsset)}
+          boardAssets={(firstPage?.assets ?? []).map(toBoardAsset)}
+          boardCursor={firstPage?.nextCursor ?? null}
+          boardTotal={firstPage?.total ?? 0}
+          pageAssets={pagePhotos.filter((p) => !firstPage?.assets.some((a) => a.id === p.id)).map(toBoardAsset)}
           tier={user.tier}
         />
       </main>
