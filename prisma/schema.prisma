@@ -45,12 +45,33 @@ model User {
   updatedAt            DateTime     @updatedAt
   assets               MediaAsset[]
   zines                Zine[]
+  boards               Board[]
+}
+
+/// DIG-25: a creator keeps several Vision Boards. Every photo is on one board and every zine is
+/// built from one board. Storage is one quota for the whole account, not per board.
+model Board {
+  id        String       @id @default(cuid())
+  ownerId   String
+  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  assets    MediaAsset[]
+  zines     Zine[]
+
+  @@index([ownerId, sortOrder])
 }
 
 model MediaAsset {
   id              String      @id @default(cuid())
   ownerId         String
   owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// The app moves photos to another board before deleting one. NoAction (checked at the end of
+  /// the statement) still lets deleting a user cascade through boards and photos together.
+  boardId         String
+  board           Board       @relation(fields: [boardId], references: [id], onDelete: NoAction)
   storageKey      String      @unique
   publicUrl       String
   originalName    String?
@@ -74,12 +95,16 @@ model MediaAsset {
   updatedAt       DateTime    @updatedAt
 
   @@index([ownerId, sortOrder])
+  @@index([boardId, sortOrder])
 }
 
 model Zine {
   id          String     @id @default(cuid())
   ownerId     String
   owner       User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  /// A board cannot be deleted while a zine links to it (DIG-25).
+  boardId     String
+  board       Board      @relation(fields: [boardId], references: [id], onDelete: NoAction)
   title       String
   description String?
   slug        String     @unique
@@ -90,6 +115,7 @@ model Zine {
   pages       ZinePage[]
 
   @@index([ownerId])
+  @@index([boardId])
 }
 
 model ZinePage {

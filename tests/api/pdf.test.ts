@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { writeLocalObject } from "@/lib/storage/local";
 import { GET } from "@/app/api/pdf/[slug]/route";
 import { processAsset } from "@/lib/media/process";
-import { createTestUser, deleteTestUser, params } from "./helpers";
+import { createTestUser, defaultBoardId, deleteTestUser, params } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -45,7 +45,13 @@ async function photo(ownerId: string, { writeFile = true } = {}) {
     await writeLocalObject(storageKey, bytes, "image/jpeg");
   }
   return prisma.mediaAsset.create({
-    data: { ownerId, storageKey, publicUrl: `/api/media/${storageKey}`, exif: { iso: 400 } },
+    data: {
+      ownerId,
+      boardId: await defaultBoardId(ownerId),
+      storageKey,
+      publicUrl: `/api/media/${storageKey}`,
+      exif: { iso: 400 },
+    },
   });
 }
 
@@ -53,6 +59,7 @@ async function zine(ownerId: string, assetIds: string[], { published = true } = 
   return prisma.zine.create({
     data: {
       ownerId,
+      boardId: await defaultBoardId(ownerId),
       title: "Brine & Light",
       slug: `pdf-${randomUUID().slice(0, 8)}`,
       published,

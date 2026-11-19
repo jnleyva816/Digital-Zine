@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import { createUserWithPhotos, deleteUser, makePro, signIn, testDb } from "./helpers";
+import { createUserWithPhotos, deleteUser, makePro, signIn, testDb, defaultBoardId } from "./helpers";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -20,6 +20,7 @@ async function creatorWithZine(page: Page, { pro, published }: { pro: boolean; p
   const zine = await testDb.zine.create({
     data: {
       ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
       title: "Brine & Light",
       slug: `pdf-${randomUUID().slice(0, 8)}`,
       published,

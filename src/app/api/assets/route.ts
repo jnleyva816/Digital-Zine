@@ -8,7 +8,8 @@ import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { enqueueProcessing } from "@/lib/media/queue";
 import { getStorageDriver } from "@/lib/storage";
-import { getBoardUsageBytes, withUserLock } from "@/lib/usage";
+import { getAccountUsageBytes, withUserLock } from "@/lib/usage";
+import { getOrCreateDefaultBoard } from "@/lib/boards";
 
 const exifSchema = z
   .object({
@@ -34,16 +35,20 @@ const createAssetSchema = z.object({
   kind: z.enum(["photo", "recipe"]).default("photo"),
   exif: exifSchema,
   recipe: recipeSchema,
+  /** The board to add the photo to (DIG-25). Without one, the creator's first board. */
+  boardId: z.string().min(1).optional(),
 });
 
-export async function GET() {
+export async function GET(req: Request) {
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  // `?boardId=` narrows the list to one board (DIG-25); ownership still comes from the session.
+  const boardId = new URL(req.url).searchParams.get("boardId");
   const assets = await prisma.mediaAsset.findMany({
-    where: { ownerId: user.id },
+    where: { ownerId: user.id, ...(boardId ? { boardId } : {}) },
     orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
   });
 
@@ -83,11 +88,16 @@ export async function POST(req: Request) {
   }
 
   const result = await withUserLock(user.id, async (tx) => {
-    const check = checkUpload({ size: sizeBytes, usedBytes: await getBoardUsageBytes(user.id, tx) });
+    const board = parsed.data.boardId
+      ? await tx.board.findFirst({ where: { id: parsed.data.boardId, ownerId: user.id }, select: { id: true } })
+      : await getOrCreateDefaultBoard(user.id, tx);
+    if (!board) return { rejected: "board_not_found", asset: null } as const;
+
+    const check = checkUpload({ size: sizeBytes, usedBytes: await getAccountUsageBytes(user.id, tx) });
     if (!check.ok) return { rejected: check, asset: null } as const;
 
     const aggregate = await tx.mediaAsset.aggregate({
-      where: { ownerId: user.id },
+      where: { boardId: board.id },
       _max: { sortOrder: true },
     });
     const nextSortOrder = (aggregate._max.sortOrder ?? -1) + 1;
@@ -95,6 +105,7 @@ export async function POST(req: Request) {
     const asset = await tx.mediaAsset.create({
       data: {
         ownerId: user.id,
+        boardId: board.id,
         storageKey,
         publicUrl,
         originalName: parsed.data.originalName ?? null,
@@ -116,6 +127,9 @@ export async function POST(req: Request) {
   if (result.rejected) {
     // Nothing references the bytes, so they would only cost money.
     await driver.deleteObject(storageKey);
+    if (result.rejected === "board_not_found") {
+      return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    }
     return uploadLimitResponse(result.rejected);
   }
   let { asset } = result;

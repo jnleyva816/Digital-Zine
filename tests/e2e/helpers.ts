@@ -5,8 +5,12 @@ import bcrypt from "bcryptjs";
 import { PrismaClient } from "@prisma/client";
 import { expect, type Page } from "@playwright/test";
 import { loadTestEnv } from "../../scripts/test-db";
+import { getOrCreateDefaultBoard } from "../../src/lib/boards";
 
 export const SEEDED = { email: "creator@digitalzine.local", password: "zine1234" } as const;
+
+/** One Vision Board's page. `/board` redirects to the creator's first board (DIG-25). */
+export const BOARD_URL = /\/boards\/[a-z0-9-]+$/;
 
 /** Prisma client bound to the test database, for arranging data the UI cannot create. */
 const testEnv = loadTestEnv();
@@ -14,12 +18,17 @@ export const testDb = new PrismaClient({ datasourceUrl: testEnv.DATABASE_URL });
 /** Where the test server keeps uploaded files. */
 const storageRoot = path.resolve(testEnv.LOCAL_STORAGE_DIR);
 
+/** The creator's first board, made on demand, as the app does (DIG-25). */
+export async function defaultBoardId(userId: string) {
+  return (await getOrCreateDefaultBoard(userId, testDb)).id;
+}
+
 export async function signIn(page: Page, email: string = SEEDED.email, password: string = SEEDED.password) {
   await page.goto("/signin");
   await page.getByLabel("Studio Email").fill(email);
   await page.getByLabel("Password").fill(password);
   await page.getByRole("button", { name: /sign in to studio/i }).click();
-  await expect(page).toHaveURL("/board");
+  await expect(page).toHaveURL(BOARD_URL);
 }
 
 export async function createUser(password = "test-pass-123") {
@@ -59,6 +68,7 @@ export async function createUserWithPhotos(names = ["persimmon.jpg", "cellar.jpg
       await testDb.mediaAsset.create({
         data: {
           ownerId: user.id,
+          boardId: await defaultBoardId(user.id),
           storageKey,
           publicUrl: `/api/media/${storageKey}`,
           originalName: name,

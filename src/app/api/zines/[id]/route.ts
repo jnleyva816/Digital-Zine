@@ -17,6 +17,8 @@ const updateZineSchema = z.object({
   slug: z.string().min(1).max(80).optional(),
   published: z.boolean().optional(),
   pages: z.array(pageInputSchema).max(60).optional(),
+  /** Moves the zine to another board; only while it has no pages (DIG-25). */
+  boardId: z.string().min(1).optional(),
 });
 
 export async function GET(
@@ -95,6 +97,28 @@ export async function PATCH(
     }
   }
 
+  let nextBoardId: string | undefined;
+  if (parsed.data.boardId !== undefined && parsed.data.boardId !== existing.boardId) {
+    const target = await prisma.board.findFirst({
+      where: { id: parsed.data.boardId, ownerId: user.id },
+      select: { id: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    }
+    const pageCount =
+      parsed.data.pages !== undefined
+        ? parsed.data.pages.length
+        : await prisma.zinePage.count({ where: { zineId: existing.id } });
+    if (pageCount > 0) {
+      return NextResponse.json(
+        { error: "A zine's board can only be changed while it has no pages." },
+        { status: 409 }
+      );
+    }
+    nextBoardId = target.id;
+  }
+
   if (parsed.data.published === true) {
     const pageCount =
       parsed.data.pages !== undefined
@@ -160,6 +184,7 @@ export async function PATCH(
           ? { description: parsed.data.description?.trim() || null }
           : {}),
         ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
+        ...(nextBoardId !== undefined ? { boardId: nextBoardId } : {}),
         ...(parsed.data.published !== undefined
           ? {
               published: parsed.data.published,

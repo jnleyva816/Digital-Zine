@@ -3,6 +3,7 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import { PrismaClient } from "@prisma/client";
+import { migrateToBoards } from "../src/lib/board-migration";
 
 // npm scripts, Vitest, and Playwright all run from the repository root.
 const ROOT = process.cwd();
@@ -41,10 +42,12 @@ export async function resetTestDatabase(): Promise<void> {
     }
   };
 
-  run(["prisma", "db", "push", "--skip-generate"]);
-
   const prisma = new PrismaClient({ datasourceUrl: url });
   try {
+    // Data steps `db push` cannot do on its own must run before it (DIG-25).
+    await migrateToBoards(prisma);
+    run(["prisma", "db", "push", "--skip-generate"]);
+
     const tables = await prisma.$queryRaw<{ tablename: string }[]>`
       SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;
     if (tables.length > 0) {

@@ -4,7 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { buildStorageKey, getStorageDriver } from "@/lib/storage";
-import { getBoardUsageBytes } from "@/lib/usage";
+import { getAccountUsageBytes } from "@/lib/usage";
 
 const presignSchema = z.object({
   filename: z.string().min(1).max(255),
@@ -29,7 +29,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const check = checkUpload({ size: parsed.data.size, usedBytes: await getBoardUsageBytes(user.id) });
+  const check = checkUpload({ size: parsed.data.size, usedBytes: await getAccountUsageBytes(user.id) });
   if (!check.ok) return uploadLimitResponse(check);
 
   const driver = getStorageDriver();

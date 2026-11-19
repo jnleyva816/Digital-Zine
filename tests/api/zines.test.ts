@@ -3,7 +3,15 @@ import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { GET as LIST, POST as CREATE } from "@/app/api/zines/route";
 import { DELETE, GET, PATCH } from "@/app/api/zines/[id]/route";
-import { createAsset, createTestUser, deleteTestUser, jsonRequest, params } from "./helpers";
+import {
+  createAsset,
+  createBoard,
+  createTestUser,
+  defaultBoardId,
+  deleteTestUser,
+  jsonRequest,
+  params,
+} from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
@@ -244,5 +252,66 @@ describe("POST /api/zines zine limit (DIG-32)", () => {
     mockedUser.mockResolvedValue({ ...me, tier: "free", role: "admin", viewingAsFree: true });
     expect((await create("First")).status).toBe(201);
     expect((await create("Second")).status).toBe(403);
+  });
+});
+
+describe("boards (DIG-25)", () => {
+  const createOn = (title: string, boardId?: string, assetIds?: string[]) =>
+    CREATE(jsonRequest("/api/zines", "POST", { title, boardId, assetIds }));
+  const zineBoard = async (id: string) => (await prisma.zine.findUnique({ where: { id } }))?.boardId;
+
+  it("builds a new zine from the board I pick, starting with that board's photos only", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    await createAsset(me.id, 0, "home.jpg");
+    const t1 = await createAsset(me.id, 0, "t1.jpg", trip.id);
+    const t2 = await createAsset(me.id, 1, "t2.jpg", trip.id);
+    const res = await createOn("Trip Issue", trip.id);
+    expect(res.status).toBe(201);
+    const { zine } = (await res.json()) as ZineBody;
+    expect(await zineBoard(zine.id)).toBe(trip.id);
+    expect(zine.pages.map((p) => p.content.assetId)).toEqual([t1.id, t2.id]);
+  });
+
+  it("leaves out chosen photos that are not on the zine's board", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    const home = await createAsset(me.id, 0, "home.jpg");
+    const t1 = await createAsset(me.id, 0, "t1.jpg", trip.id);
+    const { zine } = (await (await createOn("Mixed", trip.id, [home.id, t1.id])).json()) as ZineBody;
+    expect(zine.pages.map((p) => p.content.assetId)).toEqual([t1.id]);
+  });
+
+  it("uses my first board when none is given", async () => {
+    const { zine } = (await (await createOn("Plain")).json()) as ZineBody;
+    expect(await zineBoard(zine.id)).toBe(await defaultBoardId(me.id));
+  });
+
+  it("refuses another creator's board with 404", async () => {
+    const theirs = await createBoard(other.id, "Theirs");
+    expect((await createOn("Sneaky", theirs.id)).status).toBe(404);
+    expect(await prisma.zine.count({ where: { ownerId: me.id } })).toBe(0);
+  });
+
+  it("switches a zine to another of my boards while it has no pages", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    const zine = await createZine("Empty", []);
+    const res = await patch(zine.id, { boardId: trip.id });
+    expect(res.status).toBe(200);
+    expect(await zineBoard(zine.id)).toBe(trip.id);
+  });
+
+  it("refuses to switch boards once the zine has pages (409)", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    const photo = await createAsset(me.id, 0);
+    const zine = await createZine("Full", [photo.id]);
+    const res = await patch(zine.id, { boardId: trip.id });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "A zine's board can only be changed while it has no pages." });
+    expect(await zineBoard(zine.id)).toBe(await defaultBoardId(me.id));
+  });
+
+  it("refuses to switch to another creator's board with 404", async () => {
+    const theirs = await createBoard(other.id, "Theirs");
+    const zine = await createZine("Empty", []);
+    expect((await patch(zine.id, { boardId: theirs.id })).status).toBe(404);
   });
 });

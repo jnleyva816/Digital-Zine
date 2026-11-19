@@ -1,11 +1,11 @@
-import { BOARD_STORAGE_BYTES, formatBytes } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES, formatBytes } from "@/lib/limits";
 
-/** How much of the board's 2 GB is used (DIG-32). Warns from 90%. */
+/** How much of the account's 2 GB is used, across all boards (DIG-32, DIG-25). Warns from 90%. */
 export function StorageMeter({ usedBytes }: { usedBytes: number }) {
-  const used = Math.min(Math.max(usedBytes, 0), BOARD_STORAGE_BYTES);
-  const ratio = used / BOARD_STORAGE_BYTES;
-  const label = `${formatBytes(used)} of ${formatBytes(BOARD_STORAGE_BYTES)} used`;
-  const full = used >= BOARD_STORAGE_BYTES;
+  const used = Math.min(Math.max(usedBytes, 0), ACCOUNT_STORAGE_BYTES);
+  const ratio = used / ACCOUNT_STORAGE_BYTES;
+  const label = `${formatBytes(used)} of ${formatBytes(ACCOUNT_STORAGE_BYTES)} used`;
+  const full = used >= ACCOUNT_STORAGE_BYTES;
   const warn = !full && ratio >= 0.9;
 
   return (
@@ -16,9 +16,9 @@ export function StorageMeter({ usedBytes }: { usedBytes: number }) {
       </div>
       <div
         role="meter"
-        aria-label="Board storage"
+        aria-label="Storage"
         aria-valuemin={0}
-        aria-valuemax={BOARD_STORAGE_BYTES}
+        aria-valuemax={ACCOUNT_STORAGE_BYTES}
         aria-valuenow={used}
         aria-valuetext={label}
         className="mt-1.5 h-2 overflow-hidden rounded-full bg-paper-200"
@@ -29,10 +29,12 @@ export function StorageMeter({ usedBytes }: { usedBytes: number }) {
         />
       </div>
       {full ? (
-        <p className="mt-1.5 text-xs text-red-800">Your board is full. Delete photos to upload more.</p>
+        <p className="mt-1.5 text-xs text-red-800">Your storage is full. Delete photos to upload more.</p>
       ) : warn ? (
         <p className="mt-1.5 text-xs text-amber-800">Almost full. Delete photos to make room.</p>
-      ) : null}
+      ) : (
+        <p className="mt-1.5 text-xs text-ink-500">Shared by all your boards.</p>
+      )}
     </div>
   );
 }

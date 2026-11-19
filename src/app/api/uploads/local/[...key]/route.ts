@@ -3,7 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { writeLocalObject } from "@/lib/storage/local";
-import { getBoardUsageBytes } from "@/lib/usage";
+import { getAccountUsageBytes } from "@/lib/usage";
 
 export async function PUT(
   req: Request,
@@ -33,7 +33,7 @@ export async function PUT(
     return NextResponse.json({ error: "Empty upload payload" }, { status: 400 });
   }
   // The local driver cannot sign a size like S3 does, so it checks the real body here (DIG-32).
-  const check = checkUpload({ size: arrayBuffer.byteLength, usedBytes: await getBoardUsageBytes(user.id) });
+  const check = checkUpload({ size: arrayBuffer.byteLength, usedBytes: await getAccountUsageBytes(user.id) });
   if (!check.ok) return uploadLimitResponse(check);
 
   await writeLocalObject(storageKey, Buffer.from(arrayBuffer), contentType);

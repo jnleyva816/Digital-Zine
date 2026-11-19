@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { SEEDED, signIn } from "./helpers";
+import { BOARD_URL, SEEDED, signIn } from "./helpers";
 
 test.describe("signed out", () => {
-  test("/ and /board send visitors to sign-in with an HTTP redirect", async ({ request }) => {
+  test("/, /board, and /boards send visitors to sign-in with an HTTP redirect", async ({ request }) => {
     const root = await request.get("/", { maxRedirects: 0 });
     expect(root.status()).toBe(307);
     expect(root.headers().location).toMatch(/\/signin$/);
@@ -10,6 +10,10 @@ test.describe("signed out", () => {
     const board = await request.get("/board", { maxRedirects: 0 });
     expect(board.status()).toBe(307);
     expect(board.headers().location).toMatch(/\/signin\?callbackUrl=%2Fboard$/);
+
+    const boards = await request.get("/boards", { maxRedirects: 0 });
+    expect(boards.status()).toBe(307);
+    expect(boards.headers().location).toMatch(/\/signin\?callbackUrl=%2Fboards$/);
   });
 
   test("the sign-in page is not indexed and hides the dev account in production", async ({ page }) => {
@@ -34,7 +38,7 @@ test.describe("signed out", () => {
     await page.getByLabel("Studio Email").fill(SEEDED.email);
     await page.getByLabel("Password").fill(SEEDED.password);
     await page.getByRole("button", { name: /sign in to studio/i }).click();
-    await expect(page).toHaveURL("/board");
+    await expect(page).toHaveURL(BOARD_URL);
   });
 });
 
@@ -42,9 +46,9 @@ test.describe("signed in", () => {
   test("signing in lands on the board, and /signin and / redirect there", async ({ page }) => {
     await signIn(page);
     await page.goto("/signin");
-    await expect(page).toHaveURL("/board");
+    await expect(page).toHaveURL(BOARD_URL);
     await page.goto("/");
-    await expect(page).toHaveURL("/board");
+    await expect(page).toHaveURL(BOARD_URL);
   });
 
   test("signing out returns to sign-in and protects the board", async ({ page }) => {

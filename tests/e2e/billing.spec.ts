@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { createUser, createUserWithPhotos, deleteUser, makePro, signIn, testDb } from "./helpers";
+import { createUser, createUserWithPhotos, deleteUser, makePro, signIn, testDb, defaultBoardId } from "./helpers";
 
 // The e2e server runs without Stripe keys (as in CI), so these tests cover the unconfigured path
 // and the plan states. Checkout and portal redirects are covered by component and API tests.
@@ -75,6 +75,7 @@ test("the editor's PDF upsell leads a Free creator to billing", async ({ page })
   const zine = await testDb.zine.create({
     data: {
       ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
       title: "Upsell Test",
       slug: `upsell-${randomUUID().slice(0, 8)}`,
       published: true,

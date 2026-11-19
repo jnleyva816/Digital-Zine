@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { createUserWithPhotos, deleteUser, signIn, testDb } from "./helpers";
+import { createUserWithPhotos, deleteUser, signIn, testDb, defaultBoardId } from "./helpers";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -20,6 +20,7 @@ async function userWithZine(page: Page, { admin }: { admin: boolean }) {
   const zine = await testDb.zine.create({
     data: {
       ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
       title: "Admin Check",
       slug: `admin-${randomUUID().slice(0, 8)}`,
       published: true,

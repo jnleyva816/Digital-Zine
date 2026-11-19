@@ -6,6 +6,7 @@ import { CLASSIC_CHROME_TAGS, buildFujiMakerNote, withMakerNote } from "../fixtu
 import {
   boardCards,
   createUser,
+  defaultBoardId,
   deleteUser,
   signIn,
   storedFileExists,
@@ -215,6 +216,7 @@ test.describe("storage limits (DIG-32)", () => {
       await testDb.mediaAsset.create({
         data: {
           ownerId: user.id,
+          boardId: await defaultBoardId(user.id),
           storageKey: `users/${user.id}/big.jpg`,
           publicUrl: `/api/media/users/${user.id}/big.jpg`,
           originalName: "big.jpg",
@@ -223,12 +225,12 @@ test.describe("storage limits (DIG-32)", () => {
       });
       await signIn(page, user.email, user.password);
 
-      const meter = page.getByRole("meter", { name: "Board storage" });
+      const meter = page.getByRole("meter", { name: "Storage" });
       await expect(meter).toHaveAttribute("aria-valuetext", "2 GB of 2 GB used");
       await expect(page.getByText("Almost full. Delete photos to make room.")).toBeVisible();
 
       await page.getByLabel("choose files").setInputFiles(FIXTURE);
-      await expect(page.getByText(/Your board is full: .* of 2 GB left\. Delete photos to make room\./)).toBeVisible();
+      await expect(page.getByText(/Your storage is full: .* of 2 GB left\. Delete photos to make room\./)).toBeVisible();
       await expect(boardCards(page)).toHaveCount(1);
     } finally {
       await deleteUser(user.id);
@@ -239,7 +241,7 @@ test.describe("storage limits (DIG-32)", () => {
     const user = await createUser();
     try {
       await signIn(page, user.email, user.password);
-      const meter = page.getByRole("meter", { name: "Board storage" });
+      const meter = page.getByRole("meter", { name: "Storage" });
       await expect(meter).toHaveAttribute("aria-valuenow", "0");
       const created = page.waitForResponse((r) => r.url().endsWith("/api/assets") && r.request().method() === "POST");
       await page.getByLabel("choose files").setInputFiles(FIXTURE);
@@ -273,7 +275,7 @@ test.describe("image processing (DIG-26)", () => {
       await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.currentSrc)).toMatch(/\/w480\.avif/);
 
       // The meter now counts the copies, not the deleted original.
-      await expect(page.getByRole("meter", { name: "Board storage" })).toHaveAttribute(
+      await expect(page.getByRole("meter", { name: "Storage" })).toHaveAttribute(
         "aria-valuenow",
         String(asset.sizeBytes)
       );

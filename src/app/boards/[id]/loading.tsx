@@ -1,7 +1,7 @@
 export default function BoardLoading() {
   return (
     <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6" aria-busy="true" aria-live="polite">
-      <span className="sr-only">Loading your Vision Board…</span>
+      <span className="sr-only">Loading the board…</span>
       <div aria-hidden="true">
         <div className="h-9 w-56 animate-pulse rounded-lg bg-paper-200" />
         <div className="mt-2 h-4 w-80 max-w-full animate-pulse rounded bg-paper-100" />
