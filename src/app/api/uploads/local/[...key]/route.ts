@@ -3,6 +3,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { writeLocalObject } from "@/lib/storage/local";
+import { isValidStorageKey, isWellFormedStorageKey } from "@/lib/storage/keys";
 import { getAccountUsageBytes } from "@/lib/usage";
 
 export async function PUT(
@@ -15,9 +16,13 @@ export async function PUT(
   }
 
   const { key } = await context.params;
-  const storageKey = key.map((segment) => decodeURIComponent(segment)).join("/");
-
-  if (!storageKey.startsWith(`users/${user.id}/`)) {
+  // Never decode the segments again: that would turn %2e%2e into ".." (DIG-35). Keys the server
+  // builds need no escaping, so a %-escape, like any malformed key, is refused outright.
+  const storageKey = key.join("/");
+  if (!isWellFormedStorageKey(storageKey)) {
+    return NextResponse.json({ error: "Invalid storage key." }, { status: 400 });
+  }
+  if (!isValidStorageKey(user.id, storageKey)) {
     return NextResponse.json({ error: "Forbidden storage key" }, { status: 403 });
   }
 
