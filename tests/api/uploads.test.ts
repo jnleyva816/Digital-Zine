@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { POST as PRESIGN } from "@/app/api/uploads/presign/route";
 import { PUT } from "@/app/api/uploads/local/[...key]/route";
-import { BOARD_STORAGE_BYTES, MAX_UPLOAD_BYTES } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES, MAX_UPLOAD_BYTES } from "@/lib/limits";
 import { createAssetOfSize, createTestUser, deleteTestUser, jsonRequest, params } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
@@ -76,11 +76,11 @@ describe("POST /api/uploads/presign limits (DIG-32)", () => {
   });
 
   it("refuses a file that would push my board past 2 GB with 403", async () => {
-    await createAssetOfSize(me.id, BOARD_STORAGE_BYTES - 1024 * 1024);
+    await createAssetOfSize(me.id, ACCOUNT_STORAGE_BYTES - 1024 * 1024);
     const res = await presign(2 * 1024 * 1024);
     expect(res.status).toBe(403);
     expect(await res.json()).toEqual({
-      error: "Your board is full: 1 MB of 2 GB left. Delete photos to make room.",
+      error: "Your storage is full: 1 MB of 2 GB left. Delete photos to make room.",
       code: "over_quota",
     });
   });
@@ -88,7 +88,7 @@ describe("POST /api/uploads/presign limits (DIG-32)", () => {
   it("counts only my own photos toward my quota", async () => {
     const other = await createTestUser();
     try {
-      await createAssetOfSize(other.id, BOARD_STORAGE_BYTES - 1);
+      await createAssetOfSize(other.id, ACCOUNT_STORAGE_BYTES - 1);
       expect((await presign(1024)).status).toBe(200);
     } finally {
       await deleteTestUser(other.id);
@@ -120,7 +120,7 @@ describe("PUT /api/uploads/local/[...key]", () => {
   });
 
   it("refuses a body that would push my board past 2 GB with 403 and writes nothing", async () => {
-    await createAssetOfSize(me.id, BOARD_STORAGE_BYTES - 10);
+    await createAssetOfSize(me.id, ACCOUNT_STORAGE_BYTES - 10);
     const res = await put(["users", me.id, "over.jpg"], new Uint8Array(11));
     expect(res.status).toBe(403);
     await expect(fs.access(path.join(dir, "users", me.id, "over.jpg"))).rejects.toThrow();

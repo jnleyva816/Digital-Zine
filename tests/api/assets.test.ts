@@ -9,11 +9,13 @@ import { DELETE, PATCH } from "@/app/api/assets/[id]/route";
 import { POST as REORDER } from "@/app/api/assets/reorder/route";
 import { POST as PROCESS } from "@/app/api/assets/[id]/process/route";
 import { enqueueProcessing } from "@/lib/media/queue";
-import { BOARD_STORAGE_BYTES } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES } from "@/lib/limits";
 import { writeLocalObject } from "@/lib/storage/local";
 import {
   createAsset,
   createAssetOfSize,
+  createBoard,
+  defaultBoardId,
   createTestUser,
   createZineUsing,
   deleteTestUser,
@@ -60,7 +62,7 @@ beforeEach(async () => {
 describe("auth", () => {
   it("returns 401 on every asset route without a session", async () => {
     mockedUser.mockResolvedValue(null);
-    expect((await GET()).status).toBe(401);
+    expect((await GET(jsonRequest("/api/assets", "GET"))).status).toBe(401);
     expect((await POST(jsonRequest("/api/assets", "POST", {}))).status).toBe(401);
     expect((await PATCH(jsonRequest("/api/assets/x", "PATCH", {}), params({ id: "x" }))).status).toBe(401);
     expect((await DELETE(jsonRequest("/api/assets/x", "DELETE"), params({ id: "x" }))).status).toBe(401);
@@ -73,10 +75,19 @@ describe("GET /api/assets", () => {
     await createAsset(me.id, 1, "second.jpg");
     await createAsset(me.id, 0, "first.jpg");
     await createAsset(other.id, 0, "theirs.jpg");
-    const res = await GET();
+    const res = await GET(jsonRequest("/api/assets", "GET"));
     expect(res.status).toBe(200);
     const { assets } = (await res.json()) as { assets: { originalName: string }[] };
     expect(assets.map((a) => a.originalName)).toEqual(["first.jpg", "second.jpg"]);
+  });
+
+  it("lists only one board's photos when asked for a board (DIG-25)", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    await createAsset(me.id, 0, "home.jpg");
+    await createAsset(me.id, 0, "trip.jpg", trip.id);
+    const res = await GET(jsonRequest(`/api/assets?boardId=${trip.id}`, "GET"));
+    const { assets } = (await res.json()) as { assets: { originalName: string }[] };
+    expect(assets.map((a) => a.originalName)).toEqual(["trip.jpg"]);
   });
 });
 
@@ -108,6 +119,42 @@ describe("POST /api/assets", () => {
     expect(asset.exif).toEqual({ iso: 800, aperture: "f/4" });
   });
 
+  it("adds the photo to the board I upload it on, at the end of that board (DIG-25)", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    await createAsset(me.id, 7, "home.jpg");
+    await createAsset(me.id, 2, "trip.jpg", trip.id);
+    const res = await POST(
+      jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/onboard.jpg`), boardId: trip.id })
+    );
+    expect(res.status).toBe(201);
+    const { asset } = (await res.json()) as { asset: { boardId: string; sortOrder: number } };
+    expect(asset).toMatchObject({ boardId: trip.id, sortOrder: 3 });
+  });
+
+  it("puts a photo sent without a board on my first board (DIG-25)", async () => {
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/nob.jpg`) }));
+    const { asset } = (await res.json()) as { asset: { boardId: string } };
+    expect(asset.boardId).toBe(await defaultBoardId(me.id));
+  });
+
+  it("refuses another creator's board with 404 and deletes the upload (DIG-25)", async () => {
+    const theirs = await createBoard(other.id, "Theirs");
+    const key = await stored(`users/${me.id}/sneaky.jpg`);
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: key, boardId: theirs.id }));
+    expect(res.status).toBe(404);
+    expect(await prisma.mediaAsset.count({ where: { storageKey: key } })).toBe(0);
+    await expect(fs.access(path.join(dir, key))).rejects.toThrow();
+  });
+
+  it("counts photos on every board against the one 2 GB account quota (DIG-25)", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    await createAssetOfSize(me.id, ACCOUNT_STORAGE_BYTES - 100);
+    const res = await POST(
+      jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/other-board.jpg`, 200), boardId: trip.id })
+    );
+    expect(res.status).toBe(403);
+  });
+
   it("records the size that is actually in storage, not one the client sends (DIG-32)", async () => {
     const res = await POST(
       jsonRequest("/api/assets", "POST", { storageKey: await stored(`users/${me.id}/sized.jpg`, 4321), sizeBytes: 1 })
@@ -124,7 +171,7 @@ describe("POST /api/assets", () => {
   });
 
   it("refuses with 403 and deletes the upload when it would push my board past 2 GB (DIG-32)", async () => {
-    await createAssetOfSize(me.id, BOARD_STORAGE_BYTES - 100);
+    await createAssetOfSize(me.id, ACCOUNT_STORAGE_BYTES - 100);
     const key = await stored(`users/${me.id}/over.jpg`, 200);
     const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: key }));
     expect(res.status).toBe(403);
@@ -180,6 +227,39 @@ describe("PATCH /api/assets/[id]", () => {
     res = await PATCH(jsonRequest("/", "PATCH", { kind: "photo", recipe: null }), params({ id: mine.id }));
     expect(res.status).toBe(200);
     expect(await prisma.mediaAsset.findUnique({ where: { id: mine.id } })).toMatchObject({ kind: "photo", recipe: null });
+  });
+});
+
+describe("moving a photo to another board (DIG-25)", () => {
+  const move = (id: string, boardId: string) => PATCH(jsonRequest("/", "PATCH", { boardId }), params({ id }));
+
+  it("moves my photo to the end of my other board", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    await createAsset(me.id, 4, "already.jpg", trip.id);
+    const photo = await createAsset(me.id, 0, "moving.jpg");
+    const res = await move(photo.id, trip.id);
+    expect(res.status).toBe(200);
+    expect(await prisma.mediaAsset.findUnique({ where: { id: photo.id } })).toMatchObject({
+      boardId: trip.id,
+      sortOrder: 5,
+    });
+  });
+
+  it("refuses another creator's board with 404 and leaves the photo where it was", async () => {
+    const theirs = await createBoard(other.id, "Theirs");
+    const photo = await createAsset(me.id, 0);
+    const res = await move(photo.id, theirs.id);
+    expect(res.status).toBe(404);
+    expect((await prisma.mediaAsset.findUnique({ where: { id: photo.id } }))?.boardId).toBe(await defaultBoardId(me.id));
+  });
+
+  it("keeps the photo on zine pages that use it", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    const photo = await createAsset(me.id, 0);
+    const zine = await createZineUsing(me.id, photo.id, "Harbor Notes");
+    expect((await move(photo.id, trip.id)).status).toBe(200);
+    const page = await prisma.zinePage.findFirst({ where: { zineId: zine.id } });
+    expect(page?.content).toMatchObject({ assetId: photo.id });
   });
 });
 

@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { createUser, createUserWithPhotos, deleteUser, signIn, testDb, uploadAndProcess } from "./helpers";
+import { createUser, createUserWithPhotos, deleteUser, signIn, testDb, uploadAndProcess, defaultBoardId } from "./helpers";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -32,6 +32,7 @@ async function arrangeZine(options: ZineOptions = {}) {
   const zine = await testDb.zine.create({
     data: {
       ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
       title: "Brine & Light",
       description: options.description === undefined ? "Three plates from the pickling shelf." : options.description,
       slug,
@@ -203,6 +204,7 @@ test("a zine of processed photos loads a phone-sized copy and shares a JPEG prev
   await testDb.zine.create({
     data: {
       ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
       title: "Processed",
       slug,
       published: true,

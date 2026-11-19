@@ -3,6 +3,7 @@ import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import { writeLocalObject } from "../src/lib/storage/local";
 import { ZINE_TEMPLATE_ID } from "../src/lib/types";
+import { getOrCreateDefaultBoard } from "../src/lib/boards";
 import type { FujiRecipe } from "../src/lib/fuji-recipe";
 
 const prisma = new PrismaClient();
@@ -256,6 +257,7 @@ async function main() {
     },
   });
 
+  const board = await getOrCreateDefaultBoard(devUser.id, prisma);
   const createdAssets = [];
 
   for (let i = 0; i < SEED_PLATES.length; i++) {
@@ -270,6 +272,7 @@ async function main() {
       where: { storageKey: spec.storageKey },
       update: {
         ownerId: devUser.id,
+        boardId: board.id,
         publicUrl,
         originalName: spec.originalName,
         mimeType: "image/jpeg",
@@ -280,6 +283,7 @@ async function main() {
       },
       create: {
         ownerId: devUser.id,
+        boardId: board.id,
         storageKey: spec.storageKey,
         publicUrl,
         originalName: spec.originalName,
@@ -298,6 +302,7 @@ async function main() {
     where: { slug: "golden-hour-field-notes-issue-01" },
     update: {
       ownerId: devUser.id,
+      boardId: board.id,
       title: "Golden Hour Field Notes — Issue 01",
       description:
         "Harbor light, morning fog, and neon after rain, each shot on Fujifilm with the film recipe on the back of the card.",
@@ -306,6 +311,7 @@ async function main() {
     },
     create: {
       ownerId: devUser.id,
+      boardId: board.id,
       title: "Golden Hour Field Notes — Issue 01",
       slug: "golden-hour-field-notes-issue-01",
       description:

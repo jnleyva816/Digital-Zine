@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import { createUserWithPhotos, deleteUser, signIn, testDb } from "./helpers";
+import { createUserWithPhotos, deleteUser, signIn, testDb, defaultBoardId } from "./helpers";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -166,6 +166,7 @@ test("a Free creator with one zine is offered Pro instead of a second zine (DIG-
     await testDb.zine.create({
       data: {
         ownerId: user.id,
+        boardId: await defaultBoardId(user.id),
         title: "Only zine",
         slug: `only-${user.id}`,
         pages: { create: [{ pageNumber: 1, content: { assetId: assets[0]!.id, caption: "" } }] },

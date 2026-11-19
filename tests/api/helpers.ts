@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import { getOrCreateDefaultBoard } from "@/lib/boards";
 import type { getAuthenticatedUser } from "@/lib/auth";
 
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getAuthenticatedUser>>>;
@@ -27,11 +28,27 @@ export async function deleteTestUser(id: string) {
   await prisma.user.delete({ where: { id } }).catch(() => undefined);
 }
 
-export async function createAsset(ownerId: string, sortOrder: number, name = `photo-${sortOrder}.jpg`) {
+/** The owner's first board, made on demand (DIG-25). */
+export async function defaultBoardId(ownerId: string) {
+  return (await getOrCreateDefaultBoard(ownerId, prisma)).id;
+}
+
+export async function createBoard(ownerId: string, name: string, sortOrder = 1) {
+  return prisma.board.create({ data: { ownerId, name, sortOrder } });
+}
+
+/** A photo on `boardId`, or on the owner's first board. */
+export async function createAsset(
+  ownerId: string,
+  sortOrder: number,
+  name = `photo-${sortOrder}.jpg`,
+  boardId?: string
+) {
   const storageKey = `users/${ownerId}/${randomUUID()}-${name}`;
   return prisma.mediaAsset.create({
     data: {
       ownerId,
+      boardId: boardId ?? (await defaultBoardId(ownerId)),
       storageKey,
       publicUrl: `/api/media/${storageKey}`,
       originalName: name,
@@ -47,10 +64,11 @@ export async function createAssetOfSize(ownerId: string, sizeBytes: number) {
   return prisma.mediaAsset.update({ where: { id: asset.id }, data: { sizeBytes } });
 }
 
-export async function createZineUsing(ownerId: string, assetId: string, title = "Test Zine") {
+export async function createZineUsing(ownerId: string, assetId: string, title = "Test Zine", boardId?: string) {
   return prisma.zine.create({
     data: {
       ownerId,
+      boardId: boardId ?? (await defaultBoardId(ownerId)),
       title,
       slug: `test-${randomUUID()}`,
       pages: { create: [{ pageNumber: 1, content: { assetId, caption: "" } }] },

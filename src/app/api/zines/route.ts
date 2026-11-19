@@ -5,12 +5,15 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
 import { withUserLock } from "@/lib/usage";
+import { getOrCreateDefaultBoard } from "@/lib/boards";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
 
 const createZineSchema = z.object({
   title: z.string().min(1).max(140),
   description: z.string().max(400).optional(),
   assetIds: z.array(z.string()).max(60).optional(),
+  /** The board the zine is built from (DIG-25). Without one, the creator's first board. */
+  boardId: z.string().min(1).optional(),
 });
 
 export async function GET() {
@@ -53,56 +56,65 @@ export async function POST(req: Request) {
     slug = `${slug}-${crypto.randomBytes(2).toString("hex")}`;
   }
 
-  let validAssetIds: string[] = [];
-  if (parsed.data.assetIds && parsed.data.assetIds.length > 0) {
-    const owned = await prisma.mediaAsset.findMany({
-      where: {
-        ownerId: user.id,
-        id: { in: parsed.data.assetIds },
-      },
-      select: { id: true },
-    });
-    const ownedSet = new Set(owned.map((a) => a.id));
-    validAssetIds = parsed.data.assetIds.filter((id) => ownedSet.has(id));
-  } else {
-    const defaultBoardAssets = await prisma.mediaAsset.findMany({
-      where: { ownerId: user.id },
-      orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
-      take: 8,
-      select: { id: true },
-    });
-    validAssetIds = defaultBoardAssets.map((a) => a.id);
-  }
-
   const limit = zineLimitFor(user.tier);
-  const zine = await withUserLock(user.id, async (tx) => {
+  const result = await withUserLock(user.id, async (tx) => {
+    const board = parsed.data.boardId
+      ? await tx.board.findFirst({ where: { id: parsed.data.boardId, ownerId: user.id }, select: { id: true } })
+      : await getOrCreateDefaultBoard(user.id, tx);
+    if (!board) return "board_not_found" as const;
     if (limit !== null && (await tx.zine.count({ where: { ownerId: user.id } })) >= limit) return null;
+
+    // Pages come only from the zine's own board.
+    let validAssetIds: string[];
+    if (parsed.data.assetIds && parsed.data.assetIds.length > 0) {
+      const onBoard = await tx.mediaAsset.findMany({
+        where: { ownerId: user.id, boardId: board.id, id: { in: parsed.data.assetIds } },
+        select: { id: true },
+      });
+      const onBoardSet = new Set(onBoard.map((a) => a.id));
+      validAssetIds = parsed.data.assetIds.filter((id) => onBoardSet.has(id));
+    } else {
+      const firstPhotos = await tx.mediaAsset.findMany({
+        where: { boardId: board.id },
+        orderBy: [{ sortOrder: "asc" }, { createdAt: "asc" }],
+        take: 8,
+        select: { id: true },
+      });
+      validAssetIds = firstPhotos.map((a) => a.id);
+    }
+
     return tx.zine.create({
-    data: {
-      ownerId: user.id,
-      title: parsed.data.title.trim(),
-      description: parsed.data.description?.trim() || null,
-      slug,
-      published: false,
-      pages: {
-        create: validAssetIds.map((assetId, idx) => ({
-          pageNumber: idx + 1,
-          templateId: ZINE_TEMPLATE_ID,
-          content: {
-            assetId,
-            caption: "",
-          },
-          flipEnabled: true,
-        })),
+      data: {
+        ownerId: user.id,
+        boardId: board.id,
+        title: parsed.data.title.trim(),
+        description: parsed.data.description?.trim() || null,
+        slug,
+        published: false,
+        pages: {
+          create: validAssetIds.map((assetId, idx) => ({
+            pageNumber: idx + 1,
+            templateId: ZINE_TEMPLATE_ID,
+            content: {
+              assetId,
+              caption: "",
+            },
+            flipEnabled: true,
+          })),
+        },
       },
-    },
-    include: {
-      pages: {
-        orderBy: { pageNumber: "asc" },
+      include: {
+        pages: {
+          orderBy: { pageNumber: "asc" },
+        },
       },
-    },
     });
   });
+
+  if (result === "board_not_found") {
+    return NextResponse.json({ error: "Board not found" }, { status: 404 });
+  }
+  const zine = result;
 
   if (!zine) {
     return NextResponse.json({ error: zineLimitMessage(limit ?? 0), code: "zine_limit" }, { status: 403 });

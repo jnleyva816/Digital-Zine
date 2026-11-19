@@ -3,8 +3,8 @@ import { prisma } from "@/lib/prisma";
 
 type Db = Prisma.TransactionClient | typeof prisma;
 
-/** Bytes a user's Vision Board holds in storage (DIG-32). One board per user until DIG-25. */
-export async function getBoardUsageBytes(userId: string, db: Db = prisma): Promise<number> {
+/** Bytes a user stores across all of their boards (DIG-32). The quota is per account (DIG-25). */
+export async function getAccountUsageBytes(userId: string, db: Db = prisma): Promise<number> {
   const { _sum } = await db.mediaAsset.aggregate({ where: { ownerId: userId }, _sum: { sizeBytes: true } });
   return _sum.sizeBytes ?? 0;
 }

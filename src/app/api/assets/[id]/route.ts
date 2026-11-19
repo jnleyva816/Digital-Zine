@@ -8,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 const updateAssetSchema = z.object({
   kind: z.enum(["photo", "recipe"]).optional(),
   recipe: fujiRecipeSchema.nullable().optional(),
+  /** Moves the photo to the end of another of the owner's boards (DIG-25). */
+  boardId: z.string().min(1).optional(),
 });
 
 export async function PATCH(
@@ -44,6 +46,19 @@ export async function PATCH(
     data.recipe = parsed.data.recipe
       ? (parsed.data.recipe as Prisma.InputJsonValue)
       : Prisma.DbNull;
+  }
+
+  if (parsed.data.boardId !== undefined && parsed.data.boardId !== existing.boardId) {
+    const target = await prisma.board.findFirst({
+      where: { id: parsed.data.boardId, ownerId: user.id },
+      select: { id: true },
+    });
+    if (!target) {
+      return NextResponse.json({ error: "Board not found" }, { status: 404 });
+    }
+    const { _max } = await prisma.mediaAsset.aggregate({ where: { boardId: target.id }, _max: { sortOrder: true } });
+    data.board = { connect: { id: target.id } };
+    data.sortOrder = (_max.sortOrder ?? -1) + 1;
   }
 
   const asset = await prisma.mediaAsset.update({
