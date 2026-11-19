@@ -6,6 +6,8 @@ const baseURL = `http://localhost:${port}`;
 const testEnv: Record<string, string> = {
   ...loadTestEnv(),
   NEXT_PUBLIC_APP_URL: baseURL,
+  // The tests run a production server with the committed test secret (DIG-42).
+  ALLOW_TEST_AUTH_SECRET: "1",
   // When Playwright builds the app itself, keep the output away from `.next`, which `next dev` uses.
   ...(process.env.E2E_SKIP_BUILD ? {} : { NEXT_DIST_DIR: ".next-e2e" }),
 };

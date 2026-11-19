@@ -29,11 +29,14 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
    npm ci
    ```
 
-2. Copy the environment file. `.env` is gitignored; never commit it.
+2. Copy the environment file and give it a sign-in secret. `.env` is gitignored; never commit it.
 
    ```sh
    cp .env.example .env
+   sed -i "s|^AUTH_SECRET=.*|AUTH_SECRET=\"$(openssl rand -base64 32)\"|" .env
    ```
+
+   A production server refuses to start without a real `AUTH_SECRET` of at least 32 characters, or with a value committed in this repository (DIG-42).
 
 3. Start PostgreSQL. The default `DATABASE_URL` expects database `digital_zine`, user `zine`, password `zine` on `127.0.0.1:5432`. With Docker:
 
@@ -121,7 +124,7 @@ Every variable lives in `.env.example`. Only the first group is required.
 | Variable | Required | Purpose |
 | --- | --- | --- |
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `AUTH_SECRET` | Yes | Auth.js signing secret. In production, generate one with `openssl rand -base64 32`. |
+| `AUTH_SECRET` | Yes | Auth.js signing secret. Generate one with `openssl rand -base64 32`. A production server will not start if it is missing, shorter than 32 characters, or a value committed in this repository. |
 | `AUTH_TRUST_HOST` | Yes | `true` when running behind a proxy or on localhost |
 | `NEXT_PUBLIC_APP_URL` | Yes | Canonical public URL, used for Open Graph links and Stripe redirects |
 | `LOCAL_STORAGE_DIR` | No | Upload directory for the local storage driver. Default: `.data/uploads` |
