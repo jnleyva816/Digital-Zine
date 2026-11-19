@@ -4,6 +4,9 @@ import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { PHOTO_NAME_MAX } from "@/lib/limits";
+import { readImageSize } from "@/lib/media/variants";
+import { isDefaultEdit, photoEditSchema } from "@/lib/photo-edit";
+import { getStorageDriver } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 
 const updateAssetSchema = z.object({
@@ -16,6 +19,8 @@ const updateAssetSchema = z.object({
     .max(PHOTO_NAME_MAX, `Photo names can be up to ${PHOTO_NAME_MAX} characters.`)
     .nullable()
     .optional(),
+  /** Crop, frame, and card size (DIG-33). Null, or the defaults, clears the edit. */
+  edit: photoEditSchema.nullable().optional(),
   /** Moves the photo to the end of another of the owner's boards (DIG-25). */
   boardId: z.string().min(1).optional(),
 });
@@ -56,6 +61,19 @@ export async function PATCH(
       : Prisma.DbNull;
   }
 
+  if (parsed.data.edit !== undefined) {
+    const edit = parsed.data.edit;
+    data.edit = edit && !isDefaultEdit(edit) ? (edit as Prisma.InputJsonValue) : Prisma.DbNull;
+    // Crops need the photo's shape. Photos from before sizes were recorded get it now.
+    if (edit && (existing.width === null || existing.height === null)) {
+      const bytes = await getStorageDriver().getObject(existing.storageKey);
+      const size = bytes ? await readImageSize(bytes) : null;
+      if (size) {
+        data.width = size.width;
+        data.height = size.height;
+      }
+    }
+  }
   if (parsed.data.name !== undefined) {
     data.name = parsed.data.name || null;
   }

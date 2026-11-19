@@ -89,6 +89,9 @@ model MediaAsset {
   height          Int?
   /// A tiny inline WebP shown while the photo loads.
   blurDataUrl     String?
+  /// Crop, frame, and board card size (DIG-33): see `src/lib/photo-edit.ts`. Null is unedited.
+  /// The stored image is never changed.
+  edit            Json?       @db.JsonB
   kind            AssetKind   @default(photo)
   exif            Json?       @db.JsonB
   recipe          Json?       @db.JsonB

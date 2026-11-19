@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import Image from "next/image";
+import { EditedPhoto } from "@/components/EditedPhoto";
+import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/photo-edit";
 import { Camera, RotateCw, SlidersHorizontal } from "lucide-react";
 import { recipeRows } from "@/lib/fuji-recipe";
 import type { ExifData, RecipeData } from "@/lib/types";
@@ -12,6 +13,9 @@ export interface FlipCardProps {
   imageUrl: string;
   /** The creator's name for the photo (DIG-34): its description and the title on the back. */
   name?: string | null;
+  /** Crop and frame (DIG-33); null shows the photo as an unedited 4:5 page. */
+  edit?: PhotoEdit | null;
+  dims?: { width: number; height: number } | null;
   /** Tiny inline image shown while the photo loads (DIG-26). */
   blurDataUrl?: string | null;
   caption?: string;
@@ -28,6 +32,8 @@ export function FlipCard({
   totalPages,
   imageUrl,
   name,
+  edit = null,
+  dims = null,
   blurDataUrl,
   caption,
   flipEnabled,
@@ -43,6 +49,7 @@ export function FlipCard({
   const reverseBadgeLabel = showRecipePrimary ? "Film Recipe" : "Camera EXIF";
   const reverseName = showRecipePrimary ? "film recipe" : "camera details";
   const isFlipped = flipEnabled && flipped;
+  const aspect = frameLayout(edit ?? DEFAULT_EDIT, dims).aspect;
 
   const handleToggle = () => {
     if (!flipEnabled) return;
@@ -69,7 +76,8 @@ export function FlipCard({
         tabIndex={flipEnabled ? 0 : undefined}
         aria-label={flipEnabled ? `Page ${pageNumber}: flip to ${reverseName}` : undefined}
         aria-pressed={flipEnabled ? isFlipped : undefined}
-        className={`flip-perspective relative aspect-[4/5] w-full select-none ${
+        style={{ aspectRatio: String(Math.round(aspect * 10000) / 10000) }}
+        className={`flip-perspective relative w-full select-none ${
           flipEnabled ? "cursor-pointer" : "cursor-default"
         }`}
       >
@@ -80,15 +88,14 @@ export function FlipCard({
         >
           {/* FRONT FACE: Full-bleed photo page with optional caption */}
           <div className="flip-face overflow-hidden rounded-2xl bg-ink-900" aria-hidden={isFlipped || undefined}>
-            <Image
+            <EditedPhoto
               src={imageUrl}
               alt={name || caption || `Page ${pageNumber} of ${totalPages}`}
-              fill
+              edit={edit}
+              dims={dims}
               priority={priority}
               sizes="(max-width: 768px) 100vw, 680px"
-              className="object-cover"
-              placeholder={blurDataUrl ? "blur" : "empty"}
-              blurDataURL={blurDataUrl ?? undefined}
+              blurDataUrl={blurDataUrl}
             />
 
             <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/60 via-black/20 to-transparent p-4 sm:p-5">

@@ -38,6 +38,9 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
         status: true,
         processingError: true,
         blurDataUrl: true,
+        edit: true,
+        width: true,
+        height: true,
       },
     }),
     prisma.board.findMany({

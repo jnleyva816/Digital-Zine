@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-react";
 import { readApiError, type BoardAsset } from "@/components/board/types";
 import { ZineBoardPicker } from "./ZineBoardPicker";
+import { EditedPhoto } from "@/components/EditedPhoto";
+
+const dimsOf = (a: BoardAsset) => (a.width && a.height ? { width: a.width, height: a.height } : null);
 import { assetLabel } from "@/components/board/board-utils";
 import { DeleteZineDialog } from "./DeleteZineDialog";
 import { PdfExport } from "./PdfExport";
@@ -343,11 +345,17 @@ export function ZineEditor({
               const entry = assetsById.get(page.assetId);
               return (
                 <li key={page.key} className="flex flex-col gap-4 rounded-2xl border border-paper-300 bg-white p-4 sm:flex-row">
-                  <div className="relative aspect-[4/5] w-full shrink-0 overflow-hidden rounded-xl bg-ink-900 sm:w-28">
+                  <div className="relative w-full shrink-0 overflow-hidden rounded-xl bg-ink-900 sm:w-28">
                     {entry ? (
-                      <Image src={entry.asset.publicUrl} alt={labelFor(page.assetId)} fill sizes="(max-width: 640px) 100vw, 112px" className="object-cover" />
+                      <EditedPhoto
+                        src={entry.asset.publicUrl}
+                        alt={labelFor(page.assetId)}
+                        edit={entry.asset.edit}
+                        dims={dimsOf(entry.asset)}
+                        sizes="(max-width: 640px) 100vw, 112px"
+                      />
                     ) : (
-                      <span className="absolute inset-0 flex items-center justify-center p-2 text-center text-xs text-paper-50">Photo unavailable</span>
+                      <span className="flex aspect-[4/5] items-center justify-center p-2 text-center text-xs text-paper-50">Photo unavailable</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1 space-y-3">
@@ -429,8 +437,15 @@ export function ZineEditor({
                     disabled={draft.pages.length >= ZINE_LIMITS.pages}
                     className="group w-full overflow-hidden rounded-xl border border-paper-300 bg-white text-left transition hover:border-vermilion-500 disabled:opacity-40"
                   >
-                    <span className="relative block aspect-[4/5] bg-ink-900">
-                      <Image src={asset.publicUrl} alt="" fill sizes="(max-width: 640px) 50vw, 160px" className="object-cover" />
+                    <span className="relative block bg-ink-900">
+                      <EditedPhoto
+                        as="span"
+                        src={asset.publicUrl}
+                        alt=""
+                        edit={asset.edit}
+                        dims={dimsOf(asset)}
+                        sizes="(max-width: 640px) 50vw, 160px"
+                      />
                       <span className="absolute inset-0 flex items-center justify-center bg-ink-900/0 text-paper-50 opacity-0 transition group-hover:bg-ink-900/40 group-hover:opacity-100">
                         <ImagePlus className="h-6 w-6" aria-hidden="true" />
                       </span>

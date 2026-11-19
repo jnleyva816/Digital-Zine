@@ -18,6 +18,8 @@ export interface PdfRenderedPageItem {
   assetKind: "photo" | "recipe";
   /** JPEG bytes, already read from storage. Pages without an image are left out before rendering. */
   imageSrc: { data: Buffer; format: "jpg" };
+  /** "contain" for an edited photo, which arrives cropped and framed (DIG-33). */
+  imageFit: "cover" | "contain";
   exif: ExifData | null;
   recipe: RecipeData | null;
 }
@@ -217,7 +219,7 @@ function ZinePdfDocument({ zine }: { zine: PdfZinePayload }) {
               </View>
 
               <View style={styles.imageFrame}>
-                <PdfImage src={p.imageSrc} style={styles.plateImage} />
+                <PdfImage src={p.imageSrc} style={[styles.plateImage, { objectFit: p.imageFit }]} />
               </View>
 
               {p.caption ? <Text style={styles.caption}>{p.caption}</Text> : null}

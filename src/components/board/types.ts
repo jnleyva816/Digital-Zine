@@ -1,4 +1,5 @@
 import { parseExif, parseRecipe, type ExifData, type RecipeData } from "@/lib/types";
+import { parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 
 /** Serializable shape of a Vision Board asset, shared by the server page and client board. */
 export interface BoardAsset {
@@ -16,6 +17,11 @@ export interface BoardAsset {
   status: "processing" | "ready" | "failed";
   processingError: string | null;
   blurDataUrl: string | null;
+  /** Crop, frame, and card size (DIG-33); null when unedited. */
+  edit: PhotoEdit | null;
+  /** Pixel size, when known. Crops need it. */
+  width: number | null;
+  height: number | null;
 }
 
 interface RawAsset {
@@ -30,6 +36,9 @@ interface RawAsset {
   status?: string;
   processingError?: string | null;
   blurDataUrl?: string | null;
+  edit?: unknown;
+  width?: number | null;
+  height?: number | null;
 }
 
 export function toBoardAsset(raw: RawAsset): BoardAsset {
@@ -45,6 +54,9 @@ export function toBoardAsset(raw: RawAsset): BoardAsset {
     status: raw.status === "processing" || raw.status === "failed" ? raw.status : "ready",
     processingError: raw.processingError ?? null,
     blurDataUrl: raw.blurDataUrl ?? null,
+    edit: parsePhotoEdit(raw.edit),
+    width: raw.width ?? null,
+    height: raw.height ?? null,
   };
 }
 
