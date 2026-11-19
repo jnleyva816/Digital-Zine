@@ -6,6 +6,7 @@ import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
 import { prisma } from "@/lib/prisma";
 import { withUserLock } from "@/lib/usage";
 import { getOrCreateDefaultBoard } from "@/lib/boards";
+import { revalidatePublicZines } from "@/lib/public-zine-cache";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
 
 const createZineSchema = z.object({
@@ -120,5 +121,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: zineLimitMessage(limit ?? 0), code: "zine_limit" }, { status: 403 });
   }
 
+  // A 404 may be cached at this address from before the zine existed (DIG-27).
+  await revalidatePublicZines([zine.slug]);
   return NextResponse.json({ zine }, { status: 201 });
 }

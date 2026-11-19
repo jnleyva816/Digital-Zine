@@ -1,10 +1,17 @@
 import { cache } from "react";
+import { unstable_cache } from "next/cache";
 import { shareImageUrl } from "@/lib/media/variant-urls";
 import { prisma } from "@/lib/prisma";
 import { parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { parseExif, parsePageContent, parseRecipe, type ExifData, type RecipeData } from "@/lib/types";
 
 const SHARE_DESCRIPTION_MAX = 200;
+
+/** Cache tag for one zine's public page (DIG-27). Revalidate it whenever what readers see changes. */
+export const publicZineTag = (slug: string) => `public-zine:${slug}`;
+
+/** A safety net: even if an invalidation is missed, a cached page is rebuilt within the hour. */
+const PUBLIC_ZINE_MAX_AGE_SECONDS = 3600;
 
 /** The description used for search results and share cards. */
 export function shareDescription({
@@ -48,15 +55,24 @@ export interface PublicZine {
   title: string;
   description: string | null;
   ownerName: string | null;
-  publishedAt: Date | null;
+  /** ISO date. A string, not a Date, because the page data is cached as JSON (DIG-27). */
+  publishedAt: string | null;
   pages: PublicZinePage[];
 }
 
 /**
  * A published zine as readers see it, or null when the slug is unknown or the zine is not
- * currently published. Cached per request so metadata and the page share one query.
+ * currently published. Served from the data cache (DIG-27) and shared by the metadata and the
+ * page within a request; every change readers would see revalidates `publicZineTag(slug)`.
  */
-export const getPublicZine = cache(async (slug: string): Promise<PublicZine | null> => {
+export const getPublicZine = cache((slug: string): Promise<PublicZine | null> =>
+  unstable_cache(() => loadPublicZine(slug), ["public-zine", slug], {
+    tags: [publicZineTag(slug)],
+    revalidate: PUBLIC_ZINE_MAX_AGE_SECONDS,
+  })()
+);
+
+async function loadPublicZine(slug: string): Promise<PublicZine | null> {
   const zine = await prisma.zine.findFirst({
     where: { slug, published: true },
     select: {
@@ -118,7 +134,7 @@ export const getPublicZine = cache(async (slug: string): Promise<PublicZine | nu
     title: zine.title,
     description: zine.description,
     ownerName: zine.owner.name?.trim() || null,
-    publishedAt: zine.publishedAt,
+    publishedAt: zine.publishedAt?.toISOString() ?? null,
     pages,
   };
-});
+}
