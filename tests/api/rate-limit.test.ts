@@ -142,7 +142,13 @@ describe("routes over their limit return 429 with Retry-After and a message", ()
 
 describe("sign-in attempts", () => {
   const email = `limit-${Date.now()}@test.local`;
-  const fromIp = (ip: string) => new Request("http://test.local/api/auth/callback/credentials", { headers: { "x-forwarded-for": `${ip}, 10.0.0.1` } });
+  /**
+   * A request as our proxy forwards it: the proxy appends the address that connected to it, so
+   * the real client is the rightmost entry. Anything to its left came from the client and may be
+   * forged (DIG-37).
+   */
+  const fromIp = (ip: string, forged = "6.6.6.6") =>
+    new Request("http://test.local/api/auth/callback/credentials", { headers: { "x-forwarded-for": `${forged}, ${ip}` } });
 
   beforeAll(async () => {
     await prisma.user.create({ data: { email, passwordHash: await bcrypt.hash("right-pass", 4) } });
@@ -151,8 +157,12 @@ describe("sign-in attempts", () => {
     await prisma.user.deleteMany({ where: { email } });
   });
 
-  it("reads the client IP from the first forwarded address", () => {
+  it("reads the client IP from the right of X-Forwarded-For, past the configured number of proxies (DIG-37)", () => {
     expect(clientIp(fromIp("203.0.113.9"))).toBe("203.0.113.9");
+    vi.stubEnv("TRUSTED_PROXY_HOPS", "2");
+    const twoProxies = new Request("http://x", { headers: { "x-forwarded-for": "6.6.6.6, 203.0.113.9, 10.0.0.1" } });
+    expect(clientIp(twoProxies)).toBe("203.0.113.9");
+    vi.unstubAllEnvs();
     expect(clientIp(new Request("http://x"))).toBe("unknown");
   });
 
@@ -160,27 +170,50 @@ describe("sign-in attempts", () => {
     expect(await authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.1"))).toMatchObject({ email });
   });
 
-  it("refuses an email after 5 failed tries in 15 minutes, even with the right password, then allows it again", async () => {
-    vi.useFakeTimers({ toFake: ["Date"] });
-    vi.setSystemTime(new Date("2026-11-19T12:00:00Z"));
-    for (let i = 0; i < 5; i++) expect(await authorizeCredentials({ email, password: "wrong" }, fromIp("203.0.113.2"))).toBeNull();
-    await expect(authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.3"))).rejects.toBeInstanceOf(SignInRateLimitedError);
-    vi.setSystemTime(new Date("2026-11-19T12:15:01Z"));
+  it("does not let an attacker lock a creator out: failures count per email and IP together (DIG-37)", async () => {
+    for (let i = 0; i < 5; i++) expect(await authorizeCredentials({ email, password: "wrong" }, fromIp("198.51.100.66"))).toBeNull();
+    // The attacker's IP is now blocked for this email, even with the right password…
+    await expect(authorizeCredentials({ email, password: "right-pass" }, fromIp("198.51.100.66"))).rejects.toBeInstanceOf(
+      SignInRateLimitedError
+    );
+    // …but the creator, signing in from their own IP, is not.
     expect(await authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.3"))).toMatchObject({ email });
   });
 
-  it("clears an email's failed tries after a successful sign-in", async () => {
+  it("refuses an email from one IP after 5 failed tries in 15 minutes, then allows it again", async () => {
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-11-19T12:00:00Z"));
+    for (let i = 0; i < 5; i++) expect(await authorizeCredentials({ email, password: "wrong" }, fromIp("203.0.113.2"))).toBeNull();
+    await expect(authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.2"))).rejects.toBeInstanceOf(
+      SignInRateLimitedError
+    );
+    vi.setSystemTime(new Date("2026-11-19T12:15:01Z"));
+    expect(await authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.2"))).toMatchObject({ email });
+  });
+
+  it("clears an email's failed tries from that IP after a successful sign-in", async () => {
     for (let i = 0; i < 4; i++) await authorizeCredentials({ email, password: "wrong" }, fromIp("203.0.113.4"));
     await authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.4"));
-    for (let i = 0; i < 4; i++) expect(await authorizeCredentials({ email, password: "wrong" }, fromIp("203.0.113.5"))).toBeNull();
-    expect(await authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.5"))).toMatchObject({ email });
+    for (let i = 0; i < 4; i++) expect(await authorizeCredentials({ email, password: "wrong" }, fromIp("203.0.113.4"))).toBeNull();
+    expect(await authorizeCredentials({ email, password: "right-pass" }, fromIp("203.0.113.4"))).toMatchObject({ email });
   });
 
   it("refuses an IP after 20 failed tries across any emails", async () => {
     for (let i = 0; i < 20; i++) {
       await authorizeCredentials({ email: `nobody-${i}@test.local`, password: "x" }, fromIp("198.51.100.7"));
     }
-    await expect(authorizeCredentials({ email, password: "right-pass" }, fromIp("198.51.100.7"))).rejects.toBeInstanceOf(SignInRateLimitedError);
+    await expect(authorizeCredentials({ email, password: "right-pass" }, fromIp("198.51.100.7"))).rejects.toBeInstanceOf(
+      SignInRateLimitedError
+    );
     expect(await authorizeCredentials({ email, password: "right-pass" }, fromIp("198.51.100.8"))).toMatchObject({ email });
+  });
+
+  it("still counts an attacker who forges a new X-Forwarded-For address on every try (DIG-37)", async () => {
+    for (let i = 0; i < 20; i++) {
+      await authorizeCredentials({ email: `nobody-${i}@test.local`, password: "x" }, fromIp("198.51.100.9", `10.9.9.${i}`));
+    }
+    await expect(
+      authorizeCredentials({ email, password: "right-pass" }, fromIp("198.51.100.9", "10.9.9.250"))
+    ).rejects.toBeInstanceOf(SignInRateLimitedError);
   });
 });
