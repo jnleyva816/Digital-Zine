@@ -172,7 +172,10 @@ test("cards flip on click, Enter, and Space; pages with flip off do not", async 
   await expect(flip1).toHaveAttribute("aria-pressed", "false");
 
   const card2 = zinePages(page).nth(1);
-  await expect(card2.getByRole("button")).toHaveCount(0);
+  // No flip control (DIG-49: its only button is the one that opens the photo full screen).
+  await expect(card2.getByRole("button", { name: /flip/i })).toHaveCount(0);
+  await expect(card2.getByRole("button")).toHaveCount(1);
+  await expect(card2.getByRole("button", { name: "View page 2 full screen" })).toBeVisible();
   await card2.getByRole("img", { name: "The cellar at dawn" }).click();
   await expect(card2.getByRole("img", { name: "The cellar at dawn" })).toBeVisible();
   await expect(card2.getByText(/Flip/)).toHaveCount(0);

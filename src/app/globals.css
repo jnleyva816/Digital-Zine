@@ -37,3 +37,32 @@
 .flip-face-back {
   transform: rotateY(180deg);
 }
+
+/* Full-screen photo view on a public zine (DIG-49). Browsers without View Transitions fade in. */
+dialog[data-lightbox][open] {
+  animation: lightbox-fade 0.2s ease-out;
+}
+
+@keyframes lightbox-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+::view-transition-group(zine-photo) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  dialog[data-lightbox][open] {
+    animation: none;
+  }
+
+  ::view-transition-group(zine-photo) {
+    animation-duration: 0s;
+  }
+}

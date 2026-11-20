@@ -1,5 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { vi } from "vitest";
 import { describe, expect, it } from "vitest";
 import { FlipCard } from "./FlipCard";
 
@@ -53,3 +55,50 @@ describe("FlipCard photo edit (DIG-33)", () => {
     expect(card.style.aspectRatio).toMatch(/^0.8( \/ 1)?$/);
   });
 });
+
+describe("FlipCard full screen button (DIG-49)", () => {
+  const card = { ...base, pageNumber: 2 };
+
+  it("has a button for opening the photo full screen, named for its page", async () => {
+    const open = vi.fn();
+    render(<FlipCard {...card} onOpenFullScreen={open} />);
+    await userEvent.click(screen.getByRole("button", { name: "View page 2 full screen" }));
+    expect(open).toHaveBeenCalledTimes(1);
+    expect(open.mock.calls[0][0]).toBeInstanceOf(HTMLElement);
+  });
+
+  it("does not flip the card, with the mouse or the keyboard", async () => {
+    const open = vi.fn();
+    render(<FlipCard {...card} onOpenFullScreen={open} />);
+    const article = screen.getByTestId("zine-flip-card-2");
+    await userEvent.click(screen.getByRole("button", { name: "View page 2 full screen" }));
+    expect(article).toHaveAttribute("data-flipped", "false");
+    screen.getByRole("button", { name: "View page 2 full screen" }).focus();
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard(" ");
+    expect(article).toHaveAttribute("data-flipped", "false");
+    expect(open).toHaveBeenCalledTimes(3);
+  });
+
+  it("sits beside the flip control, not inside it, so no button holds another button", () => {
+    render(<FlipCard {...card} onOpenFullScreen={vi.fn()} />);
+    expect(screen.getByRole("button", { name: "View page 2 full screen" }).closest("[aria-pressed]")).toBeNull();
+  });
+
+  it("still flips when the card itself is pressed", async () => {
+    render(<FlipCard {...card} onOpenFullScreen={vi.fn()} />);
+    await userEvent.click(screen.getByRole("button", { name: /flip to camera details/i }));
+    expect(screen.getByTestId("zine-flip-card-2")).toHaveAttribute("data-flipped", "true");
+  });
+
+  it("is not offered while the card shows its reverse, since the photo is not in view", () => {
+    render(<FlipCard {...card} defaultFlipped onOpenFullScreen={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: "View page 2 full screen" })).not.toBeInTheDocument();
+  });
+
+  it("is not offered when nothing can open it", () => {
+    render(<FlipCard {...card} />);
+    expect(screen.queryByRole("button", { name: /full screen/i })).not.toBeInTheDocument();
+  });
+});
+
