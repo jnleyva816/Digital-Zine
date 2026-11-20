@@ -126,4 +126,31 @@ describe("BillingPanel", () => {
     act(() => vi.advanceTimersByTime(60_000));
     expect(refresh.mock.calls.length).toBeLessThanOrEqual(10);
   });
+
+  describe("a cancelled plan that has not ended yet (DIG-99)", () => {
+    const ENDS = "2026-12-20T14:24:49.000Z";
+
+    it("tells a Pro creator when Pro ends, and how to keep it", () => {
+      setup({ plan: "Pro", endsAt: ENDS });
+      expect(screen.getByRole("status")).toHaveTextContent("Your Pro plan ends on 20 December 2026. You keep Pro until then.");
+      expect(screen.getByRole("status")).toHaveTextContent(/manage subscription/i);
+      expect(screen.getByRole("button", { name: "Manage subscription" })).toBeEnabled();
+    });
+
+    it("says nothing extra when the plan is not ending", () => {
+      setup({ plan: "Pro", endsAt: null });
+      expect(screen.queryByText(/your pro plan ends/i)).not.toBeInTheDocument();
+    });
+
+    it("never shows it for a Free creator or an admin", () => {
+      setup({ plan: "Free", endsAt: ENDS });
+      expect(screen.queryByText(/your pro plan ends/i)).not.toBeInTheDocument();
+    });
+
+    it("shows it next to a failed-payment warning without hiding either", () => {
+      setup({ plan: "Pro", endsAt: ENDS, paymentFailed: true });
+      expect(screen.getByRole("alert")).toHaveTextContent(/last payment failed/i);
+      expect(screen.getByText(/your pro plan ends on 20 December 2026/i)).toBeInTheDocument();
+    });
+  });
 });

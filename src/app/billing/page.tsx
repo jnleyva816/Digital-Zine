@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { appOrigin, automaticTaxEnabled, describeSubscription } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
+import { fetchPlanEnd } from "@/lib/plan-end";
 import { isStripeConfigured } from "@/lib/stripe";
 import { StudioHeader } from "@/components/StudioHeader";
 import { BillingPanel } from "@/components/billing/BillingPanel";
@@ -29,6 +30,11 @@ export default async function BillingPage({ searchParams }: Props) {
   const billed = describeSubscription({ tier: user.billingTier, subscriptionStatus: user.subscriptionStatus });
   const plan = isAdmin ? (user.viewingAsFree ? "Free" : "Admin") : billed.plan;
   const paymentFailed = !isAdmin && billed.paymentFailed;
+  // A creator who cancelled keeps Pro until the paid period ends; say when (DIG-99).
+  const subscription = !isAdmin && billed.plan === "Pro"
+    ? await prisma.user.findUnique({ where: { id: user.id }, select: { stripeSubscriptionId: true } })
+    : null;
+  const endsAt = (await fetchPlanEnd(subscription?.stripeSubscriptionId))?.toISOString() ?? null;
 
   return (
     <>
@@ -49,6 +55,7 @@ export default async function BillingPage({ searchParams }: Props) {
           configured={isStripeConfigured() && appOrigin() !== null}
           checkout={checkout === "success" || checkout === "cancelled" ? checkout : null}
           taxExclusive={automaticTaxEnabled()}
+          endsAt={endsAt}
         />
       </main>
     </>
