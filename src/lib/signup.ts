@@ -1,4 +1,5 @@
 import { z } from "zod";
+import "@/lib/zod-setup";
 
 /** bcrypt only reads the first 72 bytes, so a longer password would be silently cut short. */
 export const PASSWORD_MIN = 8;
