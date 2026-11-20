@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { withSourceWidth } from "@/lib/media/variant-urls";
 import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/photo-edit";
 
 const pct = (n: number) => `${Math.round(n * 1000) / 1000}%`;
@@ -50,7 +51,8 @@ export function EditedPhoto({
           style={{ left: pct(layout.image.left), top: pct(layout.image.top), width: pct(layout.image.width), height: pct(layout.image.height) }}
         >
           <Image
-            src={src}
+            // The photo's own width tells the image loader which copies exist (DIG-110).
+            src={withSourceWidth(src, dims?.width)}
             alt={alt}
             fill
             sizes={sizes}
