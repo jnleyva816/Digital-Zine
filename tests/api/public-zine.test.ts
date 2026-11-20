@@ -64,3 +64,38 @@ describe("getPublicZine (DIG-34)", () => {
     expect(zine?.pages.map((p) => p.name)).toEqual(["Harbor at dusk", null]);
   });
 });
+
+describe("getPublicZine and unprocessed photos (DIG-38)", () => {
+  it("skips pages whose photo is still processing or failed, so readers never get the original", async () => {
+    const ready = await createAsset(owner.id, 0, "ready.jpg");
+    const failed = await createAsset(owner.id, 1, "failed.jpg");
+    const processing = await createAsset(owner.id, 2, "processing.jpg");
+    await prisma.mediaAsset.update({ where: { id: failed.id }, data: { status: "failed" } });
+    await prisma.mediaAsset.update({ where: { id: processing.id }, data: { status: "processing" } });
+    const slug = `unprocessed-${randomUUID().slice(0, 8)}`;
+    await prisma.zine.create({
+      data: {
+        ownerId: owner.id,
+        boardId: await defaultBoardId(owner.id),
+        title: "Mixed",
+        slug,
+        published: true,
+        publishedAt: new Date(),
+        pages: {
+          create: [
+            { pageNumber: 1, content: { assetId: failed.id, caption: "" } },
+            { pageNumber: 2, content: { assetId: processing.id, caption: "" } },
+            { pageNumber: 3, content: { assetId: ready.id, caption: "" } },
+          ],
+        },
+      },
+    });
+    const zine = await getPublicZine(slug);
+    expect(zine?.pages.map((p) => p.imageUrl)).toEqual([ready.publicUrl]);
+    expect(zine?.pages[0].pageNumber).toBe(1);
+    const json = JSON.stringify(zine);
+    expect(json).not.toContain(failed.storageKey);
+    expect(json).not.toContain(processing.storageKey);
+  });
+});
+
