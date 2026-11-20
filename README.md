@@ -139,6 +139,39 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `AWS_S3_PUBLIC_URL` | No | Public base URL for reading objects |
 | `NEXT_PUBLIC_IMAGE_CDN_URL` | No | Image CDN prefix. See below. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID`, `STRIPE_AUTOMATIC_TAX` | No | Pro subscription billing and sales tax (see "Billing" below). If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
+| `TRUSTED_PROXY_HOPS` | No | How many proxies sit in front of the app, for reading the client IP (see "Sign-in rate limits"). Default: `1` |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | No | Report server and browser errors to Sentry. Unset means nothing is sent. `NEXT_PUBLIC_SENTRY_DSN` is read at build time. |
+| `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | No | Build time only: upload source maps so Sentry shows readable stack traces |
+
+## Deploy (Railway)
+
+Production runs on [Railway](https://railway.com) as one always-on service, with Railway Postgres and Cloudflare R2 for photos. It is not serverless: the media worker and the public page cache run inside the app.
+
+`railway.json` holds the service settings. Railway builds with `npm run build`, runs `npm run db:deploy` before each deploy, starts `next start`, and only switches traffic once `GET /api/health` answers 200. That route checks the database and answers 503 when it cannot reach it.
+
+Set these on the app service:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway's private network, direct connection) |
+| `AUTH_SECRET` | `openssl rand -base64 32`, never a value from this repository |
+| `AUTH_TRUST_HOST` | `true` |
+| `NEXT_PUBLIC_APP_URL` | `https://<service>.up.railway.app`, or the custom domain. Read at build time, so change it and redeploy together. |
+| `TRUSTED_PROXY_HOPS` | `1` (Railway's edge proxy) |
+| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | The R2 bucket and an R2 API token with Object Read & Write on that bucket |
+| `AWS_REGION` | `auto` |
+| `AWS_S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com` |
+| `AWS_S3_PUBLIC_URL` | The bucket's public URL (`https://pub-<id>.r2.dev`, or a custom domain) |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | The Sentry project's DSN |
+| `STRIPE_*` | Live keys (see "Billing") |
+
+The R2 bucket needs public read access and a CORS rule that allows `PUT` with the `Content-Type` header from `NEXT_PUBLIC_APP_URL`:
+
+```json
+[{ "AllowedOrigins": ["https://<service>.up.railway.app"], "AllowedMethods": ["PUT"], "AllowedHeaders": ["Content-Type"], "MaxAgeSeconds": 3600 }]
+```
+
+After a deploy, check it with `SMOKE_BASE_URL=<url> SMOKE_SCREENSHOTS=0 npm run smoke`. Point an uptime monitor at `/api/health`.
 
 ## Admin accounts
 

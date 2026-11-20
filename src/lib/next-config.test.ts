@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import nextConfig from "../../next.config.mjs";
+import nextConfig from "../../next.config";
 
 describe("next.config image settings (DIG-46)", () => {
   it("serves every image through our own loader", () => {

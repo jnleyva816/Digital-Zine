@@ -115,6 +115,21 @@ describe("S3StorageDriver (DIG-32)", () => {
     expect(prepared.headers["Content-Type"]).toBe("image/jpeg");
   });
 
+  it("asks for no checksum the browser cannot send, so presigned PUTs work on R2 (DIG-20)", async () => {
+    const r2 = new S3StorageDriver({
+      bucket: "b",
+      region: "auto",
+      accessKeyId: "AKIDTEST",
+      secretAccessKey: "secret",
+      endpoint: "https://acct.r2.cloudflarestorage.com",
+    });
+    const prepared = await r2.prepareUpload({ storageKey: "users/u1/a.jpg", contentType: "image/jpeg", size: 5000 });
+    const url = new URL(prepared.uploadUrl);
+    const checksumParams = [...url.searchParams.keys()].filter((k) => /checksum/i.test(k));
+    expect(checksumParams).toEqual([]);
+    expect((url.searchParams.get("X-Amz-SignedHeaders") ?? "").split(";").filter((h) => /checksum/.test(h))).toEqual([]);
+  });
+
   it("signs the exact Content-Length so S3 rejects a body of any other size", async () => {
     const prepared = await driver().prepareUpload({
       storageKey: "users/u1/a.jpg",

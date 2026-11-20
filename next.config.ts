@@ -1,5 +1,7 @@
-/** @type {import('next').NextConfig} */
-const nextConfig = {
+import { withSentryConfig } from "@sentry/nextjs/config";
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
   // Playwright builds into its own folder so test runs never clobber a running `next dev`.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   serverExternalPackages: ["@react-pdf/renderer", "sharp", "pg-boss"],
@@ -15,4 +17,13 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+// Sentry (DIG-20). Source maps upload only when SENTRY_AUTH_TOKEN, SENTRY_ORG and SENTRY_PROJECT are
+// set at build time; without them the build is unchanged apart from the SDK.
+export default withSentryConfig(nextConfig, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: !process.env.SENTRY_AUTH_TOKEN,
+  telemetry: false,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN, deleteSourcemapsAfterUpload: true },
+});
