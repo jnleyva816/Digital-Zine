@@ -14,6 +14,7 @@ export type RateLimitRule =
   | "forgot-email"
   | "forgot-ip"
   | "reset-ip"
+  | "account-delete"
   | "csp-report"
   | "upload"
   | "write"
@@ -39,6 +40,8 @@ export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: 
   "forgot-ip": { limit: 20, windowSeconds: 60 * 60 },
   /** Attempts to use a reset link per client IP, good or bad, so a link cannot be guessed at. */
   "reset-ip": { limit: 20, windowSeconds: 60 * 60 },
+  /** Attempts to delete an account per creator (DIG-108), right or wrong, so a password cannot be guessed here. */
+  "account-delete": { limit: 5, windowSeconds: 60 * 60 },
   /** CSP violation reports per client IP (DIG-104). A browser sends a few; more is noise or abuse. */
   "csp-report": { limit: 60, windowSeconds: 60 },
   /** Upload presigns per user. */
@@ -99,6 +102,7 @@ const MESSAGES: Record<RateLimitRule, string> = {
   "forgot-email": "That email address has been sent a reset link too many times.",
   "forgot-ip": "Too many password resets requested.",
   "reset-ip": "Too many attempts to reset a password.",
+  "account-delete": "You have tried to delete your account too many times.",
   "csp-report": "Too many reports.",
   upload: "You've reached the limit of 300 uploads an hour.",
   write: "You're making changes too quickly.",

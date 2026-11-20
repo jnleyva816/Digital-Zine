@@ -6,11 +6,23 @@ import type { getAuthenticatedUser } from "@/lib/auth";
 
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getAuthenticatedUser>>>;
 
-/** A throwaway user for one test file. Deleting it cascades to its assets and zines. */
-export async function createTestUser(): Promise<SessionUser> {
-  const user = await prisma.user.create({
-    data: { email: `api-${randomUUID()}@test.local`, name: "API Test", passwordHash: "not-used", emailVerifiedAt: new Date() },
-  });
+/**
+ * What `getAuthenticatedUser` returns for a signed-in user. `signedInAt` is when the session began
+ * (DIG-108); pass `null` for a session with no start time.
+ */
+export function sessionFor(
+  user: {
+    id: string;
+    publicId: string;
+    email: string;
+    name: string | null;
+    tier: "free" | "pro";
+    role: "user" | "admin";
+    subscriptionStatus: string;
+    stripeCustomerId: string | null;
+  },
+  signedInAt: number | null = Date.now()
+): SessionUser {
   return {
     id: user.id,
     publicId: user.publicId,
@@ -22,7 +34,16 @@ export async function createTestUser(): Promise<SessionUser> {
     viewingAsFree: false,
     subscriptionStatus: user.subscriptionStatus,
     stripeCustomerId: user.stripeCustomerId,
+    signedInAt,
   };
+}
+
+/** A throwaway user for one test file. Deleting it cascades to its assets and zines. */
+export async function createTestUser(): Promise<SessionUser> {
+  const user = await prisma.user.create({
+    data: { email: `api-${randomUUID()}@test.local`, name: "API Test", passwordHash: "not-used", emailVerifiedAt: new Date() },
+  });
+  return sessionFor(user);
 }
 
 export async function deleteTestUser(id: string) {

@@ -69,6 +69,8 @@ describe("the decided limits (DIG-28)", () => {
       "forgot-email": { limit: 3, windowSeconds: 3600 },
       "forgot-ip": { limit: 20, windowSeconds: 3600 },
       "reset-ip": { limit: 20, windowSeconds: 3600 },
+      // DIG-108: attempts to delete an account, per creator.
+      "account-delete": { limit: 5, windowSeconds: 3600 },
       "csp-report": { limit: 60, windowSeconds: 60 },
       upload: { limit: 300, windowSeconds: 3600 },
       write: { limit: 120, windowSeconds: 60 },

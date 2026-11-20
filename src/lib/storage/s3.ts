@@ -94,18 +94,35 @@ export class S3StorageDriver implements StorageDriver {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: storageKey }));
   }
 
-  /** Lists the keys under `prefix/` and deletes them in batches of up to 1,000 (DIG-40). */
+  /**
+   * Lists the keys under `prefix/` and deletes them in batches of up to 1,000 (DIG-40). A batch
+   * delete reports the files it could not remove in its answer instead of throwing, so those are
+   * counted and, once every page has been tried, reported as one error (DIG-108): a caller that
+   * must know the files are gone, such as account deletion, never mistakes a partial failure for
+   * success.
+   */
   async deletePrefix(prefix: string): Promise<void> {
     const Prefix = `${prefix.replace(/\/+$/, "")}/`;
     let ContinuationToken: string | undefined;
+    let total = 0;
+    let failed = 0;
+    const reasons = new Set<string>();
     do {
       const page = await this.client.send(new ListObjectsV2Command({ Bucket: this.config.bucket, Prefix, ContinuationToken }));
       const keys = (page.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
       if (keys.length > 0) {
-        await this.client.send(new DeleteObjectsCommand({ Bucket: this.config.bucket, Delete: { Objects: keys, Quiet: true } }));
+        const result = await this.client.send(
+          new DeleteObjectsCommand({ Bucket: this.config.bucket, Delete: { Objects: keys, Quiet: true } })
+        );
+        total += keys.length;
+        for (const error of result.Errors ?? []) {
+          failed++;
+          reasons.add(error.Code ?? "unknown error");
+        }
       }
       ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (ContinuationToken);
+    if (failed > 0) throw new Error(`Could not delete ${failed} of ${total} files under ${Prefix} (${[...reasons].join(", ")}).`);
   }
 
   async prepareUpload(params: {
