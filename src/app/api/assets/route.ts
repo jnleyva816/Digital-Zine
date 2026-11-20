@@ -10,6 +10,7 @@ import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { enqueueProcessing } from "@/lib/media/queue";
 import { getStorageDriver } from "@/lib/storage";
+import { isValidStorageKey, isWellFormedStorageKey } from "@/lib/storage/keys";
 import { getAccountUsageBytes, withUserLock } from "@/lib/usage";
 import { getOrCreateDefaultBoard } from "@/lib/boards";
 import { limitRequest } from "@/lib/rate-limit";
@@ -95,7 +96,12 @@ export async function POST(req: Request) {
     );
   }
 
-  if (!parsed.data.storageKey.startsWith(`users/${user.id}/`)) {
+  // Before any storage call: a key like users/<me>/../<them>/… would reach another creator's
+  // file, and the rejection path below deletes the upload (DIG-35).
+  if (!isWellFormedStorageKey(parsed.data.storageKey)) {
+    return NextResponse.json({ error: "Invalid storage key." }, { status: 400 });
+  }
+  if (!isValidStorageKey(user.id, parsed.data.storageKey)) {
     return NextResponse.json({ error: "Invalid storage key ownership" }, { status: 403 });
   }
 
