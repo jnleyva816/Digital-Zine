@@ -194,7 +194,6 @@ export function VisionBoard({
       const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await readApiError(res, "Could not delete the photo."));
       setAssets((prev) => prev.filter((a) => a.id !== asset.id));
-    setTotal((t) => Math.max(0, t - 1));
       setTotal((t) => Math.max(0, t - 1));
       forgetFound(asset.id);
       setAnnouncement(`${assetLabel(asset, index)} deleted.`);
