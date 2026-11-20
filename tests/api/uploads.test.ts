@@ -128,8 +128,13 @@ describe("PUT /api/uploads/local/[...key]", () => {
   });
 
   it("writes the bytes to local storage", async () => {
-    const res = await put(["users", me.id, "a%20b.jpg"], "jpeg-bytes");
+    // Keys come from buildStorageKey ([a-z0-9-] and .jpg), so they never need escaping (DIG-35).
+    const res = await put(["users", me.id, "1795033492437-abc-fog.jpg"], "jpeg-bytes");
     expect(res.status).toBe(200);
-    await expect(fs.readFile(path.join(dir, "users", me.id, "a b.jpg"), "utf8")).resolves.toBe("jpeg-bytes");
+    await expect(fs.readFile(path.join(dir, "users", me.id, "1795033492437-abc-fog.jpg"), "utf8")).resolves.toBe("jpeg-bytes");
+  });
+
+  it("refuses an escaped segment rather than decoding it again (DIG-35)", async () => {
+    expect((await put(["users", me.id, "a%20b.jpg"], "jpeg-bytes")).status).toBe(400);
   });
 });

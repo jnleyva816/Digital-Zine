@@ -9,6 +9,10 @@ function getRootDir(): string {
 
 function resolveSafePath(storageKey: string): string {
   const root = getRootDir();
+  // Never follow "." or ".." segments, even ones that stay inside the root (DIG-35).
+  if (storageKey.split(/[\\/]/).some((segment) => segment === "." || segment === "..")) {
+    throw new Error("Invalid storage key path");
+  }
   const normalizedKey = storageKey.replace(/^\/+/, "");
   const resolved = path.resolve(root, normalizedKey);
   if (resolved !== root && !resolved.startsWith(`${root}${path.sep}`)) {
