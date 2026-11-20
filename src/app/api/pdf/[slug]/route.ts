@@ -6,6 +6,7 @@ import { readImageSize } from "@/lib/media/variants";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
 import { limitRequest } from "@/lib/rate-limit";
+import { mapLimit } from "@/lib/concurrency";
 import { readLocalObject } from "@/lib/storage/local";
 import { parseExif, parsePageContent, parseRecipe } from "@/lib/types";
 
@@ -14,20 +15,37 @@ export const runtime = "nodejs";
 const REMOTE_IMAGE_TIMEOUT_MS = 10_000;
 
 /**
+ * Photos decoded at once (DIG-41). A 40MP photo takes a few hundred MB to decode, and a zine can
+ * have 60 pages, so they are loaded a couple at a time rather than all together.
+ */
+const PDF_IMAGE_CONCURRENCY = 2;
+
+/** The copy the PDF prints: 1600 px wide is about 225 dpi on the page (owner, 19 Nov; DIG-41). */
+const PDF_WIDTH = 1600;
+
+async function readStored(storageKey: string, publicUrl: string): Promise<Buffer | null> {
+  const local = await readLocalObject(storageKey);
+  if (local) return local.bytes;
+  if (publicUrl.startsWith("https://")) {
+    const res = await fetch(publicUrl, { signal: AbortSignal.timeout(REMOTE_IMAGE_TIMEOUT_MS) });
+    if (res.ok) return Buffer.from(await res.arrayBuffer());
+  }
+  return null;
+}
+
+/**
  * Loads a page's photo as JPEG bytes, or null if it cannot be read. Local files are read by
  * storage key. Only absolute https URLs (the S3 driver's public URLs, stored at upload time) are
  * fetched; nothing is ever fetched from a host taken from the request.
  */
 async function loadPageImage(storageKey: string, publicUrl: string, edit: PhotoEdit | null): Promise<Buffer | null> {
   try {
+    // A processed photo prints from its 1600 px copy. Photos narrower than that have no such
+    // copy, and older photos are a single JPEG, so both fall back to the stored file.
+    const sized = (s: string) => s.replace(/\/full\.avif$/, `/w${PDF_WIDTH}.avif`);
     let raw: Buffer | null = null;
-    const local = await readLocalObject(storageKey);
-    if (local) {
-      raw = local.bytes;
-    } else if (publicUrl.startsWith("https://")) {
-      const res = await fetch(publicUrl, { signal: AbortSignal.timeout(REMOTE_IMAGE_TIMEOUT_MS) });
-      if (res.ok) raw = Buffer.from(await res.arrayBuffer());
-    }
+    if (storageKey.endsWith("/full.avif")) raw = await readStored(sized(storageKey), sized(publicUrl));
+    raw ??= await readStored(storageKey, publicUrl);
     if (!raw) return null;
     const upright = await sharp(raw).rotate().toBuffer();
     if (!edit) return await sharp(upright).jpeg({ quality: 88 }).toBuffer();
@@ -93,8 +111,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
   });
   const assetMap = new Map(assets.map((a) => [a.id, a]));
 
-  const loaded = await Promise.all(
-    pageContents.map(async ({ page, content }) => {
+  const loaded = await mapLimit(pageContents, PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
       const asset = assetMap.get(content.assetId);
       if (!asset) return null;
       const edit = parsePhotoEdit(asset.edit);
@@ -110,8 +127,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
         exif: parseExif(asset.exif),
         recipe: parseRecipe(asset.recipe),
       };
-    })
-  );
+  });
   // Number the pages that made it, so the PDF never shows gaps.
   const pages: PdfRenderedPageItem[] = loaded
     .filter((p): p is NonNullable<typeof p> => p !== null)

@@ -162,6 +162,21 @@ describe("GET /api/pdf/[slug]", () => {
     expect(pdf).toMatch(/\/Height 50\b/);
   });
 
+  it("prints a large processed photo from its 1600 px copy, not the full-resolution one (DIG-41)", async () => {
+    const storageKey = `users/${pro.id}/${randomUUID()}.jpg`;
+    const big = await sharp({ create: { width: 3000, height: 2000, channels: 3, background: "#204060" } }).jpeg().toBuffer();
+    await writeLocalObject(storageKey, big, "image/jpeg");
+    const asset = await prisma.mediaAsset.create({
+      data: { ownerId: pro.id, boardId: await defaultBoardId(pro.id), storageKey, publicUrl: `/api/media/${storageKey}`, status: "processing" },
+    });
+    await processAsset(asset.id);
+    const res = await get((await zine(pro.id, [asset.id])).slug);
+    expect(res.status).toBe(200);
+    const pdf = Buffer.from(await res.arrayBuffer()).toString("latin1");
+    expect(pdf).toMatch(/\/Width 1600\b/);
+    expect(pdf).not.toMatch(/\/Width 3000\b/);
+  });
+
   it("renders a page whose photo carries a Fujifilm recipe", async () => {
     const withRecipe = await photo(pro.id);
     await prisma.mediaAsset.update({
