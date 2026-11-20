@@ -63,8 +63,10 @@ export async function processAsset(assetId: string): Promise<void> {
     },
   });
   if (saved.count === 0) {
-    // The photo was deleted (or reset) while it was processing; its copies would only cost money.
+    // The photo was deleted (or reset) while it was processing; its copies and the original
+    // would only cost money (DIG-40).
     await removeOutputs();
+    await driver.deleteObject(asset.storageKey);
     return;
   }
   // Zines showing this photo now point at the AVIF; refresh their cached pages before the

@@ -49,6 +49,10 @@ export class LocalStorageDriver implements StorageDriver {
     await writeLocalObject(storageKey, bytes, contentType);
   }
 
+  async deletePrefix(prefix: string): Promise<void> {
+    await fs.rm(resolveSafePath(prefix.replace(/\/+$/, "")), { recursive: true, force: true });
+  }
+
   async deleteObject(storageKey: string): Promise<void> {
     const filePath = resolveSafePath(storageKey);
     await fs.rm(filePath, { force: true });

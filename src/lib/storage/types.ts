@@ -24,4 +24,6 @@ export interface StorageDriver {
   putObject(storageKey: string, bytes: Buffer, contentType: string): Promise<void>;
   /** Removes the object. Missing objects are not an error. */
   deleteObject(storageKey: string): Promise<void>;
+  /** Removes every object whose key starts with `prefix/` (DIG-40). */
+  deletePrefix(prefix: string): Promise<void>;
 }
