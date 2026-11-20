@@ -44,7 +44,8 @@ describe("GET /llms.txt", () => {
     const text = await body();
     const targets = [...text.matchAll(/\]\((https:\/\/[^)]+)\)/g)].map((m) => m[1]);
     expect(targets).toEqual(expect.arrayContaining([`${SITE}/`, `${SITE}/#pricing`, `${SITE}/terms`, `${SITE}/privacy`]));
-    for (const target of targets) expect(target.startsWith(SITE), target).toBe(true);
+    // Compare the parsed origin, not a string prefix: "https://folio-digital-zine.app.evil.test" starts with the site.
+    for (const target of targets) expect(new URL(target).origin, target).toBe(SITE);
     // Creators' zines are not listed, and neither is anything behind a sign-in.
     expect(text).not.toMatch(/\/z\//);
     expect(text).not.toMatch(/\/(board|boards|editor|billing|recipes|api)\b/);
