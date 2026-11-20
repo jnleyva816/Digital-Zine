@@ -65,6 +65,7 @@ describe("the decided limits (DIG-28)", () => {
       "signup-ip": { limit: 10, windowSeconds: 3600 },
       "resend-email": { limit: 3, windowSeconds: 3600 },
       "resend-ip": { limit: 20, windowSeconds: 3600 },
+      "csp-report": { limit: 60, windowSeconds: 60 },
       upload: { limit: 300, windowSeconds: 3600 },
       write: { limit: 120, windowSeconds: 60 },
       pdf: { limit: 10, windowSeconds: 3600 },

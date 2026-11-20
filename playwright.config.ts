@@ -8,6 +8,9 @@ const mailPort = port + 100;
 const testEnv: Record<string, string> = {
   ...loadTestEnv(),
   NEXT_PUBLIC_APP_URL: baseURL,
+  // The test server enforces the Content Security Policy, so a page that needs something it forbids
+  // fails in the browser tests, not in production (DIG-104).
+  CSP_MODE: "enforce",
   RESEND_API_KEY: "re_e2e_key",
   RESEND_API_URL: `http://127.0.0.1:${mailPort}/emails`,
   // Fake Google client so the buttons show. Nothing signs in with it: Google is never reached.
