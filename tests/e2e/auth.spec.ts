@@ -2,11 +2,8 @@ import { expect, test } from "@playwright/test";
 import { BOARD_URL, SEEDED, createUser, deleteUser, signIn } from "./helpers";
 
 test.describe("signed out", () => {
-  test("/, /board, and /boards send visitors to sign-in with an HTTP redirect", async ({ request }) => {
-    const root = await request.get("/", { maxRedirects: 0 });
-    expect(root.status()).toBe(307);
-    expect(root.headers().location).toMatch(/\/signin$/);
-
+  // `/` is the landing page for visitors now (DIG-95); see landing.spec.ts.
+  test("/board and /boards send visitors to sign-in with an HTTP redirect", async ({ request }) => {
     const board = await request.get("/board", { maxRedirects: 0 });
     expect(board.status()).toBe(307);
     expect(board.headers().location).toMatch(/\/signin\?callbackUrl=%2Fboard$/);
