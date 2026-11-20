@@ -67,6 +67,36 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
 
    Outside production builds, the sign-in form prefills this account. Production builds never show it.
 
+## Develop locally with real services
+
+Everything above runs with no outside accounts. To try Google sign-in or billing while you build, connect your own test accounts to your local `.env`, so you never need production to find out whether something works. **Never copy production's secrets or any live Stripe key onto your machine.** Local `.env` values are yours alone; production keeps its own in Railway.
+
+**Email and Sentry: leave them unset.** Without `RESEND_API_KEY`, sign-up prints the verification link in the dev server's terminal (`[email] RESEND_API_KEY is not set. Verification link for …`); open it in the browser. Without a Sentry DSN nothing is reported, so your development errors do not mix with production's. Photos use local files, so R2 needs nothing either.
+
+**Google sign-in.** Use a separate OAuth client so production's secret stays out of your `.env`:
+
+1. In the [Google Cloud Console](https://console.cloud.google.com/auth/clients), create a client of type **Web application** named "Folio dev".
+2. Add one authorized redirect URI: `http://localhost:3000/api/auth/callback/google` (use your dev server's port).
+3. Put its ID and secret in `.env` as `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`, and restart `npm run dev`. "Continue with Google" appears on the sign-in and sign-up pages.
+4. While the Google app is in Testing mode, add your own address under Audience, then Test users.
+
+Leave `AUTH_URL` unset locally; it is only for deploys behind a proxy.
+
+**Billing with a Stripe sandbox.** Stripe cannot reach `localhost`, so the [Stripe CLI](https://docs.stripe.com/stripe-cli) forwards webhooks to it:
+
+1. Install the CLI (on NixOS: `nix shell nixpkgs#stripe-cli`) and run `stripe login`. Pick your **sandbox**, not live mode.
+2. In the sandbox, create the "Digital Zine Pro" product with a $15/month price, turn on the Customer Portal, and create a restricted key (`rk_test_…`); see "Billing (Stripe)" below for what the key needs.
+3. In `.env`, set `STRIPE_SECRET_KEY` to that key and `STRIPE_PRO_PRICE_ID` to the price's ID. Leave `STRIPE_AUTOMATIC_TAX` empty.
+4. In a second terminal, run the forwarder. It prints a signing secret (`whsec_…`); set it as `STRIPE_WEBHOOK_SECRET` and restart the dev server.
+
+   ```sh
+   stripe listen --forward-to localhost:3000/api/billing/webhook
+   ```
+
+5. Sign in, open `/billing`, and upgrade with the test card `4242 4242 4242 4242` (any future expiry, any CVC). The page should turn to Pro within seconds, and the forwarder's terminal shows each event delivered.
+
+The forwarder's secret is not the same as the one on a webhook endpoint in the Stripe dashboard. Use the dashboard endpoint's secret only on a deployed site.
+
 ## Scripts
 
 | Command | What it does |
