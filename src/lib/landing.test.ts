@@ -26,8 +26,7 @@ describe("landing page tiers (DIG-95)", () => {
     expect(free.features).not.toContain("PDF export");
   });
 
-  it("sends sign-up buttons to a page that exists today", () => {
-    // Flip to "/signup" when DIG-94 ships.
-    expect(SIGNUP_HREF).toBe("/signin");
+  it("sends sign-up buttons to the sign-up page (DIG-97)", () => {
+    expect(SIGNUP_HREF).toBe("/signup");
   });
 });

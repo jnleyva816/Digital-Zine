@@ -31,14 +31,15 @@ test.describe("landing page (DIG-95)", () => {
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   });
 
-  test("its buttons lead to sign-in", async ({ page }) => {
+  test("its buttons lead to sign-in and sign-up", async ({ page }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "Sign in" }).click();
     await expect(page).toHaveURL(/\/signin/);
 
     await page.goto("/");
     await page.getByRole("link", { name: "Start free" }).first().click();
-    await expect(page).toHaveURL(/\/signin/);
+    await expect(page).toHaveURL(/\/signup$/);
+    await expect(page.getByRole("heading", { name: /create your studio/i })).toBeVisible();
   });
 
   test("fits a phone screen without sideways scrolling", async ({ page }) => {
