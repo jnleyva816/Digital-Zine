@@ -29,7 +29,8 @@ export interface PdfZinePayload {
   description: string | null;
   /** The creator's display name, or null to leave the byline out. Never an email address. */
   authorName: string | null;
-  slug: string;
+  /** The zine's public address, like /z/ab12cd34/golden-hour (DIG-102). */
+  path: string;
   publishedAt: string;
   pages: PdfRenderedPageItem[];
 }
@@ -193,8 +194,7 @@ function ZinePdfDocument({ zine }: { zine: PdfZinePayload }) {
         <View style={styles.coverFooter}>
           {zine.authorName ? <Text>By {zine.authorName}</Text> : null}
           <Text>
-            {zine.pages.length} {zine.pages.length === 1 ? "Plate" : "Plates"} · /z/
-            {zine.slug}
+            {zine.pages.length} {zine.pages.length === 1 ? "Plate" : "Plates"} · {zine.path}
           </Text>
           <Text>{zine.publishedAt}</Text>
         </View>

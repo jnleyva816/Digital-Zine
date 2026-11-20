@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createUser, createUserWithPhotos, deleteUser, signIn, testDb, uploadAndProcess, defaultBoardId } from "./helpers";
+import { publicZinePath } from "../../src/lib/public-zine-path";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -47,7 +48,7 @@ async function arrangeZine(options: ZineOptions = {}) {
       },
     },
   });
-  return { user, assets, zine, slug };
+  return { user, assets, zine, slug, path: publicZinePath(user.publicId, slug) };
 }
 
 function metaContent(html: string, attr: "property" | "name", key: string): string | null {
@@ -59,8 +60,8 @@ function metaContent(html: string, attr: "property" | "name", key: string): stri
 const zinePages = (page: Page) => page.getByRole("list", { name: "Pages" }).getByRole("listitem");
 
 test("server-rendered HTML carries Open Graph and Twitter share metadata", async ({ request, baseURL }) => {
-  const { slug, assets } = await arrangeZine();
-  const res = await request.get(`/z/${slug}`);
+  const { slug, assets, path } = await arrangeZine();
+  const res = await request.get(path);
   expect(res.status()).toBe(200);
   const html = await res.text();
 
@@ -68,12 +69,12 @@ test("server-rendered HTML carries Open Graph and Twitter share metadata", async
   expect(metaContent(html, "property", "og:title")).toBe("Brine &amp; Light");
   expect(metaContent(html, "property", "og:description")).toBe("Three plates from the pickling shelf.");
   expect(metaContent(html, "property", "og:type")).toBe("article");
-  expect(metaContent(html, "property", "og:url")).toBe(`${baseURL}/z/${slug}`);
+  expect(metaContent(html, "property", "og:url")).toBe(`${baseURL}${path}`);
   expect(metaContent(html, "property", "og:image")).toBe(`${baseURL}${assets[0].publicUrl}`);
   expect(metaContent(html, "property", "og:image:alt")).toBe("Persimmons over coals");
   expect(metaContent(html, "name", "twitter:card")).toBe("summary_large_image");
   expect(metaContent(html, "name", "twitter:image")).toBe(`${baseURL}${assets[0].publicUrl}`);
-  expect(html).toContain(`<link rel="canonical" href="${baseURL}/z/${slug}"`);
+  expect(html).toContain(`<link rel="canonical" href="${baseURL}${path}"`);
 
   // Pages are in the server HTML, not fetched after load.
   expect(html).toContain("Persimmons over coals");
@@ -87,8 +88,8 @@ test("server-rendered HTML carries Open Graph and Twitter share metadata", async
 
 for (const crawler of ["facebookexternalhit/1.1", "Twitterbot/1.0", "Slackbot-LinkExpanding 1.0", "Discordbot/2.0"]) {
   test(`share crawler ${crawler.split("/")[0]} gets the preview tags in <head>`, async ({ request }) => {
-    const { slug } = await arrangeZine();
-    const res = await request.get(`/z/${slug}`, { headers: { "user-agent": crawler } });
+    const { slug, path } = await arrangeZine();
+    const res = await request.get(path, { headers: { "user-agent": crawler } });
     expect(res.status()).toBe(200);
     const head = (await res.text()).split("</head>")[0];
     expect(metaContent(head, "property", "og:title")).toBe("Brine &amp; Light");
@@ -98,8 +99,8 @@ for (const crawler of ["facebookexternalhit/1.1", "Twitterbot/1.0", "Slackbot-Li
 }
 
 test("falls back to a byline description when the zine has none", async ({ request }) => {
-  const { slug } = await arrangeZine({ description: null, name: "Mara Ito" });
-  const html = await (await request.get(`/z/${slug}`)).text();
+  const { slug, path } = await arrangeZine({ description: null, name: "Mara Ito" });
+  const html = await (await request.get(path)).text();
   expect(metaContent(html, "property", "og:description")).toBe("A digital zine by Mara Ito · 3 pages");
 });
 
@@ -107,20 +108,20 @@ test("unknown, draft, and unpublished slugs return 404", async ({ request, page 
   expect((await request.get(`/z/no-such-zine-${randomUUID().slice(0, 8)}`)).status()).toBe(404);
 
   const draft = await arrangeZine({ published: false });
-  expect((await request.get(`/z/${draft.slug}`)).status()).toBe(404);
+  expect((await request.get(draft.path)).status()).toBe(404);
 
   // Published once, then unpublished: publishedAt is kept, but the page is gone.
   const unpublished = await arrangeZine({ published: false, publishedAt: new Date("2026-10-01T00:00:00Z") });
-  expect((await request.get(`/z/${unpublished.slug}`)).status()).toBe(404);
+  expect((await request.get(unpublished.path)).status()).toBe(404);
 
-  await page.goto(`/z/${draft.slug}`);
+  await page.goto(draft.path);
   await expect(page.getByRole("heading", { name: "Zine not found" })).toBeVisible();
   await expect(page.getByText("Brine & Light")).toHaveCount(0);
 });
 
 test("signed-out readers see the zine with its byline, date, and pages through the image loader", async ({ page }) => {
-  const { slug, assets } = await arrangeZine({ name: "Mara Ito" });
-  await page.goto(`/z/${slug}`);
+  const { slug, assets, path } = await arrangeZine({ name: "Mara Ito" });
+  await page.goto(path);
 
   await expect(page.getByRole("heading", { level: 1, name: "Brine & Light" })).toBeVisible();
   await expect(page.getByText("By Mara Ito")).toBeVisible();
@@ -139,15 +140,15 @@ test("signed-out readers see the zine with its byline, date, and pages through t
 });
 
 test("omits the byline when the creator has no display name", async ({ page }) => {
-  const { slug } = await arrangeZine({ name: null });
-  await page.goto(`/z/${slug}`);
+  const { slug, path } = await arrangeZine({ name: null });
+  await page.goto(path);
   await expect(page.getByRole("heading", { level: 1, name: "Brine & Light" })).toBeVisible();
   await expect(page.getByText(/^By /)).toHaveCount(0);
 });
 
 test("cards flip on click, Enter, and Space; pages with flip off do not", async ({ page }) => {
-  const { slug } = await arrangeZine();
-  await page.goto(`/z/${slug}`);
+  const { slug, path } = await arrangeZine();
+  await page.goto(path);
 
   const card1 = zinePages(page).nth(0);
   const flip1 = card1.getByRole("button", { name: /^Page 1: flip/ });
@@ -182,9 +183,9 @@ test("cards flip on click, Enter, and Space; pages with flip off do not", async 
 });
 
 test("fits a phone screen without horizontal scrolling", async ({ page }) => {
-  const { slug } = await arrangeZine({ name: "Mara Ito" });
+  const { slug, path } = await arrangeZine({ name: "Mara Ito" });
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.goto(`/z/${slug}`);
+  await page.goto(path);
   await expect(zinePages(page)).toHaveCount(3);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBe(0);
@@ -193,7 +194,8 @@ test("fits a phone screen without horizontal scrolling", async ({ page }) => {
 });
 
 test("the seeded zine is publicly viewable", async ({ page }) => {
-  await page.goto("/z/golden-hour-field-notes-issue-01");
+  const seeded = await testDb.user.findUniqueOrThrow({ where: { email: "creator@digitalzine.local" } });
+  await page.goto(publicZinePath(seeded.publicId, "golden-hour-field-notes-issue-01"));
   await expect(page.getByRole("heading", { level: 1, name: "Golden Hour Field Notes — Issue 01" })).toBeVisible();
   await expect(zinePages(page)).toHaveCount(4);
 });
@@ -218,13 +220,13 @@ test("a zine of processed photos loads a phone-sized copy and shares a JPEG prev
 
   await page.setViewportSize({ width: 390, height: 844 });
   const copy = page.waitForResponse((r) => /\/w\d+\.avif/.test(r.url()));
-  await page.goto(`/z/${slug}`);
+  await page.goto(publicZinePath(user.publicId, slug));
   const res = await copy;
   // 390 px wide at 1x needs the 480 px copy, never the 2400 px original size.
   expect(res.url()).toMatch(/\/w480\.avif/);
   expect(res.headers()["content-type"]).toBe("image/avif");
 
-  const html = await (await page.request.get(`/z/${slug}`)).text();
+  const html = await (await page.request.get(publicZinePath(user.publicId, slug))).text();
   const ogImage = metaContent(html, "property", "og:image");
   expect(ogImage).toBe(`${baseURL}${asset.publicUrl.replace(/\/full\.avif$/, "/og.jpg")}`);
   const og = await page.request.get(ogImage!);

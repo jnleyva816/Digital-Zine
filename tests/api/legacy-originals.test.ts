@@ -71,7 +71,7 @@ describe("stripping metadata from pre-pipeline originals (DIG-38)", () => {
     expect(updated.sizeBytes).toBe(stored!.bytes.length);
     // The EXIF the app keeps for card backs is untouched.
     expect(updated.exif).toEqual(old.exif);
-    expect(vi.mocked(revalidateTag).mock.calls.map(([t]) => t)).toContain(publicZineTag(zine.slug));
+    expect(vi.mocked(revalidateTag).mock.calls.map(([t]) => t)).toContain(publicZineTag(me.publicId, zine.slug));
   });
 
   it("leaves processed AVIF photos, and photos still processing or failed, alone; and is safe to run twice", async () => {

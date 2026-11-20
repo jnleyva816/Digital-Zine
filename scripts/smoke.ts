@@ -17,6 +17,7 @@ import bcrypt from "bcryptjs";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { chromium, expect, type Page } from "@playwright/test";
 import { deleteAccount } from "../src/lib/storage/cleanup";
+import { publicZinePath } from "../src/lib/public-zine-path";
 
 try {
   process.loadEnvFile(".env");
@@ -192,8 +193,9 @@ async function main() {
   await removeSmokeUsers();
   const { user: creator, password, zine } = await createSmokeCreator();
   const ZINE_SLUG = zine.slug;
+  const ZINE_PATH = publicZinePath(creator.publicId, zine.slug);
   try {
-    await runChecks(creator.email, password, ZINE_SLUG);
+    await runChecks(creator.email, password, ZINE_SLUG, ZINE_PATH);
   } finally {
     await removeSmokeUsers();
     await prisma.$disconnect();
@@ -204,7 +206,7 @@ async function main() {
   process.exit(failed.length ? 1 : 0);
 }
 
-async function runChecks(email: string, password: string, ZINE_SLUG: string) {
+async function runChecks(email: string, password: string, ZINE_SLUG: string, ZINE_PATH: string) {
 
   const browser = await chromium.launch({ executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || undefined });
   const context = await browser.newContext({ baseURL: BASE, viewport: { width: 1280, height: 860 } });
@@ -274,7 +276,7 @@ async function runChecks(email: string, password: string, ZINE_SLUG: string) {
   const viewer = await reader.newPage();
 
   await check("public viewer is server-rendered with Open Graph tags", async () => {
-    const res = await reader.request.get(`/z/${ZINE_SLUG}`);
+    const res = await reader.request.get(ZINE_PATH);
     expect(res.status()).toBe(200);
     const html = await res.text();
     for (const tag of ["og:title", "og:description", "og:image"]) {
@@ -283,7 +285,7 @@ async function runChecks(email: string, password: string, ZINE_SLUG: string) {
   });
 
   await check("public viewer flips cards for a signed-out reader", async () => {
-    await viewer.goto(`/z/${ZINE_SLUG}`);
+    await viewer.goto(ZINE_PATH);
     await expect(viewer.getByRole("heading", { level: 1, name: "Night Walks & Harbor Light" })).toBeVisible();
     await shot(viewer, "public-viewer.png");
     const flip = viewer.getByRole("button", { name: /^Page 1: flip/ });
@@ -298,7 +300,7 @@ async function runChecks(email: string, password: string, ZINE_SLUG: string) {
   await check("public viewer fits a phone", async () => {
     const phone = await browser.newContext({ baseURL: BASE, viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
     const p = await phone.newPage();
-    await p.goto(`/z/${ZINE_SLUG}`);
+    await p.goto(ZINE_PATH);
     await expect(p.getByRole("heading", { level: 1 })).toBeVisible();
     const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
     expect(overflow).toBe(0);

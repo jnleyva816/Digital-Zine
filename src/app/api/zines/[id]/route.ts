@@ -90,8 +90,9 @@ export async function PATCH(
       );
     }
     if (nextSlug !== existing.slug) {
+      // Only this creator's other zines can clash: slugs are unique per creator (DIG-102).
       const collision = await prisma.zine.findUnique({
-        where: { slug: nextSlug },
+        where: { ownerId_slug: { ownerId: existing.ownerId, slug: nextSlug } },
       });
       if (collision && collision.id !== existing.id) {
         return NextResponse.json(
@@ -229,7 +230,10 @@ export async function PATCH(
   }
 
   // Readers see the change on their next view, including a 404 right after unpublishing (DIG-27).
-  await revalidatePublicZines([existing.slug, updated.slug]);
+  await revalidatePublicZines([
+    { owner: user.publicId, slug: existing.slug },
+    { owner: user.publicId, slug: updated.slug },
+  ]);
   return NextResponse.json({ zine: updated });
 }
 
@@ -253,6 +257,6 @@ export async function DELETE(
   }
 
   await prisma.zine.delete({ where: { id: existing.id } });
-  await revalidatePublicZines([existing.slug]);
+  await revalidatePublicZines([{ owner: user.publicId, slug: existing.slug }]);
   return NextResponse.json({ ok: true });
 }

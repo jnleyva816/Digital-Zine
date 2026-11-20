@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createUserWithPhotos, deleteUser, signIn, testDb, defaultBoardId } from "./helpers";
+import { publicZinePath } from "../../src/lib/public-zine-path";
 
 test.afterAll(async () => {
   await testDb.$disconnect();
@@ -103,7 +104,7 @@ test("does not save an invalid draft", async ({ page }) => {
 });
 
 test("publishes, locks the URL, and unpublishes", async ({ page }) => {
-  await creatorWithPhotos(page);
+  const { user } = await creatorWithPhotos(page);
   await createZine(page, "Pickle Diaries");
 
   await page.getByLabel("Public URL").fill("pickles-vol-1");
@@ -115,7 +116,7 @@ test("publishes, locks the URL, and unpublishes", async ({ page }) => {
   // Publishing saves pending edits first.
   await page.getByRole("button", { name: "Publish" }).click();
   await expect(page.getByText("Published", { exact: true })).toBeVisible();
-  await expect(page.getByRole("link", { name: "View public page" })).toHaveAttribute("href", "/z/pickles-vol-1");
+  await expect(page.getByRole("link", { name: "View public page" })).toHaveAttribute("href", publicZinePath(user.publicId, "pickles-vol-1"));
   await expect(page.getByLabel("Public URL")).toHaveAttribute("readonly", "");
   await expect(page.getByText("The URL is locked because this zine has been published.")).toBeVisible();
 

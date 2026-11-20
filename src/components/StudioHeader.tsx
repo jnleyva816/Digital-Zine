@@ -16,13 +16,14 @@ interface StudioHeaderProps {
     viewingAsFree: boolean;
   };
   activeZineId?: string | null;
-  publishedSlug?: string | null;
+  /** The address of the creator's published zine, like /z/ab12cd34/golden-hour (DIG-102). */
+  publishedPath?: string | null;
 }
 
 export function StudioHeader({
   user,
   activeZineId,
-  publishedSlug,
+  publishedPath,
 }: StudioHeaderProps) {
   const pathname = usePathname();
   const editorHref = activeZineId ? `/editor/${activeZineId}` : "/editor";
@@ -92,9 +93,9 @@ export function StudioHeader({
         </div>
 
         <div className="flex items-center gap-3">
-          {publishedSlug ? (
+          {publishedPath ? (
             <Link
-              href={`/z/${publishedSlug}`}
+              href={publishedPath}
               className="hidden items-center gap-1.5 rounded-full border border-paper-300 bg-white px-3 py-1.5 text-xs font-medium text-ink-800 transition hover:border-ink-700 sm:inline-flex"
             >
               Public Viewer

@@ -13,6 +13,7 @@ export async function createTestUser(): Promise<SessionUser> {
   });
   return {
     id: user.id,
+    publicId: user.publicId,
     email: user.email,
     name: user.name,
     tier: user.tier,

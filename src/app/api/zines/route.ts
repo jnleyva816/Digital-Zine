@@ -56,7 +56,8 @@ export async function POST(req: Request) {
   }
 
   let slug = slugifyTitle(parsed.data.title);
-  const collision = await prisma.zine.findUnique({ where: { slug } });
+  // A slug only has to be free among this creator's zines (DIG-102).
+  const collision = await prisma.zine.findUnique({ where: { ownerId_slug: { ownerId: user.id, slug } } });
   if (collision) {
     slug = `${slug}-${crypto.randomBytes(2).toString("hex")}`;
   }
@@ -136,6 +137,6 @@ export async function POST(req: Request) {
   }
 
   // A 404 may be cached at this address from before the zine existed (DIG-27).
-  await revalidatePublicZines([zine.slug]);
+  await revalidatePublicZines([{ owner: user.publicId, slug: zine.slug }]);
   return NextResponse.json({ zine }, { status: 201 });
 }

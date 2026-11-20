@@ -7,8 +7,11 @@ import { parseExif, parsePageContent, parseRecipe, type ExifData, type RecipeDat
 
 const SHARE_DESCRIPTION_MAX = 200;
 
-/** Cache tag for one zine's public page (DIG-27). Revalidate it whenever what readers see changes. */
-export const publicZineTag = (slug: string) => `public-zine:${slug}`;
+/**
+ * Cache tag for one zine's public page (DIG-27). Revalidate it whenever what readers see changes.
+ * A slug is only unique per creator (DIG-102), so the creator is part of the tag.
+ */
+export const publicZineTag = (owner: string, slug: string) => `public-zine:${owner}/${slug}`;
 
 /** A safety net: even if an invalidation is missed, a cached page is rebuilt within the hour. */
 const PUBLIC_ZINE_MAX_AGE_SECONDS = 3600;
@@ -51,6 +54,8 @@ export interface PublicZinePage {
 }
 
 export interface PublicZine {
+  /** The creator's public ID: the first part of the zine's address (DIG-102). */
+  owner: string;
   slug: string;
   title: string;
   description: string | null;
@@ -61,27 +66,28 @@ export interface PublicZine {
 }
 
 /**
- * A published zine as readers see it, or null when the slug is unknown or the zine is not
- * currently published. Served from the data cache (DIG-27) and shared by the metadata and the
- * page within a request; every change readers would see revalidates `publicZineTag(slug)`.
+ * A published zine as readers see it, or null when the creator or slug is unknown or the zine is
+ * not currently published. Served from the data cache (DIG-27) and shared by the metadata and the
+ * page within a request; every change readers would see revalidates `publicZineTag(owner, slug)`.
+ * `owner` is the creator's public ID (DIG-102).
  */
-export const getPublicZine = cache((slug: string): Promise<PublicZine | null> =>
-  unstable_cache(() => loadPublicZine(slug), ["public-zine", slug], {
-    tags: [publicZineTag(slug)],
+export const getPublicZine = cache((owner: string, slug: string): Promise<PublicZine | null> =>
+  unstable_cache(() => loadPublicZine(owner, slug), ["public-zine", owner, slug], {
+    tags: [publicZineTag(owner, slug)],
     revalidate: PUBLIC_ZINE_MAX_AGE_SECONDS,
   })()
 );
 
-async function loadPublicZine(slug: string): Promise<PublicZine | null> {
+async function loadPublicZine(owner: string, slug: string): Promise<PublicZine | null> {
   const zine = await prisma.zine.findFirst({
-    where: { slug, published: true },
+    where: { slug, published: true, owner: { publicId: owner } },
     select: {
       slug: true,
       ownerId: true,
       title: true,
       description: true,
       publishedAt: true,
-      owner: { select: { name: true } },
+      owner: { select: { name: true, publicId: true } },
       pages: { orderBy: { pageNumber: "asc" }, select: { pageNumber: true, flipEnabled: true, content: true } },
     },
   });
@@ -132,6 +138,7 @@ async function loadPublicZine(slug: string): Promise<PublicZine | null> {
   });
 
   return {
+    owner: zine.owner.publicId,
     slug: zine.slug,
     title: zine.title,
     description: zine.description,

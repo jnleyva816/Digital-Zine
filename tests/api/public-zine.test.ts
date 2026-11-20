@@ -32,7 +32,7 @@ describe("getPublicZine photo edits (DIG-33)", () => {
         pages: { create: [{ pageNumber: 1, content: { assetId: photo.id, caption: "" } }] },
       },
     });
-    const zine = await getPublicZine(slug);
+    const zine = await getPublicZine(owner.publicId, slug);
     expect(zine?.pages[0]).toMatchObject({ edit, dims: { width: 600, height: 400 } });
   });
 });
@@ -60,7 +60,7 @@ describe("getPublicZine (DIG-34)", () => {
       },
     });
 
-    const zine = await getPublicZine(slug);
+    const zine = await getPublicZine(owner.publicId, slug);
     expect(zine?.pages.map((p) => p.name)).toEqual(["Harbor at dusk", null]);
   });
 });
@@ -90,7 +90,7 @@ describe("getPublicZine and unprocessed photos (DIG-38)", () => {
         },
       },
     });
-    const zine = await getPublicZine(slug);
+    const zine = await getPublicZine(owner.publicId, slug);
     expect(zine?.pages.map((p) => p.imageUrl)).toEqual([ready.publicUrl]);
     expect(zine?.pages[0].pageNumber).toBe(1);
     const json = JSON.stringify(zine);
@@ -99,3 +99,58 @@ describe("getPublicZine and unprocessed photos (DIG-38)", () => {
   });
 });
 
+describe("getPublicZine addresses (DIG-102)", () => {
+  let other: Awaited<ReturnType<typeof createTestUser>>;
+  beforeAll(async () => {
+    other = await createTestUser();
+  });
+  afterAll(async () => {
+    await deleteTestUser(other.id);
+  });
+
+  async function publish(user: typeof owner, slug: string, title: string) {
+    const photo = await createAsset(user.id, 0, `${title}.jpg`);
+    await prisma.mediaAsset.update({ where: { id: photo.id }, data: { status: "ready" } });
+    return prisma.zine.create({
+      data: {
+        ownerId: user.id,
+        boardId: await defaultBoardId(user.id),
+        title,
+        slug,
+        published: true,
+        publishedAt: new Date(),
+        pages: { create: [{ pageNumber: 1, content: { assetId: photo.id, caption: "" } }] },
+      },
+    });
+  }
+
+  it("gives each user a short, lowercase public ID of their own", () => {
+    expect(owner.publicId).toMatch(/^[a-z0-9]{6,12}$/);
+    expect(other.publicId).toMatch(/^[a-z0-9]{6,12}$/);
+    expect(other.publicId).not.toBe(owner.publicId);
+  });
+
+  it("lets two creators publish the same slug, each reached through their own ID", async () => {
+    const slug = `shared-${randomUUID().slice(0, 8)}`;
+    await publish(owner, slug, "Mine");
+    await publish(other, slug, "Theirs");
+    expect((await getPublicZine(owner.publicId, slug))?.title).toBe("Mine");
+    expect((await getPublicZine(other.publicId, slug))?.title).toBe("Theirs");
+  });
+
+  it("does not find a zine under another creator's ID, an unknown ID, or an unpublished slug", async () => {
+    const slug = `only-mine-${randomUUID().slice(0, 8)}`;
+    await publish(owner, slug, "Mine");
+    expect(await getPublicZine(other.publicId, slug)).toBeNull();
+    expect(await getPublicZine("nobodyhere", slug)).toBeNull();
+    const draft = `draft-${randomUUID().slice(0, 8)}`;
+    await prisma.zine.create({ data: { ownerId: owner.id, boardId: await defaultBoardId(owner.id), title: "Draft", slug: draft } });
+    expect(await getPublicZine(owner.publicId, draft)).toBeNull();
+  });
+
+  it("tells readers the creator part of the address, for canonical and share links", async () => {
+    const slug = `addr-${randomUUID().slice(0, 8)}`;
+    await publish(owner, slug, "Addr");
+    expect((await getPublicZine(owner.publicId, slug))?.owner).toBe(owner.publicId);
+  });
+});

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { publicZinePath } from "@/lib/public-zine-path";
 import { prisma } from "@/lib/prisma";
 import { BOARD_ASSET_SELECT, boardPhotoPage } from "@/lib/board-photos";
 import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
@@ -51,7 +52,7 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
       <StudioHeader
         user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={zine.id}
-        publishedSlug={zine.published ? zine.slug : null}
+        publishedPath={zine.published ? publicZinePath(user.publicId, zine.slug) : null}
       />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <Link href="/editor" className="mb-4 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900">
@@ -59,6 +60,7 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
           All zines
         </Link>
         <ZineEditor
+          ownerPublicId={user.publicId}
           zine={{
             id: zine.id,
             title: zine.title,
