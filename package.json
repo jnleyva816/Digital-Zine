@@ -57,7 +57,7 @@
     "@vitejs/plugin-react": "^6.3.0",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.20.1",
-    "eslint-config-next": "15.5.29",
+    "eslint-config-next": "16.4.6",
     "jsdom": "^31.0.1",
     "playwright-core": "^1.50.1",
     "postcss": "^8.5.3",
