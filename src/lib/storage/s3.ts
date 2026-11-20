@@ -28,6 +28,10 @@ export class S3StorageDriver implements StorageDriver {
     this.config = config;
     this.client = new S3Client({
       region: config.region,
+      // By default the SDK adds a CRC32 of the (empty) body to every presigned PUT, which the
+      // browser's real upload can never match, and which R2 does not accept (DIG-20).
+      requestChecksumCalculation: "WHEN_REQUIRED",
+      responseChecksumValidation: "WHEN_REQUIRED",
       ...(config.endpoint ? { endpoint: config.endpoint, forcePathStyle: true } : {}),
       credentials: {
         accessKeyId: config.accessKeyId,
