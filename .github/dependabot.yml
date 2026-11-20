@@ -1,0 +1,22 @@
+# Weekly dependency updates (DIG-103). Security advisories open their own pull requests at once;
+# this covers the steady stream of fixes so none of them pile up into a risky big jump.
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    open-pull-requests-limit: 5
+    groups:
+      # One pull request for the small stuff. A major version is always its own.
+      minor-and-patch:
+        update-types: ["minor", "patch"]
+    labels: ["Security"]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+    labels: ["Security"]

@@ -1,4 +1,4 @@
-import sharp from "sharp";
+import sharp, { type Sharp } from "sharp";
 import { AVIF_QUALITY, VARIANT_WIDTHS } from "@/lib/limits";
 
 export { pickVariantUrl, variantKeys } from "./variant-urls";
@@ -11,7 +11,7 @@ export interface RenderedImage {
 
 const OG_WIDTH = 1200;
 
-async function encode(pipeline: sharp.Sharp): Promise<RenderedImage> {
+async function encode(pipeline: Sharp): Promise<RenderedImage> {
   const { data, info } = await pipeline.toBuffer({ resolveWithObject: true });
   return { bytes: data, width: info.width, height: info.height };
 }
