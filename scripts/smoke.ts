@@ -16,6 +16,7 @@ import path from "node:path";
 import bcrypt from "bcryptjs";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { chromium, expect, type Page } from "@playwright/test";
+import { deleteAccount } from "../src/lib/storage/cleanup";
 
 try {
   process.loadEnvFile(".env");
@@ -100,10 +101,8 @@ const PLATES: {
 /** Removes smoke users left behind by an interrupted run. */
 async function removeSmokeUsers() {
   const stale = await prisma.user.findMany({ where: { email: { endsWith: `@${SMOKE_DOMAIN}` } }, select: { id: true } });
-  for (const { id } of stale) {
-    await prisma.user.delete({ where: { id } });
-    await fs.rm(path.join(STORAGE, "users", id), { recursive: true, force: true });
-  }
+  // The account row and its stored files, in whichever storage the environment uses (DIG-40).
+  for (const { id } of stale) await deleteAccount(id);
 }
 
 async function createSmokeCreator() {

@@ -10,6 +10,7 @@ import { readImageSize } from "@/lib/media/variants";
 import { isDefaultEdit, photoEditSchema } from "@/lib/photo-edit";
 import { getStorageDriver } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
+import { deleteStoredFiles, storedKeysFor } from "@/lib/storage/cleanup";
 import { limitRequest } from "@/lib/rate-limit";
 
 const updateAssetSchema = z.object({
@@ -165,6 +166,8 @@ export async function DELETE(
   await prisma.mediaAsset.delete({
     where: { id: existing.id },
   });
+  // Its files would only cost money now (DIG-40). Outside any transaction; failures are logged.
+  await deleteStoredFiles(storedKeysFor(existing.storageKey));
 
   return NextResponse.json({ ok: true });
 }

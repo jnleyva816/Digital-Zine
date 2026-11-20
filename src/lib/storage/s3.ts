@@ -1,4 +1,12 @@
-import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import {
+  DeleteObjectCommand,
+  DeleteObjectsCommand,
+  GetObjectCommand,
+  HeadObjectCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import type { PreparedUpload, StorageDriver } from "./types";
 
@@ -80,6 +88,20 @@ export class S3StorageDriver implements StorageDriver {
 
   async deleteObject(storageKey: string): Promise<void> {
     await this.client.send(new DeleteObjectCommand({ Bucket: this.config.bucket, Key: storageKey }));
+  }
+
+  /** Lists the keys under `prefix/` and deletes them in batches of up to 1,000 (DIG-40). */
+  async deletePrefix(prefix: string): Promise<void> {
+    const Prefix = `${prefix.replace(/\/+$/, "")}/`;
+    let ContinuationToken: string | undefined;
+    do {
+      const page = await this.client.send(new ListObjectsV2Command({ Bucket: this.config.bucket, Prefix, ContinuationToken }));
+      const keys = (page.Contents ?? []).flatMap((o) => (o.Key ? [{ Key: o.Key }] : []));
+      if (keys.length > 0) {
+        await this.client.send(new DeleteObjectsCommand({ Bucket: this.config.bucket, Delete: { Objects: keys, Quiet: true } }));
+      }
+      ContinuationToken = page.IsTruncated ? page.NextContinuationToken : undefined;
+    } while (ContinuationToken);
   }
 
   async prepareUpload(params: {
