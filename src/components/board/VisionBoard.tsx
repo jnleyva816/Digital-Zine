@@ -278,7 +278,7 @@ export function VisionBoard({
     for (const file of Array.from(files)) {
       const id = `${file.name}-${file.size}-${crypto.randomUUID()}`;
       if (!(ACCEPTED_IMAGE_TYPES as readonly string[]).includes(file.type)) {
-        items.push({ id, name: file.name, stage: "error", error: "Only JPEG, PNG, WebP, GIF, or AVIF images." });
+        items.push({ id, name: file.name, stage: "error", error: "Only JPEG photos can be uploaded." });
         continue;
       }
       const check = checkUpload({ size: file.size, usedBytes: committedBytes });
@@ -576,7 +576,7 @@ export function VisionBoard({
           .
         </p>
         <p className="mt-1 text-xs text-ink-500">
-          JPEG, PNG, WebP, GIF, or AVIF up to {formatBytes(MAX_UPLOAD_BYTES)}. Camera EXIF is read on your device before upload.
+          JPEG photos up to {formatBytes(MAX_UPLOAD_BYTES)}. Camera EXIF is read on your device before upload.
         </p>
         <input
           ref={fileInputRef}

@@ -11,7 +11,8 @@ const presignSchema = z.object({
   filename: z.string().min(1).max(255),
   contentType: z
     .string()
-    .regex(/^image\/(jpeg|jpg|png|webp|gif|avif)$/i, "Only image files are supported"),
+    // JPEG only (owner, 19 Nov; DIG-36). The worker makes the AVIF copies.
+    .regex(/^image\/jpeg$/i, "Only JPEG photos can be uploaded."),
   size: z.number({ message: "The file size is missing or invalid." }).int("The file size is missing or invalid.").positive("The file size is missing or invalid."),
 });
 

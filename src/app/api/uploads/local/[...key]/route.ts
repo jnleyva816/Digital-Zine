@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
-import { writeLocalObject } from "@/lib/storage/local";
+import { contentTypeForKey, writeLocalObject } from "@/lib/storage/local";
 import { isValidStorageKey, isWellFormedStorageKey } from "@/lib/storage/keys";
 import { getAccountUsageBytes } from "@/lib/usage";
 
@@ -26,7 +26,11 @@ export async function PUT(
     return NextResponse.json({ error: "Forbidden storage key" }, { status: 403 });
   }
 
-  const contentType = req.headers.get("content-type") || "image/jpeg";
+  // JPEG only (owner, 19 Nov), by both the declared type and the file name (DIG-36).
+  const contentType = (req.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+  if (contentType !== "image/jpeg" || contentTypeForKey(storageKey) !== "image/jpeg") {
+    return NextResponse.json({ error: "Only JPEG photos can be uploaded." }, { status: 415 });
+  }
   // Refuse a declared oversize body before reading it into memory.
   const declared = Number(req.headers.get("content-length"));
   if (declared > 0) {

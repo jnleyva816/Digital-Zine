@@ -93,7 +93,12 @@ describe("storage keys that climb out of the creator's folder (DIG-35)", () => {
 
   it("still accepts a normal upload into my own folder", async () => {
     const segments = ["users", attacker.id, "1795033492437-def-fog.jpg"];
-    const req = new Request("http://test.local/api/uploads/local/x", { method: "PUT", body: Buffer.from("jpeg bytes") });
+    // JPEG uploads must say so (DIG-36).
+    const req = new Request("http://test.local/api/uploads/local/x", {
+      method: "PUT",
+      headers: { "Content-Type": "image/jpeg" },
+      body: Buffer.from("jpeg bytes"),
+    });
     expect((await LOCAL_PUT(req, params({ key: segments }))).status).toBe(200);
   });
 });
