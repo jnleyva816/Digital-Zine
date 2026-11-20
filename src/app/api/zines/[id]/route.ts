@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicZines } from "@/lib/public-zine-cache";
-import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
+import { parsePageContent, slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
 import { limitRequest } from "@/lib/rate-limit";
 
 const pageInputSchema = z.object({
@@ -153,6 +153,20 @@ export async function PATCH(
           { error: "One or more mapped assets do not belong to your Vision Board" },
           { status: 400 }
         );
+      }
+      // A zine is built from its own board (DIG-25). Photos already on its pages may have been
+      // moved to another board since, and stay; any photo newly added must be on the zine's board
+      // (DIG-44).
+      const current = await prisma.zinePage.findMany({ where: { zineId: existing.id }, select: { content: true } });
+      const alreadyUsed = new Set(current.map((p) => parsePageContent(p.content).assetId).filter(Boolean));
+      const added = requestedAssetIds.filter((assetId) => !alreadyUsed.has(assetId));
+      if (added.length > 0) {
+        const onBoard = await prisma.mediaAsset.count({
+          where: { id: { in: added }, ownerId: user.id, boardId: existing.boardId },
+        });
+        if (onBoard !== added.length) {
+          return NextResponse.json({ error: "Only photos on this zine's board can be added to it." }, { status: 400 });
+        }
       }
     }
   }

@@ -311,6 +311,34 @@ describe("boards (DIG-25)", () => {
     expect(await zineBoard(zine.id)).toBe(await defaultBoardId(me.id));
   });
 
+  const pagesOf = (...assetIds: string[]) => ({ pages: assetIds.map((assetId) => ({ assetId, caption: "", flipEnabled: true })) });
+  const pageAssets = async (id: string) =>
+    (await prisma.zinePage.findMany({ where: { zineId: id }, orderBy: { pageNumber: "asc" } })).map(
+      (p) => (p.content as { assetId: string }).assetId
+    );
+
+  it("refuses to add a photo from another of my boards with 400 and changes nothing (DIG-44)", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    const home = await createAsset(me.id, 0, "home.jpg");
+    const away = await createAsset(me.id, 0, "away.jpg", trip.id);
+    const zine = await createZine("Home zine", [home.id]);
+    const res = await patch(zine.id, pagesOf(home.id, away.id));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Only photos on this zine's board can be added to it." });
+    expect(await pageAssets(zine.id)).toEqual([home.id]);
+  });
+
+  it("still saves pages whose photo was moved to another board after it was added (DIG-44)", async () => {
+    const trip = await createBoard(me.id, "Trip");
+    const moved = await createAsset(me.id, 0, "moved.jpg");
+    const stays = await createAsset(me.id, 1, "stays.jpg");
+    const zine = await createZine("Home zine", [moved.id]);
+    await prisma.mediaAsset.update({ where: { id: moved.id }, data: { boardId: trip.id } });
+    const res = await patch(zine.id, pagesOf(stays.id, moved.id));
+    expect(res.status).toBe(200);
+    expect(await pageAssets(zine.id)).toEqual([stays.id, moved.id]);
+  });
+
   it("refuses to switch to another creator's board with 404", async () => {
     const theirs = await createBoard(other.id, "Theirs");
     const zine = await createZine("Empty", []);
