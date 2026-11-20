@@ -218,6 +218,32 @@ describe("slug", () => {
   });
 });
 
+describe("slug races (DIG-45)", () => {
+  // Another request takes the slug between the "is it free?" check and the write. The check is
+  // made to miss, as it would in that race; the database's unique constraint still catches it.
+  const raceTheCheck = () => vi.spyOn(prisma.zine, "findUnique").mockResolvedValueOnce(null);
+
+  it("on create, retries once with a suffix instead of failing with 500", async () => {
+    const first = await createZine("Night Market");
+    raceTheCheck();
+    const res = await CREATE(jsonRequest("/api/zines", "POST", { title: "Night Market" }));
+    expect(res.status).toBe(201);
+    const { zine } = (await res.json()) as ZineBody;
+    expect(zine.slug).toMatch(/^night-market-[0-9a-f]{4}$/);
+    expect(zine.slug).not.toBe(first.slug);
+  });
+
+  it("on rename, returns the usual 409 instead of 500, and changes nothing", async () => {
+    await createZine("Taken");
+    const mine = await createZine("Mine");
+    raceTheCheck();
+    const res = await patch(mine.id, { slug: "taken", title: "Renamed" });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: 'Slug "taken" is already taken.' });
+    expect((await prisma.zine.findUnique({ where: { id: mine.id } }))?.title).toBe("Mine");
+  });
+});
+
 describe("DELETE", () => {
   it("deletes my zine and its pages", async () => {
     const mine = await createAsset(me.id, 0);

@@ -100,6 +100,16 @@ describe("POST /api/assets", () => {
     expect((await POST(jsonRequest("/api/assets", "POST", { storageKey: "" }))).status).toBe(400);
   });
 
+  it("returns 409 for a storage key that is already a photo, and keeps its file (DIG-45)", async () => {
+    const key = await stored(`users/${me.id}/retried.jpg`);
+    expect((await POST(jsonRequest("/api/assets", "POST", { storageKey: key }))).status).toBe(201);
+    const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: key }));
+    expect(res.status).toBe(409);
+    expect(await res.json()).toEqual({ error: "This upload has already been added." });
+    expect(await prisma.mediaAsset.count({ where: { storageKey: key } })).toBe(1);
+    await expect(fs.access(path.join(dir, key))).resolves.toBeUndefined();
+  });
+
   it("rejects a storage key outside my folder with 403", async () => {
     const res = await POST(jsonRequest("/api/assets", "POST", { storageKey: `users/${other.id}/x.jpg` }));
     expect(res.status).toBe(403);
@@ -441,6 +451,11 @@ describe("DELETE /api/assets/[id]", () => {
 describe("POST /api/assets/reorder", () => {
   it("rejects an empty list with 400", async () => {
     expect((await REORDER(jsonRequest("/", "POST", { orderedIds: [] }))).status).toBe(400);
+  });
+
+  it("rejects a list of more than 2,000 ids with 400 (DIG-45)", async () => {
+    const ids = Array.from({ length: 2001 }, (_, i) => `id-${i}`);
+    expect((await REORDER(jsonRequest("/", "POST", { orderedIds: ids }))).status).toBe(400);
   });
 
   it("applies my order and ignores ids I do not own", async () => {

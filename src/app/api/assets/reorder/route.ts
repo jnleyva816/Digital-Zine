@@ -5,7 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { limitRequest } from "@/lib/rate-limit";
 
 const reorderSchema = z.object({
-  orderedIds: z.array(z.string().min(1)).min(1),
+  // A board loads at most a page at a time, so even a long session sends far fewer (DIG-45).
+  orderedIds: z.array(z.string().min(1)).min(1).max(2000),
 });
 
 export async function POST(req: Request) {
