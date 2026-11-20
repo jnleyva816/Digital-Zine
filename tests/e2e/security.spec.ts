@@ -92,7 +92,7 @@ test.describe("Content Security Policy", () => {
 
   test("visitor pages load and work with no violation", async ({ page }) => {
     const watch = await watchViolations(page);
-    for (const path of ["/", "/signin", "/signup", "/terms", "/privacy", "/verify-email"]) {
+    for (const path of ["/", "/signin", "/signup", "/terms", "/privacy", "/verify-email", "/forgot-password", "/reset-password?token=abc"]) {
       await page.goto(path);
       await expect(page.locator("main, h1").first()).toBeVisible();
       await expectNoViolations(watch, path);

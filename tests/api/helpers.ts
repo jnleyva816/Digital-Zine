@@ -92,6 +92,14 @@ export async function createSavedRecipe(ownerId: string, name = "Kodachrome 64",
   return prisma.recipe.create({ data: { ownerId, name, settings: settings as Prisma.InputJsonValue } });
 }
 
+/** Waits for the work route handlers handed to `after()` (see tests/setup/vitest.setup.ts). */
+export async function settleAfter() {
+  const g = globalThis as { __afterTasks?: Promise<unknown>[] };
+  const tasks = g.__afterTasks ?? [];
+  g.__afterTasks = [];
+  await Promise.allSettled(tasks);
+}
+
 /** Clears every rate-limit counter (DIG-28), so one test's requests never count against the next. */
 export async function resetRateLimits() {
   await prisma.rateLimit.deleteMany({});

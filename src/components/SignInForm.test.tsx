@@ -41,6 +41,11 @@ describe("SignInForm", () => {
     expect(screen.queryByText(/zine1234/)).not.toBeInTheDocument();
   });
 
+  it("links to the password reset page from beside the password (DIG-107)", () => {
+    render(<SignInForm showDevCredentials={false} />);
+    expect(screen.getByRole("link", { name: "Forgot your password?" })).toHaveAttribute("href", "/forgot-password");
+  });
+
   it("prefills and shows the dev account outside production", () => {
     render(<SignInForm showDevCredentials />);
     expect(screen.getByLabelText("Studio Email")).toHaveValue("creator@digitalzine.local");

@@ -8,6 +8,7 @@ import { EmailNotVerifiedError, SignInRateLimitedError, authorizeCredentials } f
 import { consumeVerificationToken } from "@/lib/email-verification";
 import { googleEnabled } from "@/lib/google-config";
 import { resolveGoogleUser } from "@/lib/google-signin";
+import { checkSessionToken, markSignedIn } from "@/lib/session-token";
 
 /** Too many failed sign-ins (DIG-28). The form reads `code` and says to wait. */
 class RateLimitedSignin extends CredentialsSignin {
@@ -85,7 +86,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } else if (user?.id) {
         token.sub = user.id;
       }
-      return token;
+      // A sign-in starts a session; every later call checks it is still good, so a password reset
+      // signs out the sessions from before it (DIG-107).
+      if (account || user) markSignedIn(token);
+      return checkSessionToken(token);
     },
     async session({ session, token }) {
       if (session.user && token.sub) {

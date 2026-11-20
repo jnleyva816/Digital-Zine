@@ -6,6 +6,12 @@ export const PASSWORD_MIN = 8;
 export const PASSWORD_MAX = 72;
 export const NAME_MAX = 80;
 
+/** The password rules, shared by sign-up and password reset (DIG-107) so they never drift apart. */
+export const passwordField = z
+  .string({ error: "Choose a password." })
+  .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`)
+  .max(PASSWORD_MAX, `Use at most ${PASSWORD_MAX} characters.`);
+
 /**
  * What the signup form sends (DIG-94). The browser and `POST /api/signup` use this one schema, so
  * the form and the server never disagree about what is valid.
@@ -23,10 +29,7 @@ export const signupSchema = z
       .toLowerCase()
       .max(254, "That email address is too long.")
       .email("Enter a valid email address."),
-    password: z
-      .string({ error: "Choose a password." })
-      .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`)
-      .max(PASSWORD_MAX, `Use at most ${PASSWORD_MAX} characters.`),
+    password: passwordField,
     confirmPassword: z.string({ error: "Type the password again." }),
     acceptTerms: z.literal(true, { error: "Accept the Terms and Privacy Policy to continue." }),
   })

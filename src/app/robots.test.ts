@@ -15,7 +15,7 @@ describe("robots.txt", () => {
   it("lets every crawler read the site, apart from the private and transactional areas", () => {
     const [rule] = rulesFor("*");
     expect(asList(rule.allow)).toContain("/");
-    for (const path of ["/api/", "/board", "/boards", "/editor", "/billing", "/recipes", "/signin", "/signup", "/verify-email"]) {
+    for (const path of ["/api/", "/board", "/boards", "/editor", "/billing", "/recipes", "/signin", "/signup", "/verify-email", "/forgot-password", "/reset-password"]) {
       expect(asList(rule.disallow), path).toContain(path);
     }
   });

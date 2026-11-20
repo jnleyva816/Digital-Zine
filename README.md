@@ -240,6 +240,12 @@ Sign-up is limited to 10 per IP per hour, and asking for another link to 3 per e
 
 Then set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. The Google buttons only appear when both are set.
 
+## Forgot password (DIG-107)
+
+`/signin` links to `/forgot-password`. Whoever asks gets the same answer ("If that address has an account, we sent a link") and the answer goes out before the address is looked up, so neither the wording nor the response time shows who has an account. A password account is emailed a link valid for one hour; a Google-only account is emailed a reminder to sign in with Google; an unknown address gets nothing. Only a hash of the token is stored, and asking again retires the older link. Requests are limited to 3 per email and 20 per IP per hour, and attempts to use a link to 20 per IP per hour.
+
+Opening the link (`/reset-password?token=…`) spends nothing; submitting a new password does, once. A refused password (too short, too long, not matching, or the account's own email) does not use the link up. A reset changes the password, retires every other reset link, marks the email verified, signs the creator in, and **signs out every session from before the reset**: each session records when it began, the account records `sessionsValidAfter`, and every check compares the two. Reset emails go through the same Resend setup as verification.
+
 ## Billing (Stripe)
 
 Pro costs $15/month and unlocks PDF export. `/billing` shows the plan, starts Stripe Checkout, and opens Stripe's hosted Customer Portal, where Pro users cancel, change their card, or see invoices.

@@ -13,6 +13,8 @@ export const PRIVATE_PATHS = [
   "/signin",
   "/signup",
   "/verify-email",
+  "/forgot-password",
+  "/reset-password",
 ] as const;
 
 /**
