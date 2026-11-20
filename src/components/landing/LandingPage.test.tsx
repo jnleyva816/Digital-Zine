@@ -37,9 +37,9 @@ describe("LandingPage (DIG-95)", () => {
     expect(screen.getByRole("link", { name: "Sign in" })).toHaveAttribute("href", "/signin");
     const starts = screen.getAllByRole("link", { name: /start free|get pro/i });
     expect(starts.length).toBeGreaterThanOrEqual(2);
-    for (const link of starts) expect(link).toHaveAttribute("href", "/signin");
+    for (const link of starts) expect(link).toHaveAttribute("href", "/signup");
     for (const link of screen.getAllByRole("link")) {
-      expect(link.getAttribute("href")).toMatch(/^(\/signin|#[a-z-]+)$/);
+      expect(link.getAttribute("href")).toMatch(/^(\/signin|\/signup|#[a-z-]+)$/);
     }
   });
 

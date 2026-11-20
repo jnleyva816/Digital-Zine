@@ -1,11 +1,8 @@
 import { ACCOUNT_STORAGE_BYTES, boardLimitFor, formatBytes, zineLimitFor } from "./limits";
 import { PRO_MONTHLY_PRICE_CENTS } from "./stripe";
 
-/**
- * Where the sign-up buttons on the landing page go (DIG-95). There is no sign-up page on `main`
- * yet, so they go to sign-in; change this one value to "/signup" when DIG-94 ships.
- */
-export const SIGNUP_HREF = "/signin";
+/** Where the sign-up buttons on the landing page go (DIG-95, DIG-97). */
+export const SIGNUP_HREF = "/signup";
 
 export interface LandingTier {
   name: "Free" | "Pro";

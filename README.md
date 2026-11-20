@@ -147,6 +147,7 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `AUTH_SECRET` | Yes | Auth.js signing secret. Generate one with `openssl rand -base64 32`. A production server will not start if it is missing, shorter than 32 characters, or a value committed in this repository. |
 | `AUTH_TRUST_HOST` | Yes | `true` when running behind a proxy or on localhost |
+| `AUTH_URL` | In production | The public URL, such as `https://folio-digital-zine.app`. Behind a proxy, Auth.js otherwise builds URLs from the container's own address (`https://localhost:8080`), so Google sign-in fails with `redirect_uri_mismatch`. It must match the host of the Google redirect URI. Not needed locally. |
 | `NEXT_PUBLIC_APP_URL` | Yes | Canonical public URL, used for Open Graph links and Stripe redirects |
 | `LOCAL_STORAGE_DIR` | No | Upload directory for the local storage driver. Default: `.data/uploads` |
 | `AWS_S3_BUCKET`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | No | When all four are set, uploads go straight to S3 through presigned PUT URLs |
@@ -181,8 +182,9 @@ Set these on the app service:
 | `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway's private network, direct connection) |
 | `AUTH_SECRET` | `openssl rand -base64 32`, never a value from this repository |
 | `AUTH_TRUST_HOST` | `true` |
+| `AUTH_URL` | The public URL, the same as `NEXT_PUBLIC_APP_URL`. Without it Google sign-in sends `https://localhost:8080/...` as its redirect and fails. |
 | `NEXT_PUBLIC_APP_URL` | `https://<service>.up.railway.app`, or the custom domain. Read at build time, so change it and redeploy together. |
-| `TRUSTED_PROXY_HOPS` | `1` (Railway's edge proxy) |
+| `TRUSTED_PROXY_HOPS` | `1` on Railway's own address; `2` when Cloudflare proxies a custom domain in front of Railway |
 | `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | The R2 bucket and an R2 API token with Object Read & Write on that bucket |
 | `AWS_REGION` | `auto` |
 | `AWS_S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com` |
