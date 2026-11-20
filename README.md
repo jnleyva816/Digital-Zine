@@ -220,6 +220,7 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `RESEND_API_KEY`, `EMAIL_FROM` | Production | Send verification emails (see "Sign-up"). Without a key, production refuses sign-up; elsewhere the link is printed to the console. `RESEND_API_URL` overrides the endpoint, for tests. |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | No | Turn on Continue with Google (see "Sign-up"). Unset hides the button. |
 | `TRUSTED_PROXY_HOPS` | No | How many proxies sit in front of the app, for reading the client IP (see "Sign-in rate limits"). Default: `1` |
+| `CSP_MODE` | No | `enforce` makes the Content Security Policy block violations. Anything else (the default) only reports them to `/api/csp-report` and Sentry. Deploy report-only, watch for a day, then set `enforce`. |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | No | Report server and browser errors to Sentry. Unset means nothing is sent. `NEXT_PUBLIC_SENTRY_DSN` is read at build time. |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | No | Build time only: upload source maps so Sentry shows readable stack traces |
 
