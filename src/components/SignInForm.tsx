@@ -109,12 +109,17 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
       </div>
 
       <div>
-        <label
-          htmlFor="password"
-          className="block font-mono text-xs uppercase tracking-wider text-ink-700"
-        >
-          Password
-        </label>
+        <div className="flex items-baseline justify-between gap-3">
+          <label
+            htmlFor="password"
+            className="block font-mono text-xs uppercase tracking-wider text-ink-700"
+          >
+            Password
+          </label>
+          <Link href="/forgot-password" className="text-xs font-medium text-vermilion-600 underline hover:text-vermilion-500">
+            Forgot your password?
+          </Link>
+        </div>
         <input
           id="password"
           name="password"

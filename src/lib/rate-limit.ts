@@ -11,6 +11,9 @@ export type RateLimitRule =
   | "signup-ip"
   | "resend-email"
   | "resend-ip"
+  | "forgot-email"
+  | "forgot-ip"
+  | "reset-ip"
   | "csp-report"
   | "upload"
   | "write"
@@ -27,6 +30,15 @@ export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: 
   "resend-email": { limit: 3, windowSeconds: 60 * 60 },
   /** Verification emails sent again, per client IP, across all addresses. */
   "resend-ip": { limit: 20, windowSeconds: 60 * 60 },
+  /**
+   * Password reset requests per email address (DIG-107). Each one sends an email, so this stops a
+   * mailbox being flooded. It applies to addresses with no account too, so the limit reveals nothing.
+   */
+  "forgot-email": { limit: 3, windowSeconds: 60 * 60 },
+  /** Password reset requests per client IP, across all addresses. */
+  "forgot-ip": { limit: 20, windowSeconds: 60 * 60 },
+  /** Attempts to use a reset link per client IP, good or bad, so a link cannot be guessed at. */
+  "reset-ip": { limit: 20, windowSeconds: 60 * 60 },
   /** CSP violation reports per client IP (DIG-104). A browser sends a few; more is noise or abuse. */
   "csp-report": { limit: 60, windowSeconds: 60 },
   /** Upload presigns per user. */
@@ -84,6 +96,9 @@ const MESSAGES: Record<RateLimitRule, string> = {
   "signup-ip": "Too many accounts created from this network.",
   "resend-email": "That email has been sent the link too many times.",
   "resend-ip": "Too many verification emails requested.",
+  "forgot-email": "That email address has been sent a reset link too many times.",
+  "forgot-ip": "Too many password resets requested.",
+  "reset-ip": "Too many attempts to reset a password.",
   "csp-report": "Too many reports.",
   upload: "You've reached the limit of 300 uploads an hour.",
   write: "You're making changes too quickly.",
