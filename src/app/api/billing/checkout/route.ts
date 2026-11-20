@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { appOrigin, automaticTaxEnabled, BILLING_NOT_CONFIGURED } from "@/lib/billing";
+import { appOrigin, automaticTaxEnabled, BILLING_NOT_CONFIGURED, tierForStatus } from "@/lib/billing";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient, PRO_MONTHLY_PRICE_CENTS } from "@/lib/stripe";
 
@@ -33,6 +33,18 @@ export async function POST(_req: Request) {
   }
 
   try {
+    // Stripe is the source of truth: a second tab, or a webhook that has not arrived yet, can leave
+    // the app showing Free while the customer already pays (DIG-39).
+    if (user.stripeCustomerId) {
+      const { data } = await stripe.subscriptions.list({ customer: user.stripeCustomerId, status: "all", limit: 10 });
+      if (data.some((s) => tierForStatus(s.status) === "pro")) {
+        return NextResponse.json(
+          { error: "You already have Pro. Use Manage subscription to change or cancel it." },
+          { status: 409 }
+        );
+      }
+    }
+
     let customerId = user.stripeCustomerId;
     if (!customerId) {
       // The idempotency key stops a double click from creating two customers.

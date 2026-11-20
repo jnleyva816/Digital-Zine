@@ -9,6 +9,22 @@ export function tierForStatus(status: string): "free" | "pro" {
   return PRO_STATUSES.has(status) ? "pro" : "free";
 }
 
+/** How good a status is for the creator: active, then trialing, then past due, then anything else. */
+const STATUS_RANK: Record<string, number> = { active: 3, trialing: 2, past_due: 1 };
+
+/**
+ * The subscription that decides a customer's plan (DIG-39): the best status among all of them,
+ * newest first on a tie. A late event for an old, ended subscription therefore cannot downgrade a
+ * creator who is paying for a newer one.
+ */
+export function decidingSubscription<T extends { status: string; created?: number }>(subscriptions: T[]): T | null {
+  return (
+    [...subscriptions].sort(
+      (a, b) => (STATUS_RANK[b.status] ?? 0) - (STATUS_RANK[a.status] ?? 0) || (b.created ?? 0) - (a.created ?? 0)
+    )[0] ?? null
+  );
+}
+
 /**
  * Stripe Tax on Checkout (DIG-16). Opt-in per environment because Stripe rejects `automatic_tax`
  * until the account's Tax settings are active. Tax is only collected where the account has an
