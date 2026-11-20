@@ -1,10 +1,12 @@
 # Digital Zine
 
-Creators collect photos on a private Vision Board, sequence them into a full-bleed photo zine, and publish it at `/z/[slug]`. On the public page, each card flips over to show the photo's camera EXIF or its Fujifilm film recipe: the in-camera settings (film simulation, dynamic range, grain, white balance, tone) that produced the look. Pro subscribers ($15/month) can export a published zine as a PDF.
+Digital Zine (Folio) is for photographers who want their pictures to travel with the settings that made them. Creators collect photos on a private **Vision Board**, sequence them into a full-bleed photo zine, and publish it at `/z/[slug]`. On the public page each card flips over to show the photo's camera EXIF or its **Fujifilm film recipe**: the in-camera settings (film simulation, dynamic range, grain, white balance, tone) that produced the look. Free creators publish zines; Pro subscribers ($15/month) can also export them as PDFs.
 
-Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js credentials, `@react-pdf/renderer`, and Stripe subscriptions.
+Live at **https://folio-digital-zine.app**.
 
-> Status: the MVP is merged into `main` (PR #1). Current work, including which Linear project is active, is on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page.
+**Stack:** Next.js 15 (App Router) and React 19, PostgreSQL with Prisma 6, Auth.js (email and password, and Google), Tailwind CSS, `sharp` for images and `pg-boss` for the background worker, `@react-pdf/renderer` for PDFs, Stripe for subscriptions, and Resend for email. It runs on Railway with Cloudflare R2 for photos and Sentry for errors.
+
+> The project's current state and active work live on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page in Linear, not in this file.
 
 | Vision Board | Zine editor |
 | --- | --- |
@@ -15,6 +17,66 @@ Stack: Next.js 15 App Router, React 19, PostgreSQL with Prisma 6, Auth.js creden
 | ![Public zine page with title, byline, and the first flip card](docs/screenshots/public-viewer.png) | ![The first card flipped to its Fujifilm film recipe and camera details](docs/screenshots/public-viewer-flipped.png) | ![The public zine page at phone width](docs/screenshots/public-viewer-phone.png) |
 
 `npm run smoke` regenerates these screenshots from a running server (see "Scripts").
+
+`npm run smoke` regenerates these screenshots from a running server (see "Scripts").
+
+## Features
+
+### For creators
+
+- **Vision Board.** A private place to collect photos. Upload full-resolution JPEGs (up to 75 MB each). Each photo keeps its camera EXIF, which is read in the browser before upload. Photos are stored as full-resolution AVIF with smaller copies and blur placeholders, so boards stay fast. Boards load 60 photos at a time.
+- **Many boards.** Free creators get one board; Pro creators get as many as they like. Rename, reorder, and move photos between boards.
+- **Photo names and edits.** Give a photo a name without losing its original file name. Edit it without changing the original: crop ratio, zoom and position, a frame (thin white, white mat, black, Polaroid), and card size. Edits show everywhere, including published zines and PDFs.
+- **Fujifilm recipes.** A recipe is the in-camera settings, with the camera's real options for each field. Recipes fill in automatically from a Fujifilm JPEG's maker notes, and creators can keep a private library of saved recipes that update every photo using them.
+- **Zine editor.** Build a zine from a board's photos: one full-bleed photo template with an optional caption, ordered pages, and a flip toggle per page. Publish and unpublish, edit the address until the first publish, and delete a zine only by typing its exact title.
+- **Public zine page.** `/z/[slug]` is server-rendered with Open Graph previews. Each card flips to its EXIF or film recipe. A creator's email is never shown. Only published zines are visible.
+- **PDF export (Pro).** Export a published zine as a PDF.
+- **Landing page.** Visitors see what the app is for and what Free and Pro include; signed-in creators go straight to their board.
+
+### Accounts and billing
+
+- **Sign up and sign in.** With an email and password (the email must be verified through a link sent by Resend) or with Google. A Google sign-in links to an existing account only when Google says the email is verified.
+- **Plans.** **Free:** 1 board, 1 zine, 2 GB of photo storage, and the public viewer. **Pro ($15/month):** unlimited boards and zines, and PDF export. The 2 GB storage limit applies to every account.
+- **Billing.** Stripe Checkout to upgrade and the Stripe Customer Portal to change a card or cancel. A creator who cancels keeps Pro until the end of the paid period, and `/billing` says when that is. A failed renewal keeps Pro with a warning while Stripe retries. Sales tax is optional (Stripe Tax).
+- **Admin accounts.** An admin has every Pro feature without a subscription and can preview the app as a Free user.
+
+### Under the hood
+
+- **Security.** Rate limits on sign-in, sign-up, uploads, writes, and PDF export. Storage keys are validated so one creator cannot reach another's files. Uploads are checked and never served as HTML. Original files are deleted once their copies are made, so GPS data inside them is never served. Production refuses to start with a missing or example `AUTH_SECRET`.
+- **Quality.** Test-driven: unit, component, API, and end-to-end tests run in CI on every pull request.
+- **Operations.** Prisma migrations run on every deploy, `GET /api/health` checks the database, and errors go to Sentry.
+
+## Roadmap
+
+This is a direction, not a promise or a schedule. The source of truth is the Linear backlog, and anything not yet started waits for the owner's go-ahead. Items come from that backlog.
+
+**Vision Board redesign**
+- Free-form board: place, move, resize, tilt, and stack photos, with a photo tray and sticky notes.
+- Grid view (Masonry, Even, Feature layouts) and a strip view grouped by day, with animation between views.
+- A new app bar, board bar, and view switch, and a tidier mobile board.
+
+**Reading a zine**
+- View a photo full screen, and choose vertical or book-style horizontal reading.
+- A background colour that follows each photo, and the recipe shown on the flip side as a film card with a "Shot on" chip and a copy button.
+- Generated share images for public zines.
+
+**Editor**
+- Drag to reorder pages (with keyboard and screen reader support), a live phone preview, and suggested page orders by recipe, colour, or time.
+- Autosaved drafts with undo.
+
+**PDF**
+- A template system with palettes and typefaces, starting with Darkroom, then Contact Sheet, Gallery, and Riso.
+- A "Style your PDF" panel with live preview, recipe cards in the PDF (style, size, location), and a one-sheet mini zine with fold and cut guides.
+
+**Workflow**
+- Select several photos and act on them together, and filter or group by film simulation, recipe, camera, lens, and date.
+- Drop or paste uploads with per-file progress, a command menu (⌘K), and an installable app that can receive photos shared from a phone.
+
+**Payments and launch**
+- Handling for refunds, disputes, and early fraud warnings.
+- Going live on Stripe, source maps in Sentry, and an uptime monitor.
+
+**Out of scope for now:** print-on-demand and proof copies, cover QR codes, Stripe Connect and payouts, audio and video, and asset garbage collection.
 
 ## Requirements
 
@@ -117,21 +179,6 @@ The forwarder's secret is not the same as the one on a webhook endpoint in the S
 | `npm run admin:create -- --email <email>` | Creates an admin account, or promotes an existing one (see "Admin accounts") |
 | `npm run smoke` | Smoke-checks a running server and refreshes `docs/screenshots/` (set `SMOKE_BASE_URL`) |
 
-## Schema changes and migrations
-
-Production schema changes ship as Prisma migrations in `prisma/migrations/` (DIG-19). The first one, `20261119000000_baseline`, is the whole schema as of 19 Nov 2026.
-
-- **Changing the schema:** edit `prisma/schema.prisma`, run `npm run db:migrate -- --name <short-change-name>`, and commit the new folder in `prisma/migrations/` with the schema. Never edit a migration that has been merged.
-- **A database set up with `db push` before migrations existed** (any local dev database from before 19 Nov 2026): run `npx prisma migrate resolve --applied 20261119000000_baseline` once, then `npm run db:deploy`.
-- **The test database** keeps `db push`: `npm test` and `npm run test:e2e` reset it that way. Migrations are proven separately by `npm run db:check-migrations`, which CI runs.
-- **Production:** run `npm run db:deploy` before starting the new version.
-
-## Sign-in rate limits and the client IP
-
-Failed sign-ins are limited to 5 per email from one IP and 20 per IP, per 15 minutes (DIG-28, DIG-37). Counting an email per IP means someone else's failures cannot lock a creator out.
-
-The client IP is read from `X-Forwarded-For`. Each proxy in front of the app appends the address that connected to it, so the real client is the entry `TRUSTED_PROXY_HOPS` places from the right (default `1`). Anything further left came from the client and may be forged. Set `TRUSTED_PROXY_HOPS` to the number of proxies your host puts in front of the app: usually `1`, or `2` behind a CDN and a load balancer.
-
 ## Testing
 
 This project is test-driven. Write a failing test, make it pass, then refactor. `CLAUDE.md` and `.cursor/rules/test-driven.mdc` hold the full rules.
@@ -152,21 +199,6 @@ npx playwright install chromium
 ```
 
 CI (`.github/workflows/ci.yml`) runs the build, `npm test`, and `npm run test:e2e` on every push and pull request.
-
-## Sign-up, email verification, and Google (DIG-94)
-
-Creators sign up at `/signup` with a name, email, and password, or with Google. A password account must verify its email before it can sign in: the sign-up sends a single-use link, valid for 24 hours, and opening it signs the creator in. Only a hash of the token is stored. Google accounts count as verified. A Google sign-in whose email already has an account links to it, but only when Google reports the email as verified. Existing accounts were marked verified by the migration.
-
-Sign-up is limited to 10 per IP per hour, and asking for another link to 3 per email and 20 per IP per hour.
-
-**Email** goes through [Resend](https://resend.com) over plain HTTPS. Set `RESEND_API_KEY` and `EMAIL_FROM` (an address on a domain verified in Resend). Without a key, a production server answers sign-up with "email is not set up" and creates nothing. Anywhere else the link is printed to the server console, so local sign-up works with no account.
-
-**Google** needs an OAuth client. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create an OAuth client ID of type "Web application" and add these authorized redirect URIs:
-
-- `http://localhost:3000/api/auth/callback/google` (use your dev port)
-- `https://<your domain>/api/auth/callback/google`
-
-Then set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. The Google buttons only appear when both are set.
 
 ## Environment variables
 
@@ -191,59 +223,20 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | No | Report server and browser errors to Sentry. Unset means nothing is sent. `NEXT_PUBLIC_SENTRY_DSN` is read at build time. |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | No | Build time only: upload source maps so Sentry shows readable stack traces |
 
-## Deploy (Railway)
+## Sign-up, email verification, and Google (DIG-94)
 
-Production runs on [Railway](https://railway.com) as one always-on service, with Railway Postgres and Cloudflare R2 for photos. It is not serverless: the media worker and the public page cache run inside the app.
+Creators sign up at `/signup` with a name, email, and password, or with Google. A password account must verify its email before it can sign in: the sign-up sends a single-use link, valid for 24 hours, and opening it signs the creator in. Only a hash of the token is stored. Google accounts count as verified. A Google sign-in whose email already has an account links to it, but only when Google reports the email as verified. Existing accounts were marked verified by the migration.
 
-Railway does not let new services use `railway.json`, so the service settings live on the service itself (Railway, then the service, then Settings). Set these once:
+Sign-up is limited to 10 per IP per hour, and asking for another link to 3 per email and 20 per IP per hour.
 
-| Setting | Value |
-| --- | --- |
-| Builder | Railpack (default), build command `npm run build` |
-| Pre-deploy command | `npm run db:deploy` (applies migrations before each new version starts) |
-| Start command | `npm run start` |
-| Healthcheck path | `/api/health` (200 when the database answers, 503 when not), timeout 120 s |
-| Restart policy | On failure, 5 retries |
+**Email** goes through [Resend](https://resend.com) over plain HTTPS. Set `RESEND_API_KEY` and `EMAIL_FROM` (an address on a domain verified in Resend). Without a key, a production server answers sign-up with "email is not set up" and creates nothing. Anywhere else the link is printed to the server console, so local sign-up works with no account.
 
-Set these on the app service:
+**Google** needs an OAuth client. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create an OAuth client ID of type "Web application" and add these authorized redirect URIs:
 
-| Variable | Value |
-| --- | --- |
-| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway's private network, direct connection) |
-| `AUTH_SECRET` | `openssl rand -base64 32`, never a value from this repository |
-| `AUTH_TRUST_HOST` | `true` |
-| `AUTH_URL` | The public URL, the same as `NEXT_PUBLIC_APP_URL`. Without it Google sign-in sends `https://localhost:8080/...` as its redirect and fails. |
-| `NEXT_PUBLIC_APP_URL` | `https://<service>.up.railway.app`, or the custom domain. Read at build time, so change it and redeploy together. |
-| `TRUSTED_PROXY_HOPS` | `1` on Railway's own address; `2` when Cloudflare proxies a custom domain in front of Railway |
-| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | The R2 bucket and an R2 API token with Object Read & Write on that bucket |
-| `AWS_REGION` | `auto` |
-| `AWS_S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com` |
-| `AWS_S3_PUBLIC_URL` | The bucket's public URL (`https://pub-<id>.r2.dev`, or a custom domain) |
-| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | The Sentry project's DSN |
-| `RESEND_API_KEY`, `EMAIL_FROM` | Resend API key, and a sender on a domain verified in Resend. Sign-up does not work in production without them. |
-| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client (see "Sign-up"). Optional. |
-| `STRIPE_*` | Live keys (see "Billing") |
+- `http://localhost:3000/api/auth/callback/google` (use your dev port)
+- `https://<your domain>/api/auth/callback/google`
 
-The R2 bucket needs public read access and a CORS rule that allows `PUT` with the `Content-Type` header from `NEXT_PUBLIC_APP_URL`:
-
-```json
-[{ "AllowedOrigins": ["https://<service>.up.railway.app"], "AllowedMethods": ["PUT"], "AllowedHeaders": ["Content-Type"], "MaxAgeSeconds": 3600 }]
-```
-
-After a deploy, check it with `SMOKE_BASE_URL=<url> SMOKE_SCREENSHOTS=0 npm run smoke`. Point an uptime monitor at `/api/health`.
-
-## Admin accounts
-
-Admins have every Pro feature, including PDF export, without a Stripe subscription. They can't see other users' data.
-
-```bash
-npm run admin:create -- --email you@example.com            # create, or promote an existing account
-npm run admin:create -- --email you@example.com --reset    # set a new password
-```
-
-A new account, or `--reset`, gets a random password that is printed once. Store it in a password manager. Promoting an existing account keeps its password. The command works against whatever database `DATABASE_URL` points to. Run `npm run db:deploy` first so the database is up to date.
-
-Signed-in admins see an "Admin" badge and a **View as Free** switch in the studio header. Turning it on shows the app exactly as a Free user sees it: the PDF upsell, a 403 from the PDF API, and the Free plan on `/billing`. A banner stays up until you switch back. The setting lives in an httpOnly cookie, so it survives reloads. It can only remove access: regular users can't use it, and admins can never start a Stripe checkout.
+Then set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. The Google buttons only appear when both are set.
 
 ## Billing (Stripe)
 
@@ -300,6 +293,75 @@ The browser reads EXIF with `exifreader` before it uploads.
 - With it set, the loader requests `<CDN>?url=<encoded src>&w=<width>&q=<quality>`. This fits image proxies that take a source URL, such as an Imgix web-proxy source or a CloudFront image handler.
 
 The loader is the only file to change if your CDN expects a different URL shape. Because the variable is `NEXT_PUBLIC_`, it is inlined at build time, so rebuild after you change it.
+
+## Admin accounts
+
+Admins have every Pro feature, including PDF export, without a Stripe subscription. They can't see other users' data.
+
+```bash
+npm run admin:create -- --email you@example.com            # create, or promote an existing account
+npm run admin:create -- --email you@example.com --reset    # set a new password
+```
+
+A new account, or `--reset`, gets a random password that is printed once. Store it in a password manager. Promoting an existing account keeps its password. The command works against whatever database `DATABASE_URL` points to. Run `npm run db:deploy` first so the database is up to date.
+
+Signed-in admins see an "Admin" badge and a **View as Free** switch in the studio header. Turning it on shows the app exactly as a Free user sees it: the PDF upsell, a 403 from the PDF API, and the Free plan on `/billing`. A banner stays up until you switch back. The setting lives in an httpOnly cookie, so it survives reloads. It can only remove access: regular users can't use it, and admins can never start a Stripe checkout.
+
+## Schema changes and migrations
+
+Production schema changes ship as Prisma migrations in `prisma/migrations/` (DIG-19). The first one, `20261119000000_baseline`, is the whole schema as of 19 Nov 2026.
+
+- **Changing the schema:** edit `prisma/schema.prisma`, run `npm run db:migrate -- --name <short-change-name>`, and commit the new folder in `prisma/migrations/` with the schema. Never edit a migration that has been merged.
+- **A database set up with `db push` before migrations existed** (any local dev database from before 19 Nov 2026): run `npx prisma migrate resolve --applied 20261119000000_baseline` once, then `npm run db:deploy`.
+- **The test database** keeps `db push`: `npm test` and `npm run test:e2e` reset it that way. Migrations are proven separately by `npm run db:check-migrations`, which CI runs.
+- **Production:** run `npm run db:deploy` before starting the new version.
+
+## Sign-in rate limits and the client IP
+
+Failed sign-ins are limited to 5 per email from one IP and 20 per IP, per 15 minutes (DIG-28, DIG-37). Counting an email per IP means someone else's failures cannot lock a creator out.
+
+The client IP is read from `X-Forwarded-For`. Each proxy in front of the app appends the address that connected to it, so the real client is the entry `TRUSTED_PROXY_HOPS` places from the right (default `1`). Anything further left came from the client and may be forged. Set `TRUSTED_PROXY_HOPS` to the number of proxies your host puts in front of the app: usually `1`, or `2` behind a CDN and a load balancer.
+
+## Deploy (Railway)
+
+Production runs on [Railway](https://railway.com) as one always-on service, with Railway Postgres and Cloudflare R2 for photos. It is not serverless: the media worker and the public page cache run inside the app.
+
+Railway does not let new services use `railway.json`, so the service settings live on the service itself (Railway, then the service, then Settings). Set these once:
+
+| Setting | Value |
+| --- | --- |
+| Builder | Railpack (default), build command `npm run build` |
+| Pre-deploy command | `npm run db:deploy` (applies migrations before each new version starts) |
+| Start command | `npm run start` |
+| Healthcheck path | `/api/health` (200 when the database answers, 503 when not), timeout 120 s |
+| Restart policy | On failure, 5 retries |
+
+Set these on the app service:
+
+| Variable | Value |
+| --- | --- |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Railway's private network, direct connection) |
+| `AUTH_SECRET` | `openssl rand -base64 32`, never a value from this repository |
+| `AUTH_TRUST_HOST` | `true` |
+| `AUTH_URL` | The public URL, the same as `NEXT_PUBLIC_APP_URL`. Without it Google sign-in sends `https://localhost:8080/...` as its redirect and fails. |
+| `NEXT_PUBLIC_APP_URL` | `https://<service>.up.railway.app`, or the custom domain. Read at build time, so change it and redeploy together. |
+| `TRUSTED_PROXY_HOPS` | `1` on Railway's own address; `2` when Cloudflare proxies a custom domain in front of Railway |
+| `AWS_S3_BUCKET`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` | The R2 bucket and an R2 API token with Object Read & Write on that bucket |
+| `AWS_REGION` | `auto` |
+| `AWS_S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com` |
+| `AWS_S3_PUBLIC_URL` | The bucket's public URL (`https://pub-<id>.r2.dev`, or a custom domain) |
+| `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | The Sentry project's DSN |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Resend API key, and a sender on a domain verified in Resend. Sign-up does not work in production without them. |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client (see "Sign-up"). Optional. |
+| `STRIPE_*` | Live keys (see "Billing") |
+
+The R2 bucket needs public read access and a CORS rule that allows `PUT` with the `Content-Type` header from `NEXT_PUBLIC_APP_URL`:
+
+```json
+[{ "AllowedOrigins": ["https://<service>.up.railway.app"], "AllowedMethods": ["PUT"], "AllowedHeaders": ["Content-Type"], "MaxAgeSeconds": 3600 }]
+```
+
+After a deploy, check it with `SMOKE_BASE_URL=<url> SMOKE_SCREENSHOTS=0 npm run smoke`. Point an uptime monitor at `/api/health`.
 
 ## NixOS
 
