@@ -68,7 +68,7 @@ jobs:
           path: |
             .next/cache
             tsconfig.tsbuildinfo
-          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'next.config.mjs', 'tailwind.config.*', 'tsconfig.json') }}
+          key: nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('src/**', 'next.config.ts', 'tailwind.config.*', 'tsconfig.json') }}
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 

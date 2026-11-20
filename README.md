@@ -147,7 +147,15 @@ Every variable lives in `.env.example`. Only the first group is required.
 
 Production runs on [Railway](https://railway.com) as one always-on service, with Railway Postgres and Cloudflare R2 for photos. It is not serverless: the media worker and the public page cache run inside the app.
 
-`railway.json` holds the service settings. Railway builds with `npm run build`, runs `npm run db:deploy` before each deploy, starts `next start`, and only switches traffic once `GET /api/health` answers 200. That route checks the database and answers 503 when it cannot reach it.
+Railway does not let new services use `railway.json`, so the service settings live on the service itself (Railway, then the service, then Settings). Set these once:
+
+| Setting | Value |
+| --- | --- |
+| Builder | Railpack (default), build command `npm run build` |
+| Pre-deploy command | `npm run db:deploy` (applies migrations before each new version starts) |
+| Start command | `npm run start` |
+| Healthcheck path | `/api/health` (200 when the database answers, 503 when not), timeout 120 s |
+| Restart policy | On failure, 5 retries |
 
 Set these on the app service:
 
