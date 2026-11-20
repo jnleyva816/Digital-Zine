@@ -4,6 +4,7 @@ import { z } from "zod";
 import { fujiRecipeSchema } from "@/lib/fuji-recipe";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { BOARD_ORDER, BOARD_PAGE_MAX } from "@/lib/board-pages";
 import { boardPhotoPage } from "@/lib/board-photos";
 import { uploadLimitResponse } from "@/lib/limit-response";
@@ -118,42 +119,54 @@ export async function POST(req: Request) {
     );
   }
 
-  const result = await withUserLock(user.id, async (tx) => {
-    const board = parsed.data.boardId
-      ? await tx.board.findFirst({ where: { id: parsed.data.boardId, ownerId: user.id }, select: { id: true } })
-      : await getOrCreateDefaultBoard(user.id, tx);
-    if (!board) return { rejected: "board_not_found", asset: null } as const;
+  // A retried request can send a key that is already a photo. Answer 409, and never delete the
+  // file, which belongs to that photo (DIG-45).
+  const duplicate = () => NextResponse.json({ error: "This upload has already been added." }, { status: 409 });
+  if (await prisma.mediaAsset.findUnique({ where: { storageKey }, select: { id: true } })) return duplicate();
 
-    const check = checkUpload({ size: sizeBytes, usedBytes: await getAccountUsageBytes(user.id, tx) });
-    if (!check.ok) return { rejected: check, asset: null } as const;
+  let result;
+  try {
+    result = await withUserLock(user.id, async (tx) => {
+      const board = parsed.data.boardId
+        ? await tx.board.findFirst({ where: { id: parsed.data.boardId, ownerId: user.id }, select: { id: true } })
+        : await getOrCreateDefaultBoard(user.id, tx);
+      if (!board) return { rejected: "board_not_found", asset: null } as const;
 
-    const aggregate = await tx.mediaAsset.aggregate({
-      where: { boardId: board.id },
-      _max: { sortOrder: true },
+      const check = checkUpload({ size: sizeBytes, usedBytes: await getAccountUsageBytes(user.id, tx) });
+      if (!check.ok) return { rejected: check, asset: null } as const;
+
+      const aggregate = await tx.mediaAsset.aggregate({
+        where: { boardId: board.id },
+        _max: { sortOrder: true },
+      });
+      const nextSortOrder = (aggregate._max.sortOrder ?? -1) + 1;
+
+      const asset = await tx.mediaAsset.create({
+        data: {
+          ownerId: user.id,
+          boardId: board.id,
+          storageKey,
+          publicUrl,
+          originalName: parsed.data.originalName ?? null,
+          mimeType: parsed.data.mimeType ?? "image/jpeg",
+          sizeBytes,
+          // The worker turns it into AVIF copies and deletes the original (DIG-26).
+          status: "processing",
+          kind: parsed.data.kind,
+          exif: parsed.data.exif ? (parsed.data.exif as Prisma.InputJsonValue) : Prisma.DbNull,
+          recipe: parsed.data.recipe
+            ? (parsed.data.recipe as Prisma.InputJsonValue)
+            : Prisma.DbNull,
+          sortOrder: nextSortOrder,
+        },
+      });
+      return { rejected: null, asset } as const;
     });
-    const nextSortOrder = (aggregate._max.sortOrder ?? -1) + 1;
-
-    const asset = await tx.mediaAsset.create({
-      data: {
-        ownerId: user.id,
-        boardId: board.id,
-        storageKey,
-        publicUrl,
-        originalName: parsed.data.originalName ?? null,
-        mimeType: parsed.data.mimeType ?? "image/jpeg",
-        sizeBytes,
-        // The worker turns it into AVIF copies and deletes the original (DIG-26).
-        status: "processing",
-        kind: parsed.data.kind,
-        exif: parsed.data.exif ? (parsed.data.exif as Prisma.InputJsonValue) : Prisma.DbNull,
-        recipe: parsed.data.recipe
-          ? (parsed.data.recipe as Prisma.InputJsonValue)
-          : Prisma.DbNull,
-        sortOrder: nextSortOrder,
-      },
-    });
-    return { rejected: null, asset } as const;
-  });
+  } catch (error) {
+    // Two requests with the same key at once: the constraint stops the second.
+    if (isUniqueViolation(error, "storageKey")) return duplicate();
+    throw error;
+  }
 
   if (result.rejected) {
     // Nothing references the bytes, so they would only cost money.

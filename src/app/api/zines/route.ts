@@ -8,6 +8,7 @@ import { withUserLock } from "@/lib/usage";
 import { getOrCreateDefaultBoard } from "@/lib/boards";
 import { revalidatePublicZines } from "@/lib/public-zine-cache";
 import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { limitRequest } from "@/lib/rate-limit";
 
 const createZineSchema = z.object({
@@ -61,7 +62,7 @@ export async function POST(req: Request) {
   }
 
   const limit = zineLimitFor(user.tier);
-  const result = await withUserLock(user.id, async (tx) => {
+  const create = (slug: string) => withUserLock(user.id, async (tx) => {
     const board = parsed.data.boardId
       ? await tx.board.findFirst({ where: { id: parsed.data.boardId, ownerId: user.id }, select: { id: true } })
       : await getOrCreateDefaultBoard(user.id, tx);
@@ -114,6 +115,16 @@ export async function POST(req: Request) {
       },
     });
   });
+
+  // Another request can take the slug after the check above. The unique constraint catches it,
+  // and the zine is created once more with a random suffix (DIG-45).
+  let result: Awaited<ReturnType<typeof create>>;
+  try {
+    result = await create(slug);
+  } catch (error) {
+    if (!isUniqueViolation(error, "slug")) throw error;
+    result = await create(`${slugifyTitle(parsed.data.title)}-${crypto.randomBytes(2).toString("hex")}`);
+  }
 
   if (result === "board_not_found") {
     return NextResponse.json({ error: "Board not found" }, { status: 404 });

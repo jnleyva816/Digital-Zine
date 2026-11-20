@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicZines } from "@/lib/public-zine-cache";
 import { parsePageContent, slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
+import { isUniqueViolation } from "@/lib/db-errors";
 import { limitRequest } from "@/lib/rate-limit";
 
 const pageInputSchema = z.object({
@@ -171,52 +172,61 @@ export async function PATCH(
     }
   }
 
-  const updated = await prisma.$transaction(async (tx) => {
-    if (parsed.data.pages !== undefined) {
-      await tx.zinePage.deleteMany({
-        where: { zineId: existing.id },
-      });
-      if (parsed.data.pages.length > 0) {
-        await tx.zinePage.createMany({
-          data: parsed.data.pages.map((page, idx) => ({
-            zineId: existing.id,
-            pageNumber: idx + 1,
-            templateId: ZINE_TEMPLATE_ID,
-            content: {
-              assetId: page.assetId,
-              caption: page.caption ?? "",
-            },
-            flipEnabled: page.flipEnabled,
-          })),
+  let updated;
+  try {
+      updated = await prisma.$transaction(async (tx) => {
+      if (parsed.data.pages !== undefined) {
+        await tx.zinePage.deleteMany({
+          where: { zineId: existing.id },
         });
+        if (parsed.data.pages.length > 0) {
+          await tx.zinePage.createMany({
+            data: parsed.data.pages.map((page, idx) => ({
+              zineId: existing.id,
+              pageNumber: idx + 1,
+              templateId: ZINE_TEMPLATE_ID,
+              content: {
+                assetId: page.assetId,
+                caption: page.caption ?? "",
+              },
+              flipEnabled: page.flipEnabled,
+            })),
+          });
+        }
       }
-    }
 
-    return tx.zine.update({
-      where: { id: existing.id },
-      data: {
-        ...(parsed.data.title !== undefined
-          ? { title: parsed.data.title.trim() }
-          : {}),
-        ...(parsed.data.description !== undefined
-          ? { description: parsed.data.description?.trim() || null }
-          : {}),
-        ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
-        ...(nextBoardId !== undefined ? { boardId: nextBoardId } : {}),
-        ...(parsed.data.published !== undefined
-          ? {
-              published: parsed.data.published,
-              publishedAt: existing.publishedAt ?? (parsed.data.published ? new Date() : null),
-            }
-          : {}),
-      },
-      include: {
-        pages: {
-          orderBy: { pageNumber: "asc" },
+      return tx.zine.update({
+        where: { id: existing.id },
+        data: {
+          ...(parsed.data.title !== undefined
+            ? { title: parsed.data.title.trim() }
+            : {}),
+          ...(parsed.data.description !== undefined
+            ? { description: parsed.data.description?.trim() || null }
+            : {}),
+          ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
+          ...(nextBoardId !== undefined ? { boardId: nextBoardId } : {}),
+          ...(parsed.data.published !== undefined
+            ? {
+                published: parsed.data.published,
+                publishedAt: existing.publishedAt ?? (parsed.data.published ? new Date() : null),
+              }
+            : {}),
         },
-      },
+        include: {
+          pages: {
+            orderBy: { pageNumber: "asc" },
+          },
+        },
+      });
     });
-  });
+  } catch (error) {
+    // Another zine took the slug after the check above (DIG-45). Nothing was written.
+    if (nextSlug !== undefined && isUniqueViolation(error, "slug")) {
+      return NextResponse.json({ error: `Slug "${nextSlug}" is already taken.` }, { status: 409 });
+    }
+    throw error;
+  }
 
   // Readers see the change on their next view, including a 404 right after unpublishing (DIG-27).
   await revalidatePublicZines([existing.slug, updated.slug]);
