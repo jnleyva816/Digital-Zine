@@ -27,6 +27,13 @@ const GOOGLE_REFUSALS = {
   invalid_profile: "google_failed",
 } as const;
 
+declare module "next-auth" {
+  interface Session {
+    /** When this session began, in ms since the epoch (DIG-107). Absent on sessions from before it was recorded. */
+    authAt?: number;
+  }
+}
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   session: {
@@ -95,6 +102,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }
+      if (typeof token.authAt === "number") session.authAt = token.authAt;
       return session;
     },
   },
@@ -124,5 +132,7 @@ export async function getAuthenticatedUser() {
   // billed tier. `billingTier` is what Stripe says, for the billing page.
   const viewAsFree = (await cookies()).get(VIEW_AS_FREE_COOKIE)?.value === "1";
   const access = effectiveAccess(user, viewAsFree);
-  return { ...user, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree };
+  // When this session began, for actions that ask for a recent sign-in (DIG-108).
+  const signedInAt = typeof session?.authAt === "number" ? session.authAt : null;
+  return { ...user, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree, signedInAt };
 }

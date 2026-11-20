@@ -246,6 +246,12 @@ Then set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. The Google buttons only appe
 
 Opening the link (`/reset-password?token=…`) spends nothing; submitting a new password does, once. A refused password (too short, too long, not matching, or the account's own email) does not use the link up. A reset changes the password, retires every other reset link, marks the email verified, signs the creator in, and **signs out every session from before the reset**: each session records when it began, the account records `sessionsValidAfter`, and every check compares the two. Reset emails go through the same Resend setup as verification.
 
+## Deleting an account (DIG-108)
+
+`/account` (linked from the studio header) has a "Delete account" section that lists exactly what goes: the Vision Boards and photos and every stored copy, the zines (published ones stop working at once and leave the sitemap), saved recipes, and the account. The creator types their email address and gives the account's password; an account with no password (Google only) must have signed in within the last five minutes instead. A password that is given must be right. Attempts are limited to 5 per creator per hour.
+
+The order is repeatable: any live Stripe subscription is cancelled first, immediately and with no refund (refunds are DIG-15), and the Stripe customer is deleted; then every file under `users/<id>/` is deleted from storage; then the database row goes, and its cascades remove the rest. If a step fails, the account stays, the creator is told to try again, and the error goes to Sentry tagged `area: account-deletion` with the account's ID only. A retry skips what is already done. The only admin cannot delete their own account. Deleting the Stripe customer removes the saved card and contact details; Stripe keeps its own payment records as the law requires.
+
 ## Billing (Stripe)
 
 Pro costs $15/month and unlocks PDF export. `/billing` shows the plan, starts Stripe Checkout, and opens Stripe's hosted Customer Portal, where Pro users cancel, change their card, or see invoices.
