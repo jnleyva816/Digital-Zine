@@ -12,7 +12,7 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: "/" },
   openGraph: { title, description, type: "website", url: "/", siteName: "Folio" },
-  twitter: { card: "summary", title, description },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 /** Creators go straight to their board; everyone else sees what the app is (DIG-95). */
