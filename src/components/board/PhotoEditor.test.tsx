@@ -88,4 +88,56 @@ describe("PhotoEditor (DIG-33)", () => {
     await waitFor(() => expect(screen.getByRole("alert")).toHaveTextContent("Could not save the edit."));
     expect(screen.getByRole("heading", { name: "Edit fog.jpg" })).toBeInTheDocument();
   });
+
+  describe("option previews (DIG-48)", () => {
+    const ratioOf = (shape: HTMLElement) => parseFloat(shape.style.width) / parseFloat(shape.style.height);
+
+    it.each([
+      ["4:5", 4 / 5],
+      ["1:1", 1],
+      ["3:2", 3 / 2],
+      ["2:3", 2 / 3],
+      ["16:9", 16 / 9],
+    ])("the %s option shows a shape with that ratio, hidden from screen readers", (name, aspect) => {
+      setup();
+      const option = screen.getByRole("radio", { name }).closest("label")!;
+      const shape = option.querySelector<HTMLElement>("[data-ratio-shape]")!;
+      expect(shape).not.toBeNull();
+      expect(shape.closest("[aria-hidden='true']")).not.toBeNull();
+      expect(ratioOf(shape)).toBeCloseTo(aspect, 1);
+    });
+
+    it("the Original option shows the photo's own shape", () => {
+      setup({ dims: { width: 6000, height: 4000 } });
+      const shape = screen.getByRole("radio", { name: "Original" }).closest("label")!.querySelector<HTMLElement>("[data-ratio-shape]")!;
+      expect(ratioOf(shape)).toBeCloseTo(1.5, 1);
+    });
+
+    it("the Original option still shows a shape when the photo's size is not known", () => {
+      setup({ dims: null });
+      expect(screen.getByRole("radio", { name: "Original" }).closest("label")!.querySelector("[data-ratio-shape]")).not.toBeNull();
+    });
+
+    it.each(["None", "Thin white", "White mat", "Black", "Polaroid"])("the %s frame shows a small preview", (name) => {
+      setup();
+      const swatch = screen.getByRole("radio", { name }).closest("label")!.querySelector("[data-frame-swatch]");
+      expect(swatch).not.toBeNull();
+      expect(swatch!.closest("[aria-hidden='true']")).not.toBeNull();
+    });
+
+    it("keeps each option's name as just its label, so screen readers do not hear the previews", () => {
+      setup();
+      for (const name of ["Original", "4:5", "None", "Thin white", "Polaroid", "Normal", "Large"]) {
+        expect(screen.getByRole("radio", { name })).toBeInTheDocument();
+      }
+    });
+
+    it("keeps Save, Cancel and Reset outside the scrolling controls, so they are always on screen", () => {
+      setup();
+      for (const name of ["Save", "Cancel", "Reset"]) {
+        expect(screen.getByRole("button", { name }).closest("[data-editor-scroll]")).toBeNull();
+      }
+      expect(screen.getByRole("slider", { name: "Zoom" }).closest("[data-editor-scroll]")).not.toBeNull();
+    });
+  });
 });
