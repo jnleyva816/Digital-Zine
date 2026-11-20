@@ -265,6 +265,7 @@ To turn it on:
    - `checkout.session.completed`, `checkout.session.async_payment_succeeded`
    - `customer.subscription.created`, `.updated`, `.deleted`, `.paused`, `.resumed`
    - `invoice.paid`, `invoice.payment_failed`
+   - `charge.refunded`, `charge.dispute.created`, `radar.early_fraud_warning.created` (money at risk, DIG-15)
 
    For local testing: `stripe listen --forward-to localhost:3000/api/billing/webhook`.
 
@@ -274,7 +275,7 @@ How it behaves:
 - Checkout asks Stripe first and refuses (409) when the customer already has a live subscription, even if the app has not caught up yet.
 - `active`, `trialing`, and `past_due` count as Pro. While Stripe retries a failed renewal, the creator keeps Pro and sees a warning on `/billing`. They drop to Free when the subscription becomes `unpaid` or `canceled`.
 - Without `STRIPE_SECRET_KEY` or `NEXT_PUBLIC_APP_URL`, `/billing` says billing is not set up and the billing APIs return 503. The rest of the app is unaffected.
-- Not handled yet: refund, dispute, and early-fraud-warning events (DIG-15).
+- **Money at risk (DIG-15).** A full refund of a subscription's latest payment cancels the subscription at once and the creator drops to Free (the webhook follows the charge to its payment intent, invoice, and subscription, then finds the user by the linked Stripe customer). A partial refund, or a refund of an older payment, changes nothing. A dispute and an early fraud warning change nothing for the creator. All of them are reported to Sentry (`area: stripe-risk`), with Stripe IDs, amounts, and our user ID but no email or name, so watch Sentry for them; a dispute is an `error`, the rest are `warning`. Contest or refund in the Stripe dashboard.
 
 ### Sales tax (Stripe Tax)
 
