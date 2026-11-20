@@ -48,6 +48,45 @@ describe("sendVerificationEmail", () => {
     vi.unstubAllGlobals();
   });
 
+  describe("when Resend refuses the message (DIG-96)", () => {
+    const refuse = (status: number, body: string) => {
+      vi.stubEnv("RESEND_API_KEY", "re_secret_key_123");
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(body, { status })));
+    };
+    afterEach(() => vi.unstubAllGlobals());
+
+    it("says what Resend said, so the owner can tell a test sender from an unverified domain", async () => {
+      refuse(403, JSON.stringify({ name: "validation_error", message: "You can only send testing emails to your own email address." }));
+      const error = await sendVerificationEmail("ada@example.com", LINK).catch((e: Error) => e);
+      expect(error).toBeInstanceOf(Error);
+      expect((error as Error).message).toContain("403");
+      expect((error as Error).message).toContain("You can only send testing emails to your own email address.");
+      expect((error as Error).message).toContain("validation_error");
+    });
+
+    it("never puts the API key or the recipient in the error", async () => {
+      refuse(401, JSON.stringify({ name: "restricted_api_key", message: "API key is invalid" }));
+      const error = (await sendVerificationEmail("ada@example.com", LINK).catch((e: Error) => e)) as Error;
+      expect(error.message).not.toContain("re_secret_key_123");
+      expect(error.message).not.toContain("ada@example.com");
+    });
+
+    it("cuts a long body short", async () => {
+      refuse(500, JSON.stringify({ message: "x".repeat(5000) }));
+      const error = (await sendVerificationEmail("ada@example.com", LINK).catch((e: Error) => e)) as Error;
+      expect(error.message.length).toBeLessThan(400);
+      expect(error.message).toContain("500");
+    });
+
+    it.each([
+      ["a body that is not JSON", "<html>Bad gateway</html>", /Bad gateway/],
+      ["an empty body", "", /502/],
+    ])("still gives a useful error for %s", async (_label, body, expected) => {
+      refuse(502, body);
+      await expect(sendVerificationEmail("ada@example.com", LINK)).rejects.toThrow(expected);
+    });
+  });
+
   it("throws EmailNotConfiguredError in production without a key, and never fetches", async () => {
     vi.stubEnv("NODE_ENV", "production");
     const fetchMock = vi.fn();

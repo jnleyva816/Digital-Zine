@@ -35,5 +35,26 @@ export async function sendVerificationEmail(to: string, link: string): Promise<v
       html: `<p>Welcome to Folio.</p><p><a href="${safe}">Verify your email</a> to open your studio.</p><p>Or paste this link into your browser:<br>${safe}</p><p>The link works once and expires in 24 hours. If you did not sign up, ignore this email.</p>`,
     }),
   });
-  if (!res.ok) throw new Error(`Resend rejected the email (${res.status}).`);
+  if (!res.ok) throw new Error(await resendFailure(res));
+}
+
+const DETAIL_MAX = 300;
+
+/**
+ * What to log when Resend refuses a message (DIG-96): the status and Resend's own reason, such as
+ * "You can only send testing emails to your own email address". Only Resend's response is used,
+ * never our request, so the API key and the recipient cannot end up in the log.
+ */
+async function resendFailure(res: Response): Promise<string> {
+  const raw = (await res.text().catch(() => "")).trim();
+  let detail = raw;
+  try {
+    const body = JSON.parse(raw) as { name?: unknown; message?: unknown };
+    const parts = [body.name, body.message].filter((p): p is string => typeof p === "string" && p.length > 0);
+    if (parts.length > 0) detail = parts.length === 2 ? `${parts[0]}: ${parts[1]}` : parts[0];
+  } catch {
+    // Not JSON (a proxy error page, say): the text itself is the best detail there is.
+  }
+  const clipped = detail.length > DETAIL_MAX ? `${detail.slice(0, DETAIL_MAX)}…` : detail;
+  return clipped ? `Resend rejected the email (${res.status}): ${clipped}` : `Resend rejected the email (${res.status}).`;
 }
