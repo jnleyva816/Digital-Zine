@@ -17,12 +17,19 @@ export interface BillingPanelProps {
   checkout: "success" | "cancelled" | null;
   /** True when Stripe Tax adds tax on top of the $15 price. */
   taxExclusive: boolean;
+  /** When a cancelled Pro plan stops, as an ISO date (DIG-99). Null when it is not ending. */
+  endsAt?: string | null;
   /** Leaves the app for Stripe. Injected in tests. */
   navigate?: (url: string) => void;
 }
 
 const REFRESH_EVERY_MS = 3000;
 const MAX_REFRESHES = 10;
+
+/** "20 December 2026". UTC, so the server and the browser print the same day. */
+function formatEndDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+}
 
 function goTo(url: string) {
   window.location.assign(url);
@@ -34,6 +41,7 @@ export function BillingPanel({
   configured,
   checkout,
   taxExclusive,
+  endsAt = null,
   previewOnly = false,
   navigate = goTo,
 }: BillingPanelProps) {
@@ -94,6 +102,13 @@ export function BillingPanel({
       {notice ? (
         <p role="status" className="rounded-xl border border-paper-300 bg-paper-100 px-4 py-3 text-sm text-ink-800">
           {notice}
+        </p>
+      ) : null}
+
+      {plan === "Pro" && endsAt ? (
+        <p role="status" className="rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          Your Pro plan ends on {formatEndDate(endsAt)}. You keep Pro until then. To keep it, open Manage subscription
+          below and renew.
         </p>
       ) : null}
 
