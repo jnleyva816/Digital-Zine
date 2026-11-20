@@ -12,22 +12,22 @@ export const NAME_MAX = 80;
 export const signupSchema = z
   .object({
     name: z
-      .string({ required_error: "Enter your name.", invalid_type_error: "Enter your name." })
+      .string({ error: "Enter your name." })
       .trim()
       .min(1, "Enter your name.")
       .max(NAME_MAX, `Your name can be up to ${NAME_MAX} characters.`),
     email: z
-      .string({ required_error: "Enter your email.", invalid_type_error: "Enter your email." })
+      .string({ error: "Enter your email." })
       .trim()
       .toLowerCase()
       .max(254, "That email address is too long.")
       .email("Enter a valid email address."),
     password: z
-      .string({ required_error: "Choose a password.", invalid_type_error: "Choose a password." })
+      .string({ error: "Choose a password." })
       .min(PASSWORD_MIN, `Use at least ${PASSWORD_MIN} characters.`)
       .max(PASSWORD_MAX, `Use at most ${PASSWORD_MAX} characters.`),
-    confirmPassword: z.string({ required_error: "Type the password again.", invalid_type_error: "Type the password again." }),
-    acceptTerms: z.literal(true, { errorMap: () => ({ message: "Accept the Terms and Privacy Policy to continue." }) }),
+    confirmPassword: z.string({ error: "Type the password again." }),
+    acceptTerms: z.literal(true, { error: "Accept the Terms and Privacy Policy to continue." }),
   })
   .superRefine((value, ctx) => {
     if (value.password !== value.confirmPassword) {

@@ -1,18 +1,36 @@
 name: CI
 
-# Pull requests cover feature branches; pushes to main cover merges.
+# Pull requests cover feature branches; pushes to main cover merges. The weekly run only audits
+# dependencies: new advisories appear without any code changing (DIG-103).
 on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: "17 6 * * 1"
 
 concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
+  # Fails on a high-severity advisory in what ships (DIG-103). Packages used only for development
+  # are left out on purpose: they never run in production. It needs no install and no database, so
+  # it reports fast and still reports when the build below fails.
+  audit:
+    name: Dependency audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm audit --omit=dev --audit-level=high
+
   test:
     name: Build and test
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-latest
     timeout-minutes: 20
 

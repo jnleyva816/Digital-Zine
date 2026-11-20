@@ -23,7 +23,7 @@ export async function getOrCreateDefaultBoard(userId: string, db: Db) {
 
 /** Validates a board name from a request. Trims it; 1 to 80 characters. */
 export const boardNameSchema = z
-  .string({ required_error: "Give the board a name.", invalid_type_error: "Give the board a name." })
+  .string({ error: "Give the board a name." })
   .trim()
   .min(1, "Give the board a name.")
   .max(BOARD_NAME_MAX, `Board names can be up to ${BOARD_NAME_MAX} characters.`);

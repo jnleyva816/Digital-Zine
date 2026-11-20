@@ -18,7 +18,7 @@ const updateAssetSchema = z.object({
   recipe: fujiRecipeSchema.nullable().optional(),
   /** The creator's name for the photo (DIG-34). Blank or null clears it. */
   name: z
-    .string({ invalid_type_error: "The photo name must be text." })
+    .string({ error: "The photo name must be text." })
     .trim()
     .max(PHOTO_NAME_MAX, `Photo names can be up to ${PHOTO_NAME_MAX} characters.`)
     .nullable()
