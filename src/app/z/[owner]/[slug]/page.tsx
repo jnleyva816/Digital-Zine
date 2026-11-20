@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { JsonLd } from "@/components/seo/JsonLd";
 import { ZinePages } from "@/components/zine/ZinePages";
 import { getPublicZine, shareDescription } from "@/lib/public-zine";
 import { publicZinePath } from "@/lib/public-zine-path";
+import { siteUrl } from "@/lib/site";
+import { zineJsonLd } from "@/lib/structured-data";
 
 /** `owner` is the creator's public ID (DIG-102): slugs are only unique per creator. */
 type Props = { params: Promise<{ owner: string; slug: string }> };
@@ -56,6 +59,7 @@ export default async function PublicZinePage({ params }: Props) {
 
   return (
     <div className="min-h-screen bg-paper-100">
+      <JsonLd data={zineJsonLd(zine, siteUrl())} />
       <header className="border-b border-paper-300 bg-paper-50/80">
         <div className="mx-auto max-w-2xl px-4 py-3 font-mono text-xs uppercase tracking-[0.2em] text-ink-500 sm:px-6">
           Folio · Digital Zine

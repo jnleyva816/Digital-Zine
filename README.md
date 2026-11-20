@@ -43,6 +43,7 @@ Live at **https://folio-digital-zine.app**.
 ### Under the hood
 
 - **Security.** Rate limits on sign-in, sign-up, uploads, writes, and PDF export. Storage keys are validated so one creator cannot reach another's files. Uploads are checked and never served as HTML. Original files are deleted once their copies are made, so GPS data inside them is never served. Production refuses to start with a missing or example `AUTH_SECRET`.
+- **Search and AI crawlers (DIG-106).** `/robots.txt` welcomes search engines, keeps them out of the signed-in areas, and turns AI-training crawlers away by name (the list is `AI_TRAINING_CRAWLERS` in `src/lib/seo.ts`). `/sitemap.xml` lists the landing page, the legal pages, and every published zine, read live so an unpublished zine drops out at once. Public zines and the landing page carry JSON-LD. `/llms.txt` describes the product for assistants and says the site is not available for AI training. All of them take their address from `NEXT_PUBLIC_APP_URL`. If Cloudflare's managed robots.txt is on, it adds its own AI-crawler rules in front of ours; the two say the same thing.
 - **Quality.** Test-driven: unit, component, API, and end-to-end tests run in CI on every pull request.
 - **Operations.** Prisma migrations run on every deploy, `GET /api/health` checks the database, and errors go to Sentry.
 
