@@ -9,7 +9,7 @@ type SessionUser = NonNullable<Awaited<ReturnType<typeof getAuthenticatedUser>>>
 /** A throwaway user for one test file. Deleting it cascades to its assets and zines. */
 export async function createTestUser(): Promise<SessionUser> {
   const user = await prisma.user.create({
-    data: { email: `api-${randomUUID()}@test.local`, name: "API Test", passwordHash: "not-used" },
+    data: { email: `api-${randomUUID()}@test.local`, name: "API Test", passwordHash: "not-used", emailVerifiedAt: new Date() },
   });
   return {
     id: user.id,

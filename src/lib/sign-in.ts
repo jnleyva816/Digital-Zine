@@ -5,6 +5,9 @@ import { clearRateLimit, consumeRateLimit, peekRateLimit } from "@/lib/rate-limi
 /** Thrown when sign-in is refused for too many failed tries; `auth.ts` turns it into an Auth.js error. */
 export class SignInRateLimitedError extends Error {}
 
+/** The password was right but the email was never verified (DIG-94). */
+export class EmailNotVerifiedError extends Error {}
+
 /** How many proxies sit in front of the app (owner, 19 Nov; DIG-37). Set per host when deploying. */
 function trustedProxyHops(): number {
   const hops = Number(process.env.TRUSTED_PROXY_HOPS ?? "1");
@@ -47,12 +50,14 @@ export async function authorizeCredentials(
   if (!byEmail.ok || !byIp.ok) throw new SignInRateLimitedError();
 
   const user = await prisma.user.findUnique({ where: { email } });
-  const valid = user ? await bcrypt.compare(password, user.passwordHash) : false;
+  const valid = user?.passwordHash ? await bcrypt.compare(password, user.passwordHash) : false;
   if (!user || !valid) {
     await Promise.all([consumeRateLimit("signin-email", emailFromIp), consumeRateLimit("signin-ip", ip)]);
     return null;
   }
 
   await clearRateLimit("signin-email", emailFromIp);
+  // Said only after the password is right, so this never tells a stranger which emails exist.
+  if (!user.emailVerifiedAt) throw new EmailNotVerifiedError();
   return { id: user.id, email: user.email, name: user.name ?? user.email.split("@")[0] };
 }

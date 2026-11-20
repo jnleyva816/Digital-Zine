@@ -30,7 +30,7 @@ export async function ensureAdmin(
 
   if (!existing) {
     await db.user.create({
-      data: { email, name: options.name?.trim() || "Admin", role: "admin", passwordHash: passwordHash! },
+      data: { email, name: options.name?.trim() || "Admin", role: "admin", passwordHash: passwordHash!, emailVerifiedAt: new Date() },
     });
     return { created: true, promoted: true, password };
   }

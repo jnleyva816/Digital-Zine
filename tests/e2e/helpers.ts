@@ -34,7 +34,7 @@ export async function signIn(page: Page, email: string = SEEDED.email, password:
 export async function createUser(password = "test-pass-123") {
   const email = `e2e-${randomUUID()}@test.local`;
   const user = await testDb.user.create({
-    data: { email, name: "E2E", passwordHash: await bcrypt.hash(password, 4) },
+    data: { email, name: "E2E", passwordHash: await bcrypt.hash(password, 4), emailVerifiedAt: new Date() },
   });
   return { ...user, password };
 }

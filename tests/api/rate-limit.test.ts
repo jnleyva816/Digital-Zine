@@ -58,10 +58,13 @@ async function expectRateLimited(res: Response, message: RegExp) {
 }
 
 describe("the decided limits (DIG-28)", () => {
-  it("are balanced: sign-in 5 per email and 20 per IP per 15 min, uploads 300/h, writes 120/min, PDF 10/h", () => {
+  it("are balanced: sign-in 5 per email and 20 per IP per 15 min, sign-up 10/h per IP, resend 3/h per email and 20/h per IP, uploads 300/h, writes 120/min, PDF 10/h", () => {
     expect(RATE_LIMITS).toEqual({
       "signin-email": { limit: 5, windowSeconds: 900 },
       "signin-ip": { limit: 20, windowSeconds: 900 },
+      "signup-ip": { limit: 10, windowSeconds: 3600 },
+      "resend-email": { limit: 3, windowSeconds: 3600 },
+      "resend-ip": { limit: 20, windowSeconds: 3600 },
       upload: { limit: 300, windowSeconds: 3600 },
       write: { limit: 120, windowSeconds: 60 },
       pdf: { limit: 10, windowSeconds: 3600 },
@@ -151,7 +154,7 @@ describe("sign-in attempts", () => {
     new Request("http://test.local/api/auth/callback/credentials", { headers: { "x-forwarded-for": `${forged}, ${ip}` } });
 
   beforeAll(async () => {
-    await prisma.user.create({ data: { email, passwordHash: await bcrypt.hash("right-pass", 4) } });
+    await prisma.user.create({ data: { email, passwordHash: await bcrypt.hash("right-pass", 4), emailVerifiedAt: new Date() } });
   });
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { email } });

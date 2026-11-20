@@ -123,6 +123,21 @@ npx playwright install chromium
 
 CI (`.github/workflows/ci.yml`) runs the build, `npm test`, and `npm run test:e2e` on every push and pull request.
 
+## Sign-up, email verification, and Google (DIG-94)
+
+Creators sign up at `/signup` with a name, email, and password, or with Google. A password account must verify its email before it can sign in: the sign-up sends a single-use link, valid for 24 hours, and opening it signs the creator in. Only a hash of the token is stored. Google accounts count as verified. A Google sign-in whose email already has an account links to it, but only when Google reports the email as verified. Existing accounts were marked verified by the migration.
+
+Sign-up is limited to 10 per IP per hour, and asking for another link to 3 per email and 20 per IP per hour.
+
+**Email** goes through [Resend](https://resend.com) over plain HTTPS. Set `RESEND_API_KEY` and `EMAIL_FROM` (an address on a domain verified in Resend). Without a key, a production server answers sign-up with "email is not set up" and creates nothing. Anywhere else the link is printed to the server console, so local sign-up works with no account.
+
+**Google** needs an OAuth client. In the [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create an OAuth client ID of type "Web application" and add these authorized redirect URIs:
+
+- `http://localhost:3000/api/auth/callback/google` (use your dev port)
+- `https://<your domain>/api/auth/callback/google`
+
+Then set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. The Google buttons only appear when both are set.
+
 ## Environment variables
 
 Every variable lives in `.env.example`. Only the first group is required.
@@ -139,6 +154,8 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `AWS_S3_PUBLIC_URL` | No | Public base URL for reading objects |
 | `NEXT_PUBLIC_IMAGE_CDN_URL` | No | Image CDN prefix. See below. |
 | `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRO_PRICE_ID`, `STRIPE_AUTOMATIC_TAX` | No | Pro subscription billing and sales tax (see "Billing" below). If these are unset, billing reports that it is not configured and the rest of the app keeps working. |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Production | Send verification emails (see "Sign-up"). Without a key, production refuses sign-up; elsewhere the link is printed to the console. `RESEND_API_URL` overrides the endpoint, for tests. |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | No | Turn on Continue with Google (see "Sign-up"). Unset hides the button. |
 | `TRUSTED_PROXY_HOPS` | No | How many proxies sit in front of the app, for reading the client IP (see "Sign-in rate limits"). Default: `1` |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | No | Report server and browser errors to Sentry. Unset means nothing is sent. `NEXT_PUBLIC_SENTRY_DSN` is read at build time. |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | No | Build time only: upload source maps so Sentry shows readable stack traces |
@@ -171,6 +188,8 @@ Set these on the app service:
 | `AWS_S3_ENDPOINT` | `https://<account id>.r2.cloudflarestorage.com` |
 | `AWS_S3_PUBLIC_URL` | The bucket's public URL (`https://pub-<id>.r2.dev`, or a custom domain) |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | The Sentry project's DSN |
+| `RESEND_API_KEY`, `EMAIL_FROM` | Resend API key, and a sender on a domain verified in Resend. Sign-up does not work in production without them. |
+| `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | The Google OAuth client (see "Sign-up"). Optional. |
 | `STRIPE_*` | Live keys (see "Billing") |
 
 The R2 bucket needs public read access and a CORS rule that allows `PUT` with the `Content-Type` header from `NEXT_PUBLIC_APP_URL`:

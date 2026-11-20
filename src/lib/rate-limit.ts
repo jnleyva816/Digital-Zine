@@ -5,13 +5,27 @@ import { prisma } from "@/lib/prisma";
  * Rate limits (DIG-28). Fixed-window counters in Postgres, shared by every app instance.
  * The numbers are the owner's "balanced" choice of 19 Nov 2026; admins get the same limits.
  */
-export type RateLimitRule = "signin-email" | "signin-ip" | "upload" | "write" | "pdf";
+export type RateLimitRule =
+  | "signin-email"
+  | "signin-ip"
+  | "signup-ip"
+  | "resend-email"
+  | "resend-ip"
+  | "upload"
+  | "write"
+  | "pdf";
 
 export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: number }> = {
   /** Failed sign-in tries per email address from one IP (DIG-37). */
   "signin-email": { limit: 5, windowSeconds: 15 * 60 },
   /** Failed sign-in tries per client IP, across all emails. */
   "signin-ip": { limit: 20, windowSeconds: 15 * 60 },
+  /** Signup attempts per client IP (DIG-94). Each one sends an email. */
+  "signup-ip": { limit: 10, windowSeconds: 60 * 60 },
+  /** Verification emails sent again, per email address. */
+  "resend-email": { limit: 3, windowSeconds: 60 * 60 },
+  /** Verification emails sent again, per client IP, across all addresses. */
+  "resend-ip": { limit: 20, windowSeconds: 60 * 60 },
   /** Upload presigns per user. */
   upload: { limit: 300, windowSeconds: 60 * 60 },
   /** Edits, reorders, and creates or deletes of photos, zines, boards, and recipes, per user. */
@@ -64,6 +78,9 @@ export async function clearRateLimit(rule: RateLimitRule, id: string): Promise<v
 const MESSAGES: Record<RateLimitRule, string> = {
   "signin-email": "Too many sign-in attempts.",
   "signin-ip": "Too many sign-in attempts.",
+  "signup-ip": "Too many accounts created from this network.",
+  "resend-email": "That email has been sent the link too many times.",
+  "resend-ip": "Too many verification emails requested.",
   upload: "You've reached the limit of 300 uploads an hour.",
   write: "You're making changes too quickly.",
   pdf: "You've reached the limit of 10 PDF exports an hour.",

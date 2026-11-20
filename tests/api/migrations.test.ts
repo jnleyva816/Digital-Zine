@@ -16,9 +16,9 @@ describe("Prisma migrations (DIG-19)", () => {
     expect(result.ok, result.output).toBe(true);
   }, 120_000);
 
-  it("adopt a database that was set up with db push: the baseline is marked applied and nothing else changes", async () => {
+  it("adopt a database that was set up with db push: the baseline is marked applied and every later migration applies on top", async () => {
     const result = await checkExistingDatabase();
-    expect(result.output).toContain("No pending migrations to apply");
+    expect(result.output).toContain("successfully applied");
     expect(result.ok, result.output).toBe(true);
   }, 120_000);
 
