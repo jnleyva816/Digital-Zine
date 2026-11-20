@@ -103,7 +103,7 @@ export async function wideJpeg(width = 2400, height = 1600) {
  * Returns the saved asset as the database has it once processing is done.
  */
 export async function uploadAndProcess(page: Page, ownerId: string, name = "wide.jpg", width = 2400) {
-  const buffer = await wideJpeg(width, Math.round(width * 0.75));
+  const buffer = await wideJpeg(width, Math.round((width * 2) / 3));
   await page.getByLabel("choose files").setInputFiles({ name, mimeType: "image/jpeg", buffer });
   await expect(page.getByRole("status").filter({ hasText: `Processing ${name}` })).toBeHidden({ timeout: 20_000 });
   await expect
