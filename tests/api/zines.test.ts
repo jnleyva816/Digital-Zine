@@ -218,6 +218,39 @@ describe("slug", () => {
   });
 });
 
+describe("slugs are unique per creator (DIG-102)", () => {
+  const asOther = () => mockedUser.mockResolvedValue({ ...other, tier: "pro" });
+
+  it("gives another creator the plain slug even when someone else already has it", async () => {
+    const mine = await createZine("Golden Hour", []);
+    expect(mine.slug).toBe("golden-hour");
+    asOther();
+    const theirs = await createZine("Golden Hour", []);
+    expect(theirs.slug).toBe("golden-hour");
+  });
+
+  it("still suffixes when the same creator reuses a title", async () => {
+    await createZine("Golden Hour", []);
+    const again = await createZine("Golden Hour", []);
+    expect(again.slug).toMatch(/^golden-hour-[0-9a-f]{4}$/);
+  });
+
+  it("lets a creator pick a custom slug that another creator uses", async () => {
+    await createZine("Taken", []);
+    asOther();
+    const draft = await createZine("Draft", []);
+    const res = await patch(draft.id, { slug: "taken" });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as ZineBody).zine.slug).toBe("taken");
+  });
+
+  it("still refuses a custom slug the same creator already uses", async () => {
+    await createZine("Taken", []);
+    const draft = await createZine("Draft", []);
+    expect((await patch(draft.id, { slug: "taken" })).status).toBe(409);
+  });
+});
+
 describe("slug races (DIG-45)", () => {
   // Another request takes the slug between the "is it free?" check and the write. The check is
   // made to miss, as it would in that race; the database's unique constraint still catches it.

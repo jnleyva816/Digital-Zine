@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { publicZinePath } from "@/lib/public-zine-path";
 import { prisma } from "@/lib/prisma";
 import { StudioHeader } from "@/components/StudioHeader";
 import { VisionBoard } from "@/components/board/VisionBoard";
@@ -65,7 +66,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
       <StudioHeader
         user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={latestZine?.id ?? null}
-        publishedSlug={latestZine?.published ? latestZine.slug : null}
+        publishedPath={latestZine?.published ? publicZinePath(user.publicId, latestZine.slug) : null}
       />
       <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <Link href="/boards" className="mb-4 inline-flex items-center gap-1 text-sm text-ink-500 hover:text-ink-900">

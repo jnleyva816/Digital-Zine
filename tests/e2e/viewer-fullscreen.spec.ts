@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
+import { publicZinePath } from "../../src/lib/public-zine-path";
 import { createUserWithPhotos, defaultBoardId, deleteUser, testDb } from "./helpers";
 
 /** DIG-49: a reader opens any photo of a public zine full screen. */
@@ -40,7 +41,7 @@ async function arrangeZine() {
       },
     },
   });
-  return { slug };
+  return { slug, path: publicZinePath(user.publicId, slug) };
 }
 
 const expand = (page: Page, n: number) => page.getByRole("button", { name: `View page ${n} full screen` });
@@ -62,10 +63,10 @@ async function settled(page: Page) {
 }
 
 test("opens a photo full screen with its crop and frame, and closes back to the page", async ({ page }) => {
-  const { slug } = await arrangeZine();
+  const { path } = await arrangeZine();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto(`/z/${slug}`);
+  await page.goto(path);
 
   await expand(page, 1).click();
   await expect(viewer(page)).toBeVisible();
@@ -83,8 +84,8 @@ test("opens a photo full screen with its crop and frame, and closes back to the 
 });
 
 test("fits the whole photo on a dark background, at any screen size", async ({ page }) => {
-  const { slug } = await arrangeZine();
-  await page.goto(`/z/${slug}`);
+  const { path } = await arrangeZine();
+  await page.goto(path);
   for (const size of [{ width: 360, height: 640 }, { width: 1280, height: 800 }, { width: 800, height: 400 }]) {
     await page.setViewportSize(size);
     await expand(page, 2).click();
@@ -99,8 +100,8 @@ test("fits the whole photo on a dark background, at any screen size", async ({ p
 });
 
 test("moves between photos with the buttons and the arrow keys, and shows where it is", async ({ page }) => {
-  const { slug } = await arrangeZine();
-  await page.goto(`/z/${slug}`);
+  const { path } = await arrangeZine();
+  await page.goto(path);
   await expand(page, 1).click();
 
   await expect(viewer(page).getByRole("button", { name: "Previous photo" })).toBeDisabled();
@@ -119,29 +120,29 @@ test("moves between photos with the buttons and the arrow keys, and shows where 
 });
 
 test("keeps the page in the address, so Back closes the view and a shared link opens it", async ({ page }) => {
-  const { slug } = await arrangeZine();
-  await page.goto(`/z/${slug}`);
+  const { path } = await arrangeZine();
+  await page.goto(path);
   await expand(page, 2).click();
-  await expect(page).toHaveURL(new RegExp(`/z/${slug}#page-2$`));
+  await expect(page).toHaveURL(new RegExp(`${path}#page-2$`));
   await page.keyboard.press("ArrowRight");
   await expect(page).toHaveURL(new RegExp(`#page-3$`));
 
   await page.goBack();
   await expect(viewer(page)).toBeHidden();
-  await expect(page).toHaveURL(new RegExp(`/z/${slug}$`));
+  await expect(page).toHaveURL(new RegExp(`${path}$`));
 
   // A shared link opens that photo, and closing it stays on the zine.
-  await page.goto(`/z/${slug}#page-3`);
+  await page.goto(`${path}#page-3`);
   await expect(viewer(page)).toContainText("3 / 3");
   await page.keyboard.press("Escape");
   await expect(viewer(page)).toBeHidden();
-  await expect(page).toHaveURL(new RegExp(`/z/${slug}$`));
+  await expect(page).toHaveURL(new RegExp(`${path}$`));
   await expect(page.getByRole("heading", { name: "Brine & Light" })).toBeVisible();
 });
 
 test("keeps focus inside the view while it is open", async ({ page }) => {
-  const { slug } = await arrangeZine();
-  await page.goto(`/z/${slug}`);
+  const { path } = await arrangeZine();
+  await page.goto(path);
   await expand(page, 1).click();
   await expect(viewer(page)).toBeVisible();
   // The page behind is inert: focus may reach the dialog's controls, or leave the page for the browser's own, but never page content.
@@ -156,9 +157,9 @@ test("keeps focus inside the view while it is open", async ({ page }) => {
 });
 
 test("swipes: left for next, right for previous, down to close", async ({ page }) => {
-  const { slug } = await arrangeZine();
+  const { path } = await arrangeZine();
   await page.setViewportSize({ width: 800, height: 700 });
-  await page.goto(`/z/${slug}`);
+  await page.goto(path);
   await expand(page, 2).click();
   const { x: cx, y: cy } = await settled(page);
   const drag = async (dx: number, dy: number) => {
@@ -177,9 +178,9 @@ test("swipes: left for next, right for previous, down to close", async ({ page }
 });
 
 test("double-tap zooms in and back out, and a zoomed photo pans instead of swiping", async ({ page }) => {
-  const { slug } = await arrangeZine();
+  const { path } = await arrangeZine();
   await page.setViewportSize({ width: 800, height: 700 });
-  await page.goto(`/z/${slug}`);
+  await page.goto(path);
   await expand(page, 2).click();
   const { x, y } = await settled(page);
 
@@ -201,8 +202,8 @@ test("double-tap zooms in and back out, and a zoomed photo pans instead of swipi
 });
 
 test("the zoom button works without a touch screen", async ({ page }) => {
-  const { slug } = await arrangeZine();
-  await page.goto(`/z/${slug}`);
+  const { path } = await arrangeZine();
+  await page.goto(path);
   await expand(page, 1).click();
   await viewer(page).getByRole("button", { name: "Zoom in" }).click();
   await expect(stage(page)).toHaveAttribute("data-zoom", "2.5");
@@ -214,8 +215,8 @@ test.describe("on a touch screen", () => {
   test.use({ hasTouch: true, viewport: { width: 800, height: 700 } });
 
   test("pinching two fingers apart zooms in", async ({ page }) => {
-    const { slug } = await arrangeZine();
-    await page.goto(`/z/${slug}`);
+    const { path } = await arrangeZine();
+    await page.goto(path);
     await expand(page, 2).click();
     const { x: cx, y: cy } = await settled(page);
 
@@ -236,19 +237,19 @@ test.describe("on a touch screen", () => {
 });
 
 test("the page still lists every photo and offers the view before any script runs", async ({ request }) => {
-  const { slug } = await arrangeZine();
-  const html = await (await request.get(`/z/${slug}`)).text();
+  const { path } = await arrangeZine();
+  const html = await (await request.get(path)).text();
   expect(html).toContain("View page 1 full screen");
   expect(html).toContain("View page 3 full screen");
   expect(html).toContain('aria-label="Pages"');
 });
 
 test("opens without trouble when the reader prefers reduced motion", async ({ page }) => {
-  const { slug } = await arrangeZine();
+  const { path } = await arrangeZine();
   const errors: string[] = [];
   page.on("pageerror", (e) => errors.push(e.message));
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto(`/z/${slug}`);
+  await page.goto(path);
   await expand(page, 1).click();
   await expect(viewer(page)).toBeVisible();
   await page.keyboard.press("Escape");

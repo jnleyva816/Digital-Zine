@@ -11,6 +11,7 @@ import { EditedPhoto } from "@/components/EditedPhoto";
 
 const dimsOf = (a: BoardAsset) => (a.width && a.height ? { width: a.width, height: a.height } : null);
 import { assetLabel } from "@/components/board/board-utils";
+import { publicZinePath } from "@/lib/public-zine-path";
 import { DeleteZineDialog } from "./DeleteZineDialog";
 import { PdfExport } from "./PdfExport";
 import {
@@ -44,6 +45,7 @@ const iconButton =
 
 export function ZineEditor({
   zine,
+  ownerPublicId,
   board,
   boards,
   boardAssets: initialBoardAssets,
@@ -53,6 +55,8 @@ export function ZineEditor({
   tier,
 }: {
   zine: EditorZine;
+  /** The creator's public ID: the first part of the zine's address (DIG-102). */
+  ownerPublicId: string;
   /** The board the zine is built from, and all of the creator's boards (DIG-25). */
   board: { id: string; name: string };
   boards: { id: string; name: string }[];
@@ -237,7 +241,7 @@ export function ZineEditor({
           </div>
           {published ? (
             <Link
-              href={`/z/${saved.slug}`}
+              href={publicZinePath(ownerPublicId, saved.slug)}
               className="mt-1 inline-flex items-center gap-1 text-sm font-medium text-vermilion-600 underline underline-offset-2"
             >
               View public page
@@ -341,7 +345,7 @@ export function ZineEditor({
             Public URL
           </label>
           <div className="flex items-center gap-1">
-            <span className="mt-1.5 shrink-0 font-mono text-sm text-ink-500">/z/</span>
+            <span className="mt-1.5 shrink-0 font-mono text-sm text-ink-500">/z/{ownerPublicId}/</span>
             <input
               id={`${id}-slug`}
               value={draft.slug}

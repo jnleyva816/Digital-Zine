@@ -105,6 +105,7 @@ export async function getAuthenticatedUser() {
     where: { id: userId },
     select: {
       id: true,
+      publicId: true,
       email: true,
       name: true,
       tier: true,

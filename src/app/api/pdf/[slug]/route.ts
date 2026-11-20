@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { publicZinePath } from "@/lib/public-zine-path";
 import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
@@ -139,7 +140,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
       title: zine.title,
       description: zine.description,
       authorName: zine.owner.name?.trim() || null,
-      slug: zine.slug,
+      path: publicZinePath(user.publicId, zine.slug),
       publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString().slice(0, 10),
       pages,
     });

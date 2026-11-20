@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { boardCards, createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
+import { publicZinePath } from "../../src/lib/public-zine-path";
 
 /** DIG-34: photos get a name in the app; the camera file name is kept. */
 
@@ -41,7 +42,7 @@ test("a creator names a photo, and the name shows on the board, in the editor, a
       page.getByRole("region", { name: "Add pages from your board" }).getByRole("button", { name: "Add Harbor at dusk" })
     ).toBeVisible();
 
-    await page.goto(`/z/${slug}`);
+    await page.goto(publicZinePath(user.publicId, slug));
     await expect(page.getByRole("img", { name: "Harbor at dusk" })).toBeVisible();
     await page.getByRole("button", { name: /Page 1: flip/ }).click();
     await expect(page.getByRole("heading", { name: "Harbor at dusk" })).toBeVisible();

@@ -2,12 +2,14 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ZinePages } from "@/components/zine/ZinePages";
 import { getPublicZine, shareDescription } from "@/lib/public-zine";
+import { publicZinePath } from "@/lib/public-zine-path";
 
-type Props = { params: Promise<{ slug: string }> };
+/** `owner` is the creator's public ID (DIG-102): slugs are only unique per creator. */
+type Props = { params: Promise<{ owner: string; slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
-  const zine = await getPublicZine(slug);
+  const { owner, slug } = await params;
+  const zine = await getPublicZine(owner, slug);
   if (!zine) notFound();
 
   const description = shareDescription({
@@ -17,7 +19,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   });
   const cover = zine.pages[0];
   const images = cover ? [{ url: cover.shareImageUrl, alt: cover.caption || zine.title }] : undefined;
-  const url = `/z/${zine.slug}`;
+  const url = publicZinePath(zine.owner, zine.slug);
 
   return {
     title: zine.title,
@@ -45,8 +47,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 const dateFormat = new Intl.DateTimeFormat("en-US", { dateStyle: "long", timeZone: "UTC" });
 
 export default async function PublicZinePage({ params }: Props) {
-  const { slug } = await params;
-  const zine = await getPublicZine(slug);
+  const { owner, slug } = await params;
+  const zine = await getPublicZine(owner, slug);
   if (!zine) notFound();
 
   const total = zine.pages.length;

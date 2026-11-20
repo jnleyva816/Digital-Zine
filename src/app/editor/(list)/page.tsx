@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
+import { publicZinePath } from "@/lib/public-zine-path";
 import { prisma } from "@/lib/prisma";
 import { listBoards } from "@/lib/boards";
 import { withUserLock } from "@/lib/usage";
@@ -45,7 +46,7 @@ export default async function ZineListPage() {
       <StudioHeader
         user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={latest?.id ?? null}
-        publishedSlug={latest?.published ? latest.slug : null}
+        publishedPath={latest?.published ? publicZinePath(user.publicId, latest.slug) : null}
       />
       <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
         <h1 className="font-serif text-3xl font-bold text-ink-900">Your zines</h1>

@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { cropPixels, parsePhotoEdit } from "../../src/lib/photo-edit";
 import { boardCards, createUserWithPhotos, defaultBoardId, deleteUser, makePro, signIn, testDb } from "./helpers";
+import { publicZinePath } from "../../src/lib/public-zine-path";
 
 /** DIG-33: crop, zoom, reposition, frame, and card size, shown the same everywhere. */
 
@@ -69,7 +70,7 @@ test("a creator crops and frames a photo, and the board, the zine, and the PDF a
     expect(firstWidth).toBeGreaterThan(secondWidth * 1.8);
 
     // Readers see the same crop and frame; the Polaroid card is 1.1 wide for 1.25 tall.
-    await page.goto(`/z/${slug}`);
+    await page.goto(publicZinePath(user.publicId, slug));
     const card = page.getByTestId("zine-flip-card-1");
     await expect(card.getByTestId("edited-photo")).toHaveAttribute("data-frame", "polaroid");
     const cardBox = (await card.getByTestId("edited-photo").boundingBox())!;

@@ -50,8 +50,10 @@ async function publishedZineWith(assetId: string) {
 const tags = () => revalidated.mock.calls.map(([tag]) => tag);
 
 describe("public zine cache invalidation (DIG-27)", () => {
-  it("names each zine's cache entry by its slug", () => {
-    expect(publicZineTag("harbor-notes")).toBe("public-zine:harbor-notes");
+  it("names each zine's cache entry by its creator and slug (DIG-102)", () => {
+    expect(publicZineTag("ab12cd34", "harbor-notes")).toBe("public-zine:ab12cd34/harbor-notes");
+    // The same slug under two creators is two cache entries.
+    expect(publicZineTag("ab12cd34", "harbor-notes")).not.toBe(publicZineTag("ef56ab78", "harbor-notes"));
   });
 
   it("refreshes a zine when it is edited, published, or unpublished", async () => {
@@ -60,7 +62,7 @@ describe("public zine cache invalidation (DIG-27)", () => {
     for (const body of [{ title: "New title" }, { published: false }, { published: true }]) {
       revalidated.mockClear();
       await PATCH_ZINE(jsonRequest("/", "PATCH", body), params({ id: zine.id }));
-      expect(tags(), JSON.stringify(body)).toContain(publicZineTag(zine.slug));
+      expect(tags(), JSON.stringify(body)).toContain(publicZineTag(me.publicId, zine.slug));
     }
   });
 
@@ -70,20 +72,20 @@ describe("public zine cache invalidation (DIG-27)", () => {
       data: { ownerId: me.id, boardId: await defaultBoardId(me.id), title: "Draft", slug: `draft-${randomUUID().slice(0, 8)}` },
     });
     await PATCH_ZINE(jsonRequest("/", "PATCH", { slug: "brand-new-slug-dig27", pages: [{ assetId: photo.id }] }), params({ id: zine.id }));
-    expect(tags()).toEqual(expect.arrayContaining([publicZineTag(zine.slug), publicZineTag("brand-new-slug-dig27")]));
+    expect(tags()).toEqual(expect.arrayContaining([publicZineTag(me.publicId, zine.slug), publicZineTag(me.publicId, "brand-new-slug-dig27")]));
   });
 
   it("refreshes a zine when it is deleted, so its address 404s", async () => {
     const photo = await createAsset(me.id, 0);
     const zine = await publishedZineWith(photo.id);
     await DELETE_ZINE(jsonRequest("/", "DELETE"), params({ id: zine.id }));
-    expect(tags()).toContain(publicZineTag(zine.slug));
+    expect(tags()).toContain(publicZineTag(me.publicId, zine.slug));
   });
 
   it("refreshes a new zine's address, in case a 404 was cached there", async () => {
     const res = await CREATE_ZINE(jsonRequest("/api/zines", "POST", { title: "Fresh Issue" }));
     const { zine } = (await res.json()) as { zine: { slug: string } };
-    expect(tags()).toContain(publicZineTag(zine.slug));
+    expect(tags()).toContain(publicZineTag(me.publicId, zine.slug));
   });
 
   it("refreshes every zine that uses a photo when the photo's name, edit, or recipe changes", async () => {
@@ -99,8 +101,8 @@ describe("public zine cache invalidation (DIG-27)", () => {
     ]) {
       revalidated.mockClear();
       await PATCH_ASSET(jsonRequest("/", "PATCH", body), params({ id: photo.id }));
-      expect(tags(), JSON.stringify(body)).toEqual(expect.arrayContaining([publicZineTag(a.slug), publicZineTag(b.slug)]));
-      expect(tags()).not.toContain(publicZineTag(other.slug));
+      expect(tags(), JSON.stringify(body)).toEqual(expect.arrayContaining([publicZineTag(me.publicId, a.slug), publicZineTag(me.publicId, b.slug)]));
+      expect(tags()).not.toContain(publicZineTag(me.publicId, other.slug));
     }
   });
 
@@ -113,7 +115,7 @@ describe("public zine cache invalidation (DIG-27)", () => {
       jsonRequest("/", "PATCH", { recipe: { name: saved.name, filmSimulation: "Acros" } }),
       params({ id: saved.id })
     );
-    expect(tags()).toContain(publicZineTag(zine.slug));
+    expect(tags()).toContain(publicZineTag(me.publicId, zine.slug));
     await prisma.recipe.delete({ where: { id: saved.id } });
   });
 });

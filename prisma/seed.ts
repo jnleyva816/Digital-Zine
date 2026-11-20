@@ -301,7 +301,7 @@ async function main() {
   }
 
   const zine = await prisma.zine.upsert({
-    where: { slug: "golden-hour-field-notes-issue-01" },
+    where: { ownerId_slug: { ownerId: devUser.id, slug: "golden-hour-field-notes-issue-01" } },
     update: {
       ownerId: devUser.id,
       boardId: board.id,
@@ -344,7 +344,7 @@ async function main() {
   }
 
   console.log(
-    `Seeded user ${devUser.email} (tier=${devUser.tier}), ${createdAssets.length} Vision Board assets, and published zine /z/${zine.slug}`
+    `Seeded user ${devUser.email} (tier=${devUser.tier}), ${createdAssets.length} Vision Board assets, and published zine /z/${devUser.publicId}/${zine.slug}`
   );
 }
 

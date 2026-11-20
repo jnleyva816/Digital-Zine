@@ -138,7 +138,7 @@ describe("public pages after processing (DIG-27)", () => {
     });
     vi.mocked(revalidateTag).mockClear();
     await processAsset(asset.id);
-    expect(vi.mocked(revalidateTag).mock.calls.map(([t]) => t)).toContain(publicZineTag(zine.slug));
+    expect(vi.mocked(revalidateTag).mock.calls.map(([t]) => t)).toContain(publicZineTag(me.publicId, zine.slug));
   });
 });
 

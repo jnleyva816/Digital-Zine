@@ -29,7 +29,7 @@ Live at **https://folio-digital-zine.app**.
 - **Photo names and edits.** Give a photo a name without losing its original file name. Edit it without changing the original: crop ratio, zoom and position, a frame (thin white, white mat, black, Polaroid), and card size. Edits show everywhere, including published zines and PDFs.
 - **Fujifilm recipes.** A recipe is the in-camera settings, with the camera's real options for each field. Recipes fill in automatically from a Fujifilm JPEG's maker notes, and creators can keep a private library of saved recipes that update every photo using them.
 - **Zine editor.** Build a zine from a board's photos: one full-bleed photo template with an optional caption, ordered pages, and a flip toggle per page. Publish and unpublish, edit the address until the first publish, and delete a zine only by typing its exact title.
-- **Public zine page.** `/z/[slug]` is server-rendered with Open Graph previews. Each card flips to its EXIF or film recipe. A creator's email is never shown. Only published zines are visible.
+- **Public zine page.** `/z/<creator>/<slug>` is server-rendered with Open Graph previews. The creator part is a short public ID that every account gets automatically, so two creators can use the same slug; older `/z/<slug>` links redirect to the new address. Each card flips to its EXIF or film recipe. A creator's email is never shown. Only published zines are visible.
 - **PDF export (Pro).** Export a published zine as a PDF.
 - **Landing page.** Visitors see what the app is for and what Free and Pro include; signed-in creators go straight to their board.
 
@@ -114,7 +114,7 @@ This is a direction, not a promise or a schedule. The source of truth is the Lin
    npm run db:setup
    ```
 
-   The seed creates a Free-tier user, four Vision Board photos with real EXIF, and a published sample zine at `/z/golden-hour-field-notes-issue-01`.
+   The seed creates a Free-tier user, four Vision Board photos with real EXIF, and a published sample zine at `/z/<the seed user's public ID>/golden-hour-field-notes-issue-01`; `npm run db:seed` prints the full address.
 
 5. Start the dev server and sign in at http://localhost:3000/signin.
 

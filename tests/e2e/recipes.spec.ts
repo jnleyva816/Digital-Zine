@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 import { buildFujiMakerNote, CLASSIC_CHROME_TAGS, withMakerNote } from "../fixtures/fuji-jpeg";
 import { readFujiRecipe } from "../../src/lib/fuji-makernote";
 import { boardCards, createUser, createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
+import { publicZinePath } from "../../src/lib/public-zine-path";
 
 /** DIG-24: a library of saved recipes, used on many photos. */
 
@@ -71,7 +72,7 @@ test("a saved recipe is used on photos, edits reach every photo and readers, and
     await page.goto("/board");
     await expect(boardCards(page).nth(0)).toContainText("Kodachrome 25");
     await expect(boardCards(page).nth(1)).toContainText("Kodachrome 25");
-    await page.goto(`/z/${slug}`);
+    await page.goto(publicZinePath(user.publicId, slug));
     await page.getByRole("button", { name: /Page 1: flip/ }).click();
     await expect(page.getByTestId("zine-flip-card-1")).toContainText("Kodachrome 25");
 

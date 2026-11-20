@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { appOrigin, automaticTaxEnabled, describeSubscription } from "@/lib/billing";
+import { publicZinePath } from "@/lib/public-zine-path";
 import { prisma } from "@/lib/prisma";
 import { fetchPlanEnd } from "@/lib/plan-end";
 import { isStripeConfigured } from "@/lib/stripe";
@@ -41,7 +42,7 @@ export default async function BillingPage({ searchParams }: Props) {
       <StudioHeader
         user={{ email: user.email, name: user.name, tier: user.tier, role: user.role, viewingAsFree: user.viewingAsFree }}
         activeZineId={latestZine?.id ?? null}
-        publishedSlug={latestZine?.published ? latestZine.slug : null}
+        publishedPath={latestZine?.published ? publicZinePath(user.publicId, latestZine.slug) : null}
       />
       <main className="mx-auto max-w-2xl px-4 py-8 sm:px-6">
         <div className="mb-6">
