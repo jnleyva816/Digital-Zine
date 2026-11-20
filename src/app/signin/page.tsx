@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { auth } from "@/lib/auth";
 import { SignInForm } from "@/components/SignInForm";
+import { googleEnabled } from "@/lib/google-config";
 
 export const metadata: Metadata = {
   title: "Sign in",
@@ -38,7 +39,7 @@ export default async function SignInPage() {
 
           <div className="mt-6">
             <Suspense fallback={<SignInFormSkeleton />}>
-              <SignInForm showDevCredentials={showDevCredentials} />
+              <SignInForm showDevCredentials={showDevCredentials} googleEnabled={googleEnabled()} />
             </Suspense>
           </div>
         </div>

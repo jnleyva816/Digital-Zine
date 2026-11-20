@@ -3,9 +3,16 @@ import { loadTestEnv } from "./scripts/test-db";
 
 const port = Number(process.env.E2E_PORT ?? 3417);
 const baseURL = `http://localhost:${port}`;
+// A local stand-in for Resend, started by tests/e2e/signup.spec.ts (DIG-94).
+const mailPort = port + 100;
 const testEnv: Record<string, string> = {
   ...loadTestEnv(),
   NEXT_PUBLIC_APP_URL: baseURL,
+  RESEND_API_KEY: "re_e2e_key",
+  RESEND_API_URL: `http://127.0.0.1:${mailPort}/emails`,
+  // Fake Google client so the buttons show. Nothing signs in with it: Google is never reached.
+  AUTH_GOOGLE_ID: "e2e-google-client-id.apps.googleusercontent.com",
+  AUTH_GOOGLE_SECRET: "e2e-google-client-secret",
   // The tests run a production server with the committed test secret (DIG-42).
   ALLOW_TEST_AUTH_SECRET: "1",
   // When Playwright builds the app itself, keep the output away from `.next`, which `next dev` uses.

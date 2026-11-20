@@ -3,8 +3,18 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { ArrowRight, KeyRound } from "lucide-react";
 import { safeCallbackUrl } from "@/lib/safe-callback-url";
+import { useResendVerification } from "@/lib/use-resend-verification";
+import { GoogleButton, OrDivider } from "@/components/GoogleButton";
+
+/** Why a Google sign-in came back to this page (`?error=` from `auth.ts`, DIG-94). */
+const GOOGLE_ERRORS: Record<string, string> = {
+  google_unverified: "Google has not verified that email address, so we cannot sign you in with it.",
+  google_linked_elsewhere: "That email belongs to an account linked to a different Google account.",
+  google_failed: "We could not sign you in with Google. Try again, or use your email and password.",
+};
 
 const DEV_EMAIL = "creator@digitalzine.local";
 const DEV_PASSWORD = "zine1234";
@@ -12,9 +22,11 @@ const DEV_PASSWORD = "zine1234";
 interface SignInFormProps {
   /** Show and prefill the seeded dev account. Never true in production builds. */
   showDevCredentials: boolean;
+  /** Show "Continue with Google". Only when the server has a Google client configured. */
+  googleEnabled?: boolean;
 }
 
-export function SignInForm({ showDevCredentials }: SignInFormProps) {
+export function SignInForm({ showDevCredentials, googleEnabled = false }: SignInFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = safeCallbackUrl(searchParams.get("callbackUrl"));
@@ -23,11 +35,15 @@ export function SignInForm({ showDevCredentials }: SignInFormProps) {
   const [password, setPassword] = useState(showDevCredentials ? DEV_PASSWORD : "");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [unverified, setUnverified] = useState(false);
+  const { state: resendState, resend } = useResendVerification();
+  const googleError = GOOGLE_ERRORS[searchParams.get("error") ?? ""];
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setUnverified(false);
 
     let res: Awaited<ReturnType<typeof signIn>> | undefined;
     try {
@@ -38,6 +54,13 @@ export function SignInForm({ showDevCredentials }: SignInFormProps) {
       });
     } catch {
       setError("Could not reach the server. Check your connection and try again.");
+      setLoading(false);
+      return;
+    }
+
+    if (res?.code === "email_not_verified") {
+      setUnverified(true);
+      setError("Verify your email before signing in. We sent you a link when you signed up.");
       setLoading(false);
       return;
     }
@@ -58,6 +81,13 @@ export function SignInForm({ showDevCredentials }: SignInFormProps) {
   }
 
   return (
+    <div className="space-y-5">
+    {googleEnabled ? (
+      <>
+        <GoogleButton callbackUrl={callbackUrl} />
+        <OrDivider />
+      </>
+    ) : null}
     <form onSubmit={handleSubmit} className="space-y-5">
       <div>
         <label
@@ -97,13 +127,32 @@ export function SignInForm({ showDevCredentials }: SignInFormProps) {
         />
       </div>
 
-      {error ? (
+      {error ?? googleError ? (
         <p
           role="alert"
           className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2.5 text-xs text-red-800"
         >
-          {error}
+          {error ?? googleError}
         </p>
+      ) : null}
+
+      {unverified ? (
+        <div className="space-y-2">
+          <button
+            type="button"
+            onClick={() => resend(email)}
+            disabled={resendState.status === "sending"}
+            className="text-sm font-medium text-vermilion-600 underline hover:text-vermilion-500 disabled:opacity-60"
+          >
+            Resend verification email
+          </button>
+          {resendState.status === "sent" ? (
+            <p role="status" className="text-xs text-ink-700">
+              Sent. Check your email for a new link.
+            </p>
+          ) : null}
+          {resendState.status === "error" ? <p className="text-xs text-red-800">{resendState.message}</p> : null}
+        </div>
       ) : null}
 
       <button
@@ -140,5 +189,12 @@ export function SignInForm({ showDevCredentials }: SignInFormProps) {
       </div>
       ) : null}
     </form>
+    <p className="text-center text-sm text-ink-500">
+      New here?{" "}
+      <Link href="/signup" className="font-medium text-vermilion-600 underline hover:text-vermilion-500">
+        Create an account
+      </Link>
+    </p>
+    </div>
   );
 }

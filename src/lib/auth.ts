@@ -1,14 +1,30 @@
 import NextAuth, { CredentialsSignin } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { effectiveAccess, VIEW_AS_FREE_COOKIE } from "@/lib/entitlements";
-import { SignInRateLimitedError, authorizeCredentials } from "@/lib/sign-in";
+import { EmailNotVerifiedError, SignInRateLimitedError, authorizeCredentials } from "@/lib/sign-in";
+import { consumeVerificationToken } from "@/lib/email-verification";
+import { googleEnabled } from "@/lib/google-config";
+import { resolveGoogleUser } from "@/lib/google-signin";
 
 /** Too many failed sign-ins (DIG-28). The form reads `code` and says to wait. */
 class RateLimitedSignin extends CredentialsSignin {
   code = "rate_limited";
 }
+
+/** The password was right but the email is not verified yet (DIG-94). The form offers a resend. */
+class EmailNotVerifiedSignin extends CredentialsSignin {
+  code = "email_not_verified";
+}
+
+/** Where a refused Google sign-in lands, with a reason the form can explain (DIG-94). */
+const GOOGLE_REFUSALS = {
+  unverified_email: "google_unverified",
+  email_linked_elsewhere: "google_linked_elsewhere",
+  invalid_profile: "google_failed",
+} as const;
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -30,14 +46,43 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           return await authorizeCredentials(credentials, request);
         } catch (error) {
           if (error instanceof SignInRateLimitedError) throw new RateLimitedSignin();
+          if (error instanceof EmailNotVerifiedError) throw new EmailNotVerifiedSignin();
           throw error;
         }
       },
     }),
+    // The verification link signs the creator in, once (DIG-94). The token is the credential.
+    Credentials({
+      id: "email-verification",
+      name: "Email verification",
+      credentials: { token: { label: "Token", type: "text" } },
+      async authorize(credentials) {
+        const token = typeof credentials?.token === "string" ? credentials.token : "";
+        const user = await consumeVerificationToken(token);
+        return user ? { id: user.id, email: user.email, name: user.name ?? user.email.split("@")[0] } : null;
+      },
+    }),
+    ...(googleEnabled()
+      ? [Google({ clientId: process.env.AUTH_GOOGLE_ID, clientSecret: process.env.AUTH_GOOGLE_SECRET })]
+      : []),
   ],
   callbacks: {
-    async jwt({ token, user }) {
-      if (user?.id) {
+    async signIn({ account, profile }) {
+      if (account?.provider !== "google") return true;
+      try {
+        const result = await resolveGoogleUser(profile ?? {});
+        return result.ok ? true : `/signin?error=${GOOGLE_REFUSALS[result.reason]}`;
+      } catch (error) {
+        console.error("Google sign-in failed", error);
+        return "/signin?error=google_failed";
+      }
+    },
+    async jwt({ token, user, account }) {
+      if (account?.provider === "google") {
+        // `signIn` above made or linked the account, so Google's id maps to ours.
+        const linked = await prisma.user.findUnique({ where: { googleId: account.providerAccountId }, select: { id: true } });
+        if (linked) token.sub = linked.id;
+      } else if (user?.id) {
         token.sub = user.id;
       }
       return token;

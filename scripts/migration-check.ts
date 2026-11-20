@@ -63,13 +63,15 @@ export function checkMigrations(schemaPath = SCHEMA) {
 }
 
 /**
- * A database set up with `db push` before migrations existed (like the owner's dev database):
- * mark the baseline as applied, then `migrate deploy` must find nothing to do and leave a
- * database that still matches `schema.prisma`.
+ * A database set up with `db push` before migrations existed (like the owner's dev database).
+ * Its tables are the baseline's, so build them from the baseline SQL, mark the baseline as
+ * applied, and then `migrate deploy` must apply every later migration cleanly and leave a
+ * database that matches `schema.prisma`. (Pushing today's schema would already contain the
+ * later migrations' columns, which is not what an old database looks like.)
  */
 export function checkExistingDatabase() {
   return withScratchDatabase("digital_zine_pushed_test", async (url) => {
-    await prisma(url, ["db", "push", "--skip-generate"]);
+    await prisma(url, ["db", "execute", "--file", `prisma/migrations/${BASELINE_MIGRATION}/migration.sql`, "--schema", SCHEMA]);
     await prisma(url, ["migrate", "resolve", "--applied", BASELINE_MIGRATION]);
     const deployed = await prisma(url, ["migrate", "deploy"]);
     await assertMatchesSchema(url);

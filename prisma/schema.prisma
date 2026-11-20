@@ -35,7 +35,13 @@ model User {
   id                   String       @id @default(cuid())
   email                String       @unique
   name                 String?
-  passwordHash         String
+  /// Null for accounts that only sign in with Google (DIG-94).
+  passwordHash         String?
+  /// Google's stable `sub` for the account, once linked (DIG-94).
+  googleId             String?      @unique
+  /// Null until the creator proves they own the email. Password sign-in needs it (DIG-94).
+  emailVerifiedAt      DateTime?
+  termsAcceptedAt      DateTime?
   stripeCustomerId     String?      @unique
   stripeSubscriptionId String?      @unique
   subscriptionStatus   String       @default("inactive")
@@ -47,6 +53,19 @@ model User {
   zines                Zine[]
   boards               Board[]
   recipes              Recipe[]
+  verificationTokens   EmailVerificationToken[]
+}
+
+/// DIG-94: a single-use email verification link. Only the SHA-256 of the token is stored.
+model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 /// DIG-24: a creator's saved Fujifilm recipe. Linked photos keep their own copy in

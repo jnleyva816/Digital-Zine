@@ -247,11 +247,13 @@ async function main() {
     update: {
       name: "Maya Lin",
       passwordHash,
+      emailVerifiedAt: new Date(),
     },
     create: {
       email: "creator@digitalzine.local",
       name: "Maya Lin",
       passwordHash,
+      emailVerifiedAt: new Date(),
       tier: "free",
       subscriptionStatus: "inactive",
     },

@@ -90,3 +90,50 @@ describe("SignInForm", () => {
     expect(push).not.toHaveBeenCalled();
   });
 });
+
+describe("SignInForm: signup, Google, and verification (DIG-94)", () => {
+  it("links to the signup page", () => {
+    render(<SignInForm showDevCredentials={false} />);
+    expect(screen.getByRole("link", { name: /create an account/i })).toHaveAttribute("href", "/signup");
+  });
+
+  it("offers Google only when it is set up, and starts it", async () => {
+    const { rerender } = render(<SignInForm showDevCredentials={false} />);
+    expect(screen.queryByRole("button", { name: /google/i })).not.toBeInTheDocument();
+    rerender(<SignInForm showDevCredentials={false} googleEnabled />);
+    signIn.mockResolvedValue(undefined);
+    await userEvent.click(screen.getByRole("button", { name: /continue with google/i }));
+    expect(signIn).toHaveBeenCalledWith("google", { callbackUrl: "/board" });
+  });
+
+  it("sends Google back to the page the creator was trying to open", async () => {
+    search = new URLSearchParams({ callbackUrl: "/recipes" });
+    render(<SignInForm showDevCredentials={false} googleEnabled />);
+    await userEvent.click(screen.getByRole("button", { name: /continue with google/i }));
+    expect(signIn).toHaveBeenCalledWith("google", { callbackUrl: "/recipes" });
+  });
+
+  it("tells an unverified creator to verify, and can send the link again", async () => {
+    signIn.mockResolvedValue({ error: "CredentialsSignin", code: "email_not_verified", ok: false });
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ ok: true }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    render(<SignInForm showDevCredentials={false} />);
+    await submit("a@b.co", "right-pass");
+    expect(await screen.findByRole("alert")).toHaveTextContent(/verify your email/i);
+
+    await userEvent.click(screen.getByRole("button", { name: /resend verification email/i }));
+    expect(fetchMock.mock.calls[0][0]).toBe("/api/signup/resend");
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({ email: "a@b.co" });
+    expect(await screen.findByRole("status")).toHaveTextContent(/check your email/i);
+  });
+
+  it.each([
+    ["google_unverified", /google has not verified/i],
+    ["google_linked_elsewhere", /different google account/i],
+    ["google_failed", /could not sign you in with google/i],
+  ])("explains a failed Google sign-in (%s)", (error, message) => {
+    search = new URLSearchParams({ error });
+    render(<SignInForm showDevCredentials={false} googleEnabled />);
+    expect(screen.getByRole("alert")).toHaveTextContent(message);
+  });
+});

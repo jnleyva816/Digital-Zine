@@ -85,7 +85,9 @@ describe("ensureAdmin", () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: address } });
     created.push(user.id);
     expect(user.role).toBe("admin");
-    expect(await bcrypt.compare(result.password!, user.passwordHash)).toBe(true);
+    expect(await bcrypt.compare(result.password!, user.passwordHash!)).toBe(true);
+    // DIG-94: password sign-in needs a verified email, and an admin made here has no inbox link.
+    expect(user.emailVerifiedAt).toBeInstanceOf(Date);
   });
 
   it("normalises the email the way sign-in does", async () => {
@@ -113,7 +115,7 @@ describe("ensureAdmin", () => {
     const user = await prisma.user.findUniqueOrThrow({ where: { email: address } });
     created.push(user.id);
     expect(second.password).not.toBe(first.password);
-    expect(await bcrypt.compare(second.password!, user.passwordHash)).toBe(true);
+    expect(await bcrypt.compare(second.password!, user.passwordHash!)).toBe(true);
   });
 
   it("rejects an invalid email", async () => {

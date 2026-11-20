@@ -46,7 +46,9 @@ export async function resetTestDatabase(): Promise<void> {
   try {
     // Data steps `db push` cannot do on its own must run before it (DIG-25).
     await migrateToBoards(prisma);
-    run(["prisma", "db", "push", "--skip-generate"]);
+    // Every table is emptied right after, and the name check above guarantees this is a test
+    // database, so Prisma's "may lose data" warning (a new unique index) is safe to accept.
+    run(["prisma", "db", "push", "--skip-generate", "--accept-data-loss"]);
 
     const tables = await prisma.$queryRaw<{ tablename: string }[]>`
       SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename <> '_prisma_migrations'`;

@@ -112,6 +112,7 @@ async function createSmokeCreator() {
       email: `smoke-${randomUUID().slice(0, 8)}@${SMOKE_DOMAIN}`,
       name: "Folio Demo",
       passwordHash: await bcrypt.hash(password, 10),
+      emailVerifiedAt: new Date(),
     },
   });
   const assetIds: string[] = [];
