@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { EditedPhoto } from "@/components/EditedPhoto";
 import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/photo-edit";
-import { Camera, RotateCw, SlidersHorizontal } from "lucide-react";
+import { Camera, Maximize2, RotateCw, SlidersHorizontal } from "lucide-react";
 import { recipeRows } from "@/lib/fuji-recipe";
 import type { ExifData, RecipeData } from "@/lib/types";
 
@@ -25,6 +25,8 @@ export interface FlipCardProps {
   recipe: RecipeData | null;
   priority?: boolean;
   defaultFlipped?: boolean;
+  /** Shows a button that opens the photo full screen (DIG-49); called with this card's element. */
+  onOpenFullScreen?: (card: HTMLElement) => void;
 }
 
 export function FlipCard({
@@ -42,7 +44,9 @@ export function FlipCard({
   recipe,
   priority = false,
   defaultFlipped = false,
+  onOpenFullScreen,
 }: FlipCardProps) {
+  const articleRef = useRef<HTMLElement>(null);
   const [flipped, setFlipped] = useState(flipEnabled ? defaultFlipped : false);
 
   const showRecipePrimary = kind === "recipe" && recipe !== null;
@@ -58,10 +62,11 @@ export function FlipCard({
 
   return (
     <article
+      ref={articleRef}
       data-testid={`zine-flip-card-${pageNumber}`}
       data-flip-enabled={flipEnabled ? "true" : "false"}
       data-flipped={isFlipped ? "true" : "false"}
-      className="w-full"
+      className="relative w-full"
     >
       <div
         onClick={handleToggle}
@@ -253,6 +258,19 @@ export function FlipCard({
           ) : null}
         </div>
       </div>
+
+      {/* Beside the flip control, not inside it: a button must not hold a button, and pressing this must not flip the card. */}
+      {onOpenFullScreen && !isFlipped ? (
+        <button
+          type="button"
+          data-page-expand={pageNumber}
+          aria-label={`View page ${pageNumber} full screen`}
+          onClick={() => articleRef.current && onOpenFullScreen(articleRef.current)}
+          className="absolute bottom-3 right-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-paper-50 shadow-md backdrop-blur-sm transition hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 sm:bottom-4 sm:right-4"
+        >
+          <Maximize2 className="h-5 w-5" aria-hidden="true" />
+        </button>
+      ) : null}
     </article>
   );
 }

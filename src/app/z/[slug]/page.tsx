@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { FlipCard } from "@/components/FlipCard";
+import { ZinePages } from "@/components/zine/ZinePages";
 import { getPublicZine, shareDescription } from "@/lib/public-zine";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -95,27 +95,21 @@ export default async function PublicZinePage({ params }: Props) {
             This zine has no pages to show right now.
           </p>
         ) : (
-          <ol aria-label="Pages" className="space-y-8 sm:space-y-12">
-            {zine.pages.map((page, i) => (
-              <li key={page.pageNumber}>
-                <FlipCard
-                  pageNumber={page.pageNumber}
-                  totalPages={total}
-                  imageUrl={page.imageUrl}
-                  name={page.name}
-                  edit={page.edit}
-                  dims={page.dims}
-                  blurDataUrl={page.blurDataUrl}
-                  caption={page.caption || undefined}
-                  flipEnabled={page.flipEnabled}
-                  kind={page.kind}
-                  exif={page.exif}
-                  recipe={page.recipe}
-                  priority={i === 0}
-                />
-              </li>
-            ))}
-          </ol>
+          <ZinePages
+            pages={zine.pages.map((page) => ({
+              pageNumber: page.pageNumber,
+              imageUrl: page.imageUrl,
+              name: page.name,
+              edit: page.edit,
+              dims: page.dims,
+              blurDataUrl: page.blurDataUrl,
+              caption: page.caption || undefined,
+              flipEnabled: page.flipEnabled,
+              kind: page.kind,
+              exif: page.exif,
+              recipe: page.recipe,
+            }))}
+          />
         )}
       </main>
 
