@@ -12,7 +12,13 @@ function renderCard(overrides: Partial<PhotoCardProps> = {}) {
     count: 2,
     label: "fog.jpg",
     dragging: false,
-    dropHighlight: false,
+    dropSide: null,
+    layout: "masonry",
+    held: false,
+    onToggleHeld: vi.fn(),
+    onCancelHeld: vi.fn(),
+    onHoldAt: vi.fn(),
+    columns: () => 2,
     draggable: true,
     onDragStart: vi.fn(),
     onDragEnd: vi.fn(),
@@ -49,7 +55,7 @@ describe("PhotoCard (DIG-47)", () => {
   it("shows a processed photo with its actions", async () => {
     const props = renderCard();
     expect(screen.getByRole("img", { name: "fog.jpg" })).toBeInTheDocument();
-    expect(screen.getByText("No EXIF")).toBeInTheDocument();
+    expect(screen.getByText("No camera details")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Move fog.jpg earlier" })).toBeDisabled();
     await userEvent.click(screen.getByRole("button", { name: "Move fog.jpg later" }));
     expect(props.onMoveBy).toHaveBeenCalledWith(1);

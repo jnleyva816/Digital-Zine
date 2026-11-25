@@ -15,6 +15,14 @@ export function exifBadges(exif: ExifData | null): string[] {
   ].filter((v): v is string => typeof v === "string" && v.trim() !== "");
 }
 
+/** A grid card's one line: the recipe, then the camera's settings (DIG-90). */
+export function photoMeta(asset: BoardAsset): string {
+  const recipe = asset.kind === "recipe" && asset.recipe ? [asset.recipe.name, asset.recipe.filmSimulation] : [];
+  const camera = [asset.exif?.cameraMake, asset.exif?.cameraModel].filter(Boolean).join(" ");
+  const file = asset.name?.trim() ? asset.originalName : null;
+  return [...recipe, ...exifBadges(asset.exif), camera, file].filter(Boolean).join(" · ") || "No camera details";
+}
+
 export function moveItem<T>(list: T[], from: number, to: number): T[] {
   const next = [...list];
   const [item] = next.splice(from, 1);

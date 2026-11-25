@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
-import type { BoardNote, BoardViewPrefs, Placement } from "@/lib/board-layout";
+import { GRID_LAYOUTS, type BoardNote, type BoardViewPrefs, type GridLayout, type Placement } from "@/lib/board-layout";
 import type { RecipeData } from "@/lib/types";
 import { BoardBar, type BuiltView } from "./BoardBar";
 import { FreeformBoard } from "./FreeformBoard";
@@ -19,6 +19,7 @@ import { UploadDropzone } from "./UploadDropzone";
 import { UploadList } from "./UploadList";
 import { useBoardLayout } from "./useBoardLayout";
 import { useBoardPaging } from "./useBoardPaging";
+import { useMasonry } from "./useMasonry";
 import { useBoardReorder } from "./useBoardReorder";
 import { useProcessingPoll } from "./useProcessingPoll";
 import { useUploadQueue } from "./useUploadQueue";
@@ -50,6 +51,7 @@ export interface VisionBoardProps {
   savedRecipes?: SavedRecipe[];
 }
 
+const GRID_LAYOUT_NAMES: Record<GridLayout, string> = { masonry: "Masonry", even: "Even", feature: "Feature" };
 const WIDE_SCREEN = "(min-width: 1024px)";
 
 /**
@@ -133,11 +135,15 @@ export function VisionBoard({
     params.set("view", next);
     history.replaceState(history.state, "", `${location.pathname}?${params}`);
     setAnnouncement(next === "free" ? "Free form view" : "Grid view");
-    // Remembering is a convenience: if it fails, the view still changed.
+    rememberView(wide ? { wide: next } : { narrow: "grid" });
+  }
+
+  /** Remembering is a convenience: if it fails, the view still changed. */
+  function rememberView(viewPrefs: BoardViewPrefs) {
     void fetch(`/api/boards/${encodeURIComponent(boardId)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ viewPrefs: wide ? { wide: next } : { narrow: "grid" } }),
+      body: JSON.stringify({ viewPrefs }),
     }).catch(() => undefined);
   }
 
@@ -182,7 +188,27 @@ export function VisionBoard({
     onFinished: setAnnouncement,
   });
 
+  const gridLayout = chosenView.gridLayout ?? "masonry";
+  const masonry = useMasonry(view === "grid" && gridLayout === "masonry", assets);
+
+  function chooseLayout(next: GridLayout) {
+    setChosenView((v) => ({ ...v, gridLayout: next }));
+    setAnnouncement(`${GRID_LAYOUT_NAMES[next]} layout`);
+    rememberView({ gridLayout: next });
+  }
+
+  function gridColumns() {
+    if (gridLayout === "masonry" || !masonry.list) return masonry.columns;
+    return getComputedStyle(masonry.list).gridTemplateColumns.split(" ").length;
+  }
+
   const reorder = useBoardReorder({ assets, setAssets, onAnnounce: setAnnouncement, onError: setBoardError });
+
+  // A card moved from the keyboard stays on screen.
+  const heldAt = reorder.heldId ? assets.findIndex((a) => a.id === reorder.heldId) : -1;
+  useEffect(() => {
+    if (heldAt >= 0) document.activeElement?.scrollIntoView?.({ block: "nearest" });
+  }, [heldAt]);
 
   async function retryProcessing(asset: BoardAsset) {
     setBoardError(null);
@@ -403,10 +429,12 @@ export function VisionBoard({
       ) : null}
 
       {view === "grid" ? (
-      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
+      <div className="space-y-5 px-4 py-5 sm:px-7">
 
-      <UploadDropzone inputId={inputId} fileInputRef={fileInputRef} onFiles={enqueue} isReordering={reorder.isDragging} />
-      <StorageMeter usedBytes={usedBytes} />
+      <div className="grid items-center gap-4 lg:grid-cols-[1fr_18rem]">
+        <UploadDropzone inputId={inputId} fileInputRef={fileInputRef} onFiles={enqueue} isReordering={reorder.isDragging} />
+        <StorageMeter usedBytes={usedBytes} />
+      </div>
 
       <UploadList uploads={uploads} onDismiss={dismiss} />
 
@@ -429,16 +457,34 @@ export function VisionBoard({
         </div>
       ) : (
         <>
-          <p className="text-xs text-ink-500" id={`${inputId}-order-hint`}>
-            {assets.length < total
-              ? `Showing ${assets.length} of ${total.toLocaleString("en-US")} photos.`
-              : `${assets.length} photo${assets.length === 1 ? "" : "s"}.`}{" "}
-            Drag a card, or use its arrow buttons, to change the order.
-          </p>
+          <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
+            <div role="group" aria-label="Grid layout" className="flex gap-1.5">
+              {GRID_LAYOUTS.map((l) => (
+                <button
+                  key={l}
+                  type="button"
+                  aria-pressed={gridLayout === l}
+                  onClick={() => chooseLayout(l)}
+                  className={`min-h-[34px] rounded-full border px-3.5 text-[13px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${gridLayout === l ? "border-ink-900 bg-ink-900 text-paper-50" : "border-paper-300 bg-white text-ink-900"}`}
+                >
+                  {GRID_LAYOUT_NAMES[l]}
+                </button>
+              ))}
+            </div>
+            <p className="text-[13px] text-ink-500">
+              {assets.length < total ? <span>{`Showing ${assets.length} of ${total.toLocaleString("en-US")} photos. `}</span> : null}
+              <span>Drag cards to change the order. The order is the zine&apos;s starting order.</span>
+            </p>
+            <p id={`${inputId}-keys`} className="hidden">
+              Press Space to pick up, arrow keys to move, Space to drop, Escape to cancel.
+            </p>
+          </div>
           <ol
+            ref={masonry.listRef}
             aria-label="Vision Board photos"
-            aria-describedby={`${inputId}-order-hint`}
-            className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+            data-layout={gridLayout}
+            style={masonry.listStyle}
+            className={`grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 ${gridLayout === "feature" ? "auto-rows-[minmax(248px,auto)]" : ""}`}
             onDragOver={(e) => {
               if (reorder.isDragging()) e.preventDefault();
             }}
@@ -462,7 +508,15 @@ export function VisionBoard({
                   count={assets.length}
                   label={label}
                   dragging={dragId === asset.id}
-                  dropHighlight={showDropBefore || showDropAfter}
+                  dropSide={showDropBefore ? "before" : showDropAfter ? "after" : null}
+                  layout={gridLayout}
+                  style={masonry.cardStyle(index)}
+                  held={reorder.heldId === asset.id}
+                  onToggleHeld={() => (reorder.heldId === asset.id ? reorder.dropHeld() : reorder.pickUp(index))}
+                  onCancelHeld={reorder.cancelHeld}
+                  onHoldAt={reorder.holdAt}
+                  columns={gridColumns}
+                  keysHintId={`${inputId}-keys`}
                   draggable={!busy}
                   onDragStart={() => reorder.setDrag(asset.id)}
                   onDragEnd={() => {
