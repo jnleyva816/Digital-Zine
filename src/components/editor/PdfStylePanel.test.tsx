@@ -230,3 +230,61 @@ describe("preview", () => {
     expect(panel.getByText("Add a page and save to see a preview.")).toBeInTheDocument();
   });
 });
+
+describe("cover (DIG-126)", () => {
+  const cover = (panel: ReturnType<typeof within>) => panel.getByRole("img", { name: "Cover" });
+  const photos = (panel: ReturnType<typeof within>) => cover(panel).querySelectorAll("img").length;
+  const picker = (panel: ReturnType<typeof within>) => panel.queryByRole("group", { name: "Cover photo" });
+
+  it("starts as the title only, and offers no photo to pick", async () => {
+    const { panel } = await open(darkroom);
+    expect(option(panel, "Cover", /^Title only/)).toHaveAttribute("aria-pressed", "true");
+    expect(photos(panel)).toBe(0);
+    expect(picker(panel)).not.toBeInTheDocument();
+  });
+
+  it("waits for a template", async () => {
+    const { panel } = await open(null);
+    expect(option(panel, "Cover", /^Photo grid/)).toBeDisabled();
+  });
+
+  it.each([
+    [/^Template cover/, "template", 1],
+    [/^Full-page photo/, "full", 1],
+    [/^Photo grid/, "grid", 3],
+  ] as const)("saves and previews %s", async (name, style, count) => {
+    const { user, panel } = await open(darkroom);
+    await user.click(option(panel, "Cover", name));
+    expect(photos(panel)).toBe(count);
+    expect(cover(panel)).toHaveTextContent("Brine & Light");
+    await waitFor(() => expect(saves().at(-1)).toEqual({ ...darkroom, cover: { style, photo: null } }), { timeout: 2000 });
+  });
+
+  it("takes any photo in the zine, starting from the first", async () => {
+    const { user, panel } = await open({ ...darkroom, cover: { style: "full", photo: null } });
+    const choices = within(picker(panel)!);
+    expect(choices.getByRole("button", { name: "Caption 1" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(choices.getByRole("button", { name: "Caption 3" }));
+    expect(choices.getByRole("button", { name: "Caption 3" })).toHaveAttribute("aria-pressed", "true");
+    expect(decodeURIComponent(cover(panel).querySelector("img")!.getAttribute("src")!)).toContain("/photo-3.jpg");
+    await waitFor(() => expect(saves().at(-1)).toEqual({ ...darkroom, cover: { style: "full", photo: "asset-3" } }), { timeout: 2000 });
+  });
+
+  it("lists a photo used on two pages once", async () => {
+    const { panel } = await open({ ...darkroom, cover: { style: "full", photo: null } }, { preview: { ...zine, pages: [page(1), page(2, { assetId: "asset-1" })] } });
+    expect(within(picker(panel)!).getAllByRole("button")).toHaveLength(1);
+  });
+
+  it("shows the first photo, and saves none, when the chosen one has left the zine", async () => {
+    const { user, panel } = await open({ ...darkroom, cover: { style: "full", photo: "gone" } });
+    expect(within(picker(panel)!).getByRole("button", { name: "Caption 1" })).toHaveAttribute("aria-pressed", "true");
+    await user.click(panel.getByRole("checkbox", { name: "Captions" }));
+    await waitFor(() => expect(saves().at(-1)?.cover).toEqual({ style: "full", photo: null }), { timeout: 2000 });
+  });
+
+  it("goes back to the title only on Reset", async () => {
+    const { user, panel } = await open({ ...darkroom, cover: { style: "grid", photo: null } });
+    await user.click(panel.getByRole("button", { name: "Reset" }));
+    expect(option(panel, "Cover", /^Title only/)).toHaveAttribute("aria-pressed", "true");
+  });
+});

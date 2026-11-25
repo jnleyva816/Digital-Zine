@@ -1,7 +1,7 @@
 import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 import { readPdf } from "../../tests/pdf-text";
-import { defaultPdfSettings, type PdfSettings, type PdfTemplate } from "./pdf-settings";
+import { defaultPdfSettings as newPdfSettings, type PdfPaper, type PdfSettings, type PdfTemplate } from "./pdf-settings";
 import { renderMiniZinePdfBuffer, renderZinePdfBuffer, type PdfRenderedPageItem, type PdfZinePayload } from "./pdf-zine";
 
 // DIG-66: the PDF is drawn from the zine's chosen template, typeface, palette, and paper.
@@ -9,6 +9,9 @@ let jpeg: Buffer;
 beforeAll(async () => {
   jpeg = await sharp({ create: { width: 80, height: 100, channels: 3, background: "#c0503a" } }).jpeg().toBuffer();
 });
+
+/** These tests are about each template's own cover; new zines start with the title only (DIG-126). */
+const defaultPdfSettings = (template: PdfTemplate, paper: PdfPaper): PdfSettings => ({ ...newPdfSettings(template, paper), cover: { style: "template", photo: null } });
 
 const exif = { cameraMake: "FUJIFILM", cameraModel: "X-T5", iso: 400, aperture: "f/2.8", shutterSpeed: "1/250s", focalLength: "33mm" };
 const recipe = { name: "Kodachrome 64", filmSimulation: "Classic Chrome" as const, dynamicRange: "DR200" as const };
@@ -303,5 +306,43 @@ describe("mini zine", () => {
         for (const n of [1, 2, 3, 4, 5]) expect(p.text).toContain(`${n} Extremely`);
         expect(p.text, `${paper} ${typeface}`).toContain("Sam Ortega");
       }
+  });
+});
+
+describe("cover options (DIG-126)", () => {
+  const images = (content: string) => (content.match(/ Do\b/g) ?? []).length;
+  const pages = (n: number) => ({ pages: Array.from({ length: n }, (_, i) => item(i + 1)) });
+  const cover = (template: PdfTemplate, style: PdfSettings["cover"]["style"]) => ({ ...newPdfSettings(template, "a4"), cover: { style, photo: null } });
+  const templates = ["darkroom", "contact", "gallery", "riso"] as const;
+
+  it.each(templates)("%s: the title only has the words and no photo", async (template) => {
+    const [first] = await render(cover(template, "title"), pages(3));
+    const text = first.text.toLowerCase();
+    for (const t of ["golden hour", "four frames from three evenings.", "sam ortega", "october 2026"]) expect(text).toContain(t);
+    expect(images(first.content)).toBe(0);
+  });
+
+  it.each(templates)("%s: the full-page photo has one photo and the title", async (template) => {
+    const [first] = await render(cover(template, "full"), pages(3));
+    expect(first.text.toLowerCase()).toContain("golden hour");
+    expect(images(first.content)).toBe(1);
+  });
+
+  it.each([
+    [1, 1],
+    [2, 2],
+    [3, 3],
+    [6, 4],
+  ])("the grid of a %i-photo zine has %i", async (count, shown) => {
+    for (const template of templates) {
+      const [first] = await render(cover(template, "grid"), pages(count));
+      expect(images(first.content)).toBe(shown);
+      expect(first.text.toLowerCase()).toContain("golden hour");
+    }
+  });
+
+  it("stays one sheet with the longest title and description, on every cover", async () => {
+    const long = { title: "Wide open harbors ".repeat(8).slice(0, 140), description: "A long description of the light. ".repeat(13).slice(0, 400), ...pages(4) };
+    for (const template of templates) for (const style of ["title", "full", "grid"] as const) expect(await render(cover(template, style), long)).toHaveLength(5);
   });
 });

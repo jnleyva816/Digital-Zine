@@ -4,6 +4,7 @@ import { registerPdfFonts } from "@/lib/pdf-fonts";
 import { miniPalette } from "@/lib/mini-zine";
 import { MiniSheet } from "@/lib/pdf-templates/mini";
 import { PDF_TEMPLATES } from "@/lib/pdf-templates";
+import { Cover } from "@/lib/pdf-templates/covers";
 import { PAPER_POINTS, templateContext } from "@/lib/pdf-templates/context";
 import type { PdfZinePayload, TemplateContext } from "@/lib/pdf-templates/types";
 
@@ -22,7 +23,7 @@ function Sheet({ ctx, children }: { ctx: TemplateContext; children: React.ReactN
 
 function Booklet({ zine }: { zine: PdfZinePayload }) {
   const ctx = templateContext(zine);
-  const { Cover, PhotoPage } = PDF_TEMPLATES[zine.settings.template];
+  const { PhotoPage } = PDF_TEMPLATES[zine.settings.template];
   return (
     <Document title={zine.title} author={zine.authorName ?? undefined} subject={zine.description ?? "Digital Zine Edition"}>
       <Sheet ctx={ctx}>

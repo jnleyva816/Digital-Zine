@@ -41,6 +41,8 @@ export const CARD_LOCATIONS = {
   "beside-caption": "Beside the caption",
   "under-caption": "Under the caption",
 } as const;
+/** What the cover shows (owner, 25 Nov 2026; DIG-126). */
+export const COVERS = { title: "Title only", template: "Template cover", full: "Full-page photo", grid: "Photo grid" } as const;
 export const PAPERS = {
   letter: { label: "Letter", hint: "US and Canada" },
   a4: { label: "A4", hint: "Most other countries" },
@@ -57,6 +59,7 @@ export type PdfTemplate = keyof typeof TEMPLATES;
 export type PdfTypeface = keyof typeof TYPEFACES;
 export type PdfPaletteName = keyof typeof PALETTES;
 export type PdfPaper = keyof typeof PAPERS;
+export type CoverStyle = keyof typeof COVERS;
 export type CardStyle = keyof typeof CARD_STYLES;
 export type RecipeCardSize = keyof typeof RECIPE_CARD_SIZES;
 export type CardLocation = keyof typeof CARD_LOCATIONS;
@@ -85,6 +88,11 @@ export const pdfSettingsSchema = z
         showExif: z.boolean(),
       })
       .strict(),
+    /** A style saved before covers could be chosen keeps its template's photo cover (DIG-126). */
+    cover: z
+      .object({ style: keys(COVERS), photo: z.string().min(1).max(64).nullable() })
+      .strict()
+      .default({ style: "template", photo: null }),
     guides: z.boolean(),
     inkSaver: z.boolean(),
     recipePage: z.boolean(),
@@ -118,6 +126,7 @@ export function defaultPdfSettings(template: PdfTemplate, paper: PdfPaper): PdfS
     pageNumbers: true,
     recipeCards: true,
     card: { ...card, size: "standard", showName: true, showExif: false },
+    cover: { style: "title", photo: null },
     guides: true,
     inkSaver: false,
     recipePage: true,

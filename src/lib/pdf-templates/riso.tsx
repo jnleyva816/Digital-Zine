@@ -1,7 +1,7 @@
 import React from "react";
 import { Image as PdfImage, Text, View } from "./primitives";
 import { placeCard } from "./recipe-card";
-import { FillPhoto, cameraLine, fitTitle, monthOf, twoDigits } from "./shared";
+import { FillPhoto, cameraLine, coverPage, fitTitle, monthOf, twoDigits } from "./shared";
 import type { PdfTemplateDefinition } from "./types";
 
 /**
@@ -11,7 +11,7 @@ import type { PdfTemplateDefinition } from "./types";
 export const riso: PdfTemplateDefinition = {
   Cover({ ctx }) {
     const { zine, faces, palette, u, width, height } = ctx;
-    const cover = zine.pages[0];
+    const cover = coverPage(zine);
     const title = { ...faces.heading, fontSize: fitTitle(zine.title, u(64), 24), lineHeight: 1, textTransform: "uppercase" as const };
     const label = { ...faces.detailStrong, fontSize: u(10), textTransform: "uppercase" as const };
     const pages = `${zine.pages.length} ${zine.pages.length === 1 ? "page" : "pages"}`;

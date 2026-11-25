@@ -1,14 +1,14 @@
 import React from "react";
 import { Image as PdfImage, Text, View } from "./primitives";
 import { placeCard } from "./recipe-card";
-import { FillPhoto, cameraLine, fitTitle, monthOf } from "./shared";
+import { FillPhoto, cameraLine, coverPage, fitTitle, monthOf } from "./shared";
 import type { PdfTemplateDefinition } from "./types";
 
 /** Wide margins, like prints on a gallery wall (DIG-68). */
 export const gallery: PdfTemplateDefinition = {
   Cover({ ctx }) {
     const { zine, faces, palette, u } = ctx;
-    const cover = zine.pages[0];
+    const cover = coverPage(zine);
     return (
       <View style={{ flexGrow: 1, alignItems: "center", paddingHorizontal: u(48), paddingTop: u(64), paddingBottom: u(30) }}>
         {cover ? <PdfImage src={cover.imageSrc} style={{ width: u(176), height: u(220), objectFit: cover.imageFit }} /> : null}

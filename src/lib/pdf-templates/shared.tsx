@@ -2,7 +2,7 @@ import React from "react";
 import { Image as PdfImage, View } from "./primitives";
 import type { ExifData } from "@/lib/types";
 import { TEMPLATES } from "@/lib/pdf-settings";
-import type { PdfRenderedPageItem, TemplateContext } from "./types";
+import type { PdfRenderedPageItem, PdfZinePayload, TemplateContext } from "./types";
 
 /** "X-T5 · 33mm · f/2.8 · 1/250s · ISO 400", with whatever is missing left out. */
 export function cameraLine(exif: ExifData | null, separator = " · "): string {
@@ -12,6 +12,9 @@ export function cameraLine(exif: ExifData | null, separator = " · "): string {
     .filter(Boolean)
     .join(separator);
 }
+
+/** The cover's photo: the one chosen, or the first (DIG-126). */
+export const coverPage = (zine: PdfZinePayload): PdfRenderedPageItem | undefined => zine.coverPhoto ?? zine.pages[0];
 
 /** Contact Sheet's edge print: amber, until the creator picks another palette. Then, and elsewhere, the accent. */
 export const edgeColor = ({ settings, palette }: TemplateContext) =>

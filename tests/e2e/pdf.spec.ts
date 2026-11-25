@@ -131,7 +131,9 @@ test("changing the template changes the preview, the saved style, and the next e
   await expect(cover).toHaveCSS("background-color", "rgb(22, 20, 18)");
 
   await panel.getByRole("button", { name: /^Riso Two-ink/ }).click();
+  await panel.getByRole("button", { name: "Template cover" }).click();
   await expect(cover).toHaveCSS("background-color", "rgb(242, 237, 228)");
+  await expect(cover.locator("img")).toHaveCount(1);
   // The preview's photos and fonts really load, under the enforced Content Security Policy.
   await expect
     .poll(() => cover.locator("img").evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)))
@@ -144,7 +146,7 @@ test("changing the template changes the preview, the saved style, and the next e
   await expect(panel.getByRole("button", { name: "Typewriter" })).toHaveAttribute("aria-pressed", "true");
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
-  await expect.poll(() => savedStyle(zine.id)).toEqual({ ...defaultPdfSettings("riso", "a4"), typeface: "typewriter" });
+  await expect.poll(() => savedStyle(zine.id)).toEqual({ ...defaultPdfSettings("riso", "a4"), typeface: "typewriter", cover: { style: "template", photo: null } });
 
   await page.reload();
   const downloading = page.waitForEvent("download");
@@ -258,4 +260,26 @@ test("a Free creator makes a mini zine: picks photos, and downloads the print sh
   // On a phone, nothing scrolls sideways.
   await page.setViewportSize({ width: 360, height: 800 });
   expect(await panel.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true);
+});
+
+test("the cover starts as the title only, and can be any photo in the zine (DIG-126)", async ({ page }) => {
+  const zine = await creatorWithZine(page, { pro: true, published: true });
+  const images = (content: string) => (content.match(/ Do\b/g) ?? []).length;
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  const exported = async () => {
+    const downloading = page.waitForEvent("download");
+    await panel.getByRole("button", { name: "Export PDF" }).click();
+    return readPdf(await fs.readFile(await (await downloading).path()))[0];
+  };
+  await expect(panel.getByRole("button", { name: "Title only" })).toHaveAttribute("aria-pressed", "true");
+  expect(images((await exported()).content)).toBe(0);
+
+  await panel.getByRole("button", { name: "Full-page photo" }).click();
+  await panel.getByRole("group", { name: "Cover photo" }).getByRole("button", { name: "Plate 3" }).click();
+  await expect(panel.getByRole("img", { name: "Cover", exact: true }).locator("img")).toHaveCount(1);
+  expect(images((await exported()).content)).toBe(1);
+
+  const third = await testDb.zinePage.findFirstOrThrow({ where: { zineId: zine.id, pageNumber: 3 } });
+  expect(await savedStyle(zine.id)).toMatchObject({ cover: { style: "full", photo: (third.content as { assetId: string }).assetId } });
 });

@@ -165,6 +165,19 @@ describe("reading order", () => {
   });
 });
 
+describe("the mini zine's cover (DIG-126)", () => {
+  it("is in the panel and in the reading order", async () => {
+    const { user, panel, order } = await open(mini, pages(7));
+    const front = () => within(panel.getByRole("list", { name: "Reading order once folded" })).getAllByRole("listitem")[0].querySelector("img");
+    expect(front()).toBeNull();
+    await user.click(within(panel.getByRole("group", { name: "Cover" })).getByRole("button", { name: /^Full-page photo/ }));
+    // Any photo in the zine, whether or not it is inside.
+    await user.click(within(panel.getByRole("group", { name: "Cover photo" })).getByRole("button", { name: "Photo 7" }));
+    expect(decodeURIComponent(front()!.getAttribute("src")!)).toContain("/photo-7.jpg");
+    expect(order()[0]).toBe("CoverPhoto, title");
+  });
+});
+
 describe("folding and downloading", () => {
   it("has the six steps as text, and links to the same steps on their own page", async () => {
     const { panel } = await open(mini, pages(4));

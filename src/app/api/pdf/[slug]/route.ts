@@ -129,8 +129,13 @@ export async function GET(req: Request, context: { params: Promise<{ slug: strin
 
   const allPages = zine.pages.map((page) => ({ page, content: parsePageContent(page.content) }));
   const pageContents = mini ? pickMiniPages(allPages, (p) => p.content.assetId, settings.miniPhotos) : allPages;
+  // The chosen cover photo, which a mini zine may not have inside (DIG-126). It must be on one of the zine's pages.
+  const { cover } = settings;
+  const usesPhoto = cover.photo !== null && (cover.style === "full" || cover.style === "template");
+  const coverContent = usesPhoto ? allPages.find((p) => p.content.assetId === cover.photo) : undefined;
+  const extra = coverContent && !pageContents.includes(coverContent) ? [coverContent] : [];
   const assets = await prisma.mediaAsset.findMany({
-    where: { id: { in: pageContents.map((p) => p.content.assetId).filter(Boolean) }, ownerId: user.id },
+    where: { id: { in: [...pageContents, ...extra].map((p) => p.content.assetId).filter(Boolean) }, ownerId: user.id },
   });
   const assetMap = new Map(assets.map((a) => [a.id, a]));
 
@@ -138,7 +143,7 @@ export async function GET(req: Request, context: { params: Promise<{ slug: strin
   const { text: ink1, accent: ink2, page: paper } = mini ? miniPalette(settings) : PALETTES[settings.palette];
   const ink = (image: Buffer) => (settings.template === "riso" ? duotone(image, { ink1, ink2, paper }) : image);
 
-  const loaded = await mapLimit(pageContents, PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
+  const loaded = await mapLimit([...pageContents, ...extra], PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
       const asset = assetMap.get(content.assetId);
       if (!asset) return null;
       const edit = parsePhotoEdit(asset.edit);
@@ -156,9 +161,13 @@ export async function GET(req: Request, context: { params: Promise<{ slug: strin
       };
   });
   // Number the pages that made it, so the PDF never shows gaps.
-  const pages: PdfRenderedPageItem[] = loaded
+  const inside = loaded.slice(0, pageContents.length);
+  const pages: PdfRenderedPageItem[] = inside
     .filter((p): p is NonNullable<typeof p> => p !== null)
     .map((p, i) => ({ ...p, pageNumber: i + 1 }));
+  const found = coverContent && loaded[extra.length ? pageContents.length : pageContents.indexOf(coverContent)];
+  // As numbered inside, where it is there too; a cover photo that cannot be read gives way to the first.
+  const coverPhoto = found ? (pages.find((p) => p.imageSrc === found.imageSrc) ?? { ...found, pageNumber: 0 }) : null;
 
   if (mini && pages.length < MINI_PHOTO_MINIMUM) {
     return NextResponse.json(
@@ -175,6 +184,7 @@ export async function GET(req: Request, context: { params: Promise<{ slug: strin
       authorName: zine.owner.name?.trim() || null,
       publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString(),
       pages,
+      coverPhoto,
       settings,
     };
     pdf = mini

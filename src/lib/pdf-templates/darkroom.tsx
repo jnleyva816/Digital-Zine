@@ -1,7 +1,7 @@
 import React from "react";
 import { Image as PdfImage, Text, View } from "./primitives";
 import { placeCard } from "./recipe-card";
-import { FillPhoto, cameraLine, fitTitle, monthOf, twoDigits } from "./shared";
+import { FillPhoto, cameraLine, coverPage, fitTitle, monthOf, twoDigits } from "./shared";
 import type { PdfTemplateDefinition, TemplateContext } from "./types";
 
 const small = ({ faces, palette, u }: TemplateContext) => ({
@@ -16,7 +16,7 @@ const small = ({ faces, palette, u }: TemplateContext) => ({
 export const darkroom: PdfTemplateDefinition = {
   Cover({ ctx }) {
     const { zine, faces, palette, u, width, height } = ctx;
-    const cover = zine.pages[0];
+    const cover = coverPage(zine);
     return (
       <View style={{ flexGrow: 1 }}>
         {cover ? (
