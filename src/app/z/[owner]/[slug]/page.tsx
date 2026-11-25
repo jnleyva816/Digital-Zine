@@ -92,7 +92,7 @@ export default async function PublicZinePage({ params }: Props) {
             </p>
           ) : null}
           {anyFlip ? (
-            <p className="mt-4 text-sm text-ink-500">Tap or press Enter on a card with a Flip label to see its reverse.</p>
+            <p className="mt-4 text-sm text-ink-500">Tap a photo, or the label in its corner, to see how it was shot.</p>
           ) : null}
         </div>
 

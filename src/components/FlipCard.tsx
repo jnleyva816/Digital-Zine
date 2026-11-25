@@ -4,7 +4,8 @@ import { useRef, useState } from "react";
 import { EditedPhoto } from "@/components/EditedPhoto";
 import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/photo-edit";
 import { Camera, Maximize2, RotateCw, SlidersHorizontal } from "lucide-react";
-import { recipeRows } from "@/lib/fuji-recipe";
+import { CameraBack, CopyRecipeButton, RecipeBack } from "@/components/FilmCard";
+import { shotOnLabel } from "@/lib/film-card";
 import type { ExifData, RecipeData } from "@/lib/types";
 
 export interface FlipCardProps {
@@ -50,7 +51,7 @@ export function FlipCard({
   const [flipped, setFlipped] = useState(flipEnabled ? defaultFlipped : false);
 
   const showRecipePrimary = kind === "recipe" && recipe !== null;
-  const reverseBadgeLabel = showRecipePrimary ? "Film Recipe" : "Camera EXIF";
+  const chip = shotOnLabel(exif, recipe) ?? (showRecipePrimary ? "Film recipe" : "Camera details");
   const reverseName = showRecipePrimary ? "film recipe" : "camera details";
   const isFlipped = flipEnabled && flipped;
   const aspect = frameLayout(edit ?? DEFAULT_EDIT, dims).aspect;
@@ -70,17 +71,6 @@ export function FlipCard({
     >
       <div
         onClick={handleToggle}
-        onKeyDown={(e) => {
-          if (!flipEnabled) return;
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleToggle();
-          }
-        }}
-        role={flipEnabled ? "button" : undefined}
-        tabIndex={flipEnabled ? 0 : undefined}
-        aria-label={flipEnabled ? `Page ${pageNumber}: flip to ${reverseName}` : undefined}
-        aria-pressed={flipEnabled ? isFlipped : undefined}
         style={{ aspectRatio: String(Math.round(aspect * 10000) / 10000) }}
         className={`flip-perspective relative w-full select-none ${
           flipEnabled ? "cursor-pointer" : "cursor-default"
@@ -108,21 +98,6 @@ export function FlipCard({
                 {String(pageNumber).padStart(2, "0")} /{" "}
                 {String(totalPages).padStart(2, "0")}
               </span>
-
-              {flipEnabled ? (
-                <span
-                  data-testid={`flip-trigger-${pageNumber}`}
-                  className="inline-flex items-center gap-1.5 rounded-full bg-paper-50/95 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-md backdrop-blur"
-                >
-                  {showRecipePrimary ? (
-                    <SlidersHorizontal className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
-                  ) : (
-                    <Camera className="h-3.5 w-3.5 text-vermilion-500" aria-hidden="true" />
-                  )}
-                  Flip · {reverseBadgeLabel}
-                  <RotateCw className="h-3 w-3 text-ink-500" aria-hidden="true" />
-                </span>
-              ) : null}
             </div>
 
             {caption ? (
@@ -138,128 +113,43 @@ export function FlipCard({
           {flipEnabled ? (
             <div
               aria-hidden={!isFlipped || undefined}
-              className="flip-face flip-face-back flex flex-col justify-between overflow-y-auto rounded-2xl border border-paper-300 bg-paper-100 p-5 text-ink-900 sm:p-8">
-              <div>
-                <div className="flex items-center justify-between border-b border-paper-300 pb-3.5">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs uppercase tracking-[0.2em] text-vermilion-600">
-                      Plate {String(pageNumber).padStart(2, "0")} · Reverse
-                    </span>
-                  </div>
-                  <span className="inline-flex items-center gap-1.5 rounded-full border border-paper-300 bg-paper-50 px-3 py-1 text-xs font-medium text-ink-700">
-                    <RotateCw className="h-3 w-3" aria-hidden="true" />
-                    Flip to Photo
-                  </span>
-                </div>
-                {name ? <h2 className="mt-4 font-serif text-xl font-bold text-ink-900">{name}</h2> : null}
-
-                {showRecipePrimary && recipe ? (
-                  <div className="mt-5 space-y-4">
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-500">
-                        Fujifilm Film Recipe
-                      </p>
-                      <h3 className="mt-1 font-serif text-xl font-bold leading-snug text-ink-900 sm:text-2xl">
-                        {recipe.name}
-                      </h3>
-                    </div>
-                    <dl className="grid grid-cols-1 gap-x-5 gap-y-1.5 text-xs sm:grid-cols-2 sm:text-sm">
-                      {recipeRows(recipe).map((row) => (
-                        <div key={row.label} className="flex items-baseline justify-between gap-3 border-b border-paper-300/70 py-1">
-                          <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-500">{row.label}</dt>
-                          <dd className="text-right font-medium text-ink-900">{row.value}</dd>
-                        </div>
-                      ))}
-                    </dl>
-                  </div>
-                ) : (
-                  <div className="mt-6 space-y-5">
-                    <div>
-                      <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-ink-500">
-                        Exposure & Optical Telemetry
-                      </p>
-                      <h3 className="mt-1 font-serif text-xl font-bold text-ink-900 sm:text-2xl">
-                        {[exif?.cameraMake, exif?.cameraModel]
-                          .filter(Boolean)
-                          .join(" ") || "Camera Frame Metadata"}
-                      </h3>
-                      {exif?.lens ? (
-                        <p className="mt-1 font-mono text-xs text-ink-700">
-                          {exif.lens}
-                        </p>
-                      ) : null}
-                    </div>
-
-                    {exif ? (
-                      <dl className="grid grid-cols-2 gap-3">
-                        <div className="rounded-xl border border-paper-300 bg-paper-50 p-3.5">
-                          <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-500">
-                            ISO Sensitivity
-                          </dt>
-                          <dd className="mt-1 font-mono text-lg font-semibold text-ink-900">
-                            {exif.iso ? `ISO ${exif.iso}` : "—"}
-                          </dd>
-                        </div>
-                        <div className="rounded-xl border border-paper-300 bg-paper-50 p-3.5">
-                          <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-500">
-                            Aperture
-                          </dt>
-                          <dd className="mt-1 font-mono text-lg font-semibold text-ink-900">
-                            {exif.aperture || "—"}
-                          </dd>
-                        </div>
-                        <div className="rounded-xl border border-paper-300 bg-paper-50 p-3.5">
-                          <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-500">
-                            Shutter Speed
-                          </dt>
-                          <dd className="mt-1 font-mono text-lg font-semibold text-ink-900">
-                            {exif.shutterSpeed || "—"}
-                          </dd>
-                        </div>
-                        <div className="rounded-xl border border-paper-300 bg-paper-50 p-3.5">
-                          <dt className="font-mono text-[10px] uppercase tracking-widest text-ink-500">
-                            Focal Length
-                          </dt>
-                          <dd className="mt-1 font-mono text-lg font-semibold text-ink-900">
-                            {exif.focalLength || "—"}
-                          </dd>
-                        </div>
-                      </dl>
-                    ) : (
-                      <p className="rounded-xl border border-paper-300 bg-paper-50 p-4 text-sm text-ink-700">
-                        No embedded EXIF tags were recorded on this frame.
-                      </p>
-                    )}
-
-                    {exif?.takenAt ? (
-                      <p className="font-mono text-xs text-ink-500">
-                        Captured: {exif.takenAt}
-                      </p>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-
-              {/* Compact secondary EXIF footer when the back shows a film recipe and the photo also has camera EXIF */}
-              {showRecipePrimary && exif ? (
-                <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-paper-300 pt-3 font-mono text-[11px] text-ink-500">
-                  <span>
-                    {[exif.cameraMake, exif.cameraModel]
-                      .filter(Boolean)
-                      .join(" ") || "Shot Specs"}
-                  </span>
-                  {exif.iso ? <span>ISO {exif.iso}</span> : null}
-                  {exif.aperture ? <span>{exif.aperture}</span> : null}
-                  {exif.shutterSpeed ? <span>{exif.shutterSpeed}</span> : null}
-                  {exif.focalLength ? <span>{exif.focalLength}</span> : null}
-                </div>
-              ) : null}
+              className={`flip-face flip-face-back overflow-y-auto rounded-2xl border border-paper-300 bg-paper-100 p-5 text-ink-900 sm:p-8 ${showRecipePrimary ? "pb-20 sm:pb-20" : ""}`}
+            >
+              <p className="flex min-h-8 items-center pr-28 font-mono text-xs uppercase tracking-[0.2em] text-ink-500">
+                Plate {String(pageNumber).padStart(2, "0")}
+              </p>
+              {name ? <h2 className="mt-3 break-words font-serif text-xl font-bold text-ink-900">{name}</h2> : null}
+              {showRecipePrimary && recipe ? <RecipeBack recipe={recipe} exif={exif} /> : <CameraBack exif={exif} />}
             </div>
           ) : null}
         </div>
       </div>
 
-      {/* Beside the flip control, not inside it: a button must not hold a button, and pressing this must not flip the card. */}
+      {/*
+        The flip control is a button of its own rather than the whole card (DIG-52): screen readers flatten
+        whatever is inside a button, which would hide the settings on the back. Clicking the card flips it too.
+      */}
+      {flipEnabled ? (
+        <button
+          type="button"
+          data-testid={`flip-trigger-${pageNumber}`}
+          aria-label={`Page ${pageNumber}: flip to ${reverseName}, ${chip}`}
+          aria-pressed={isFlipped}
+          onClick={handleToggle}
+          className="absolute right-3 top-3 z-10 inline-flex min-h-9 max-w-[70%] items-center gap-1.5 rounded-full bg-paper-50/95 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-md ring-1 ring-ink-900/10 backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 sm:right-4 sm:top-4"
+        >
+          {isFlipped ? null : showRecipePrimary ? (
+            <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-vermilion-600" aria-hidden="true" />
+          ) : (
+            <Camera className="h-3.5 w-3.5 shrink-0 text-vermilion-600" aria-hidden="true" />
+          )}
+          <span className="truncate">{isFlipped ? "Photo" : chip}</span>
+          <RotateCw className="h-3 w-3 shrink-0 text-ink-500" aria-hidden="true" />
+        </button>
+      ) : null}
+      {isFlipped && showRecipePrimary && recipe ? <CopyRecipeButton recipe={recipe} /> : null}
+
+      {/* Beside the card, so pressing this does not flip it. */}
       {onOpenFullScreen && !isFlipped ? (
         <button
           type="button"
