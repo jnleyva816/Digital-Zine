@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
-import { BookOpen, CreditCard, ExternalLink, Layers, LogOut, ShieldCheck, SlidersHorizontal, Sparkles } from "lucide-react";
+import { BookOpen, CreditCard, ExternalLink, Layers, LogOut, ShieldCheck, SlidersHorizontal, Sparkles, UserRound } from "lucide-react";
 import { AdminViewBanner, AdminViewToggle } from "./AdminViewToggle";
 
 interface StudioHeaderProps {
@@ -47,7 +47,7 @@ export function StudioHeader({
           <nav aria-label="Studio" className="flex items-center gap-1 rounded-full border border-paper-300 bg-paper-100 p-1 text-sm">
             <Link
               href="/board"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-medium transition sm:px-3.5 ${
                 pathname.startsWith("/board")
                   ? "bg-ink-900 text-paper-50 shadow-sm"
                   : "text-ink-700 hover:text-ink-900"
@@ -58,7 +58,7 @@ export function StudioHeader({
             </Link>
             <Link
               href={editorHref}
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-medium transition sm:px-3.5 ${
                 pathname.startsWith("/editor")
                   ? "bg-ink-900 text-paper-50 shadow-sm"
                   : "text-ink-700 hover:text-ink-900"
@@ -69,7 +69,7 @@ export function StudioHeader({
             </Link>
             <Link
               href="/recipes"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-medium transition sm:px-3.5 ${
                 pathname.startsWith("/recipes")
                   ? "bg-ink-900 text-paper-50 shadow-sm"
                   : "text-ink-700 hover:text-ink-900"
@@ -80,7 +80,7 @@ export function StudioHeader({
             </Link>
             <Link
               href="/billing"
-              className={`inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 font-medium transition ${
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-medium transition sm:px-3.5 ${
                 pathname.startsWith("/billing")
                   ? "bg-ink-900 text-paper-50 shadow-sm"
                   : "text-ink-700 hover:text-ink-900"
@@ -88,6 +88,17 @@ export function StudioHeader({
             >
               <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
               <span className="sr-only sm:not-sr-only">Billing</span>
+            </Link>
+            <Link
+              href="/account"
+              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 font-medium transition sm:px-3.5 ${
+                pathname.startsWith("/account")
+                  ? "bg-ink-900 text-paper-50 shadow-sm"
+                  : "text-ink-700 hover:text-ink-900"
+              }`}
+            >
+              <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
+              <span className="sr-only sm:not-sr-only">Account</span>
             </Link>
           </nav>
         </div>

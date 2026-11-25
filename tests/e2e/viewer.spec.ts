@@ -232,3 +232,41 @@ test("a zine of processed photos loads a phone-sized copy and shares a JPEG prev
   const og = await page.request.get(ogImage!);
   expect(og.headers()["content-type"]).toBe("image/jpeg");
 });
+
+// DIG-110: a photo narrower than the largest copy has no copy that wide. A sharp screen used to ask for
+// one anyway, got a 404, and showed a black frame; full screen worked because it uses the full copy.
+for (const width of [750, 1104]) {
+  test(`a ${width} px photo loads on a sharp phone screen, with no failed image requests (DIG-110)`, async ({ browser }) => {
+    const user = await createUser();
+    cleanup.push(user.id);
+    const setup = await browser.newPage();
+    await signIn(setup, user.email, user.password);
+    const asset = await uploadAndProcess(setup, user.id, `small-${width}.jpg`, width);
+    await setup.close();
+    const slug = `small-${randomUUID().slice(0, 8)}`;
+    await testDb.zine.create({
+      data: {
+        ownerId: user.id,
+        boardId: await defaultBoardId(user.id),
+        title: "Small photos",
+        slug,
+        published: true,
+        publishedAt: new Date(),
+        pages: { create: [{ pageNumber: 1, content: { assetId: asset.id, caption: "Small" } }] },
+      },
+    });
+
+    // 390 CSS px at 3x asks for roughly 1170 px, more than a 750 or 1104 px photo has a copy for.
+    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 3 });
+    const page = await context.newPage();
+    const failed: string[] = [];
+    page.on("response", (r) => {
+      if (/\.avif/.test(r.url()) && r.status() >= 400) failed.push(`${r.status()} ${r.url()}`);
+    });
+    await page.goto(publicZinePath(user.publicId, slug));
+    const img = zinePages(page).nth(0).getByRole("img", { name: "Small" });
+    await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth > 0)).toBe(true);
+    expect(failed).toEqual([]);
+    await context.close();
+  });
+}

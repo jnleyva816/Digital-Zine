@@ -21,6 +21,7 @@
     "test:e2e": "playwright test",
     "test:db:reset": "tsx scripts/test-db-reset.ts",
     "smoke": "tsx scripts/smoke.ts",
+    "brand:generate": "tsx scripts/generate-brand-assets.ts",
     "admin:create": "tsx scripts/admin-create.ts"
   },
   "prisma": {

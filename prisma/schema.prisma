@@ -57,10 +57,27 @@ model User {
   boards               Board[]
   recipes              Recipe[]
   verificationTokens   EmailVerificationToken[]
+  passwordResetTokens  PasswordResetToken[]
+  /// Sessions issued before this moment are signed out (DIG-107). Set when a password is reset, so
+  /// a stolen session does not survive. Null until then.
+  sessionsValidAfter   DateTime?
 }
 
 /// DIG-94: a single-use email verification link. Only the SHA-256 of the token is stored.
 model EmailVerificationToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+/// DIG-107: a single-use password reset link, valid for one hour. Only the SHA-256 of the token is
+/// stored. A creator has at most one at a time: asking again retires the older link.
+model PasswordResetToken {
   id        String   @id @default(cuid())
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)

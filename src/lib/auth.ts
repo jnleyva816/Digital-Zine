@@ -8,6 +8,7 @@ import { EmailNotVerifiedError, SignInRateLimitedError, authorizeCredentials } f
 import { consumeVerificationToken } from "@/lib/email-verification";
 import { googleEnabled } from "@/lib/google-config";
 import { resolveGoogleUser } from "@/lib/google-signin";
+import { checkSessionToken, markSignedIn } from "@/lib/session-token";
 
 /** Too many failed sign-ins (DIG-28). The form reads `code` and says to wait. */
 class RateLimitedSignin extends CredentialsSignin {
@@ -25,6 +26,13 @@ const GOOGLE_REFUSALS = {
   email_linked_elsewhere: "google_linked_elsewhere",
   invalid_profile: "google_failed",
 } as const;
+
+declare module "next-auth" {
+  interface Session {
+    /** When this session began, in ms since the epoch (DIG-107). Absent on sessions from before it was recorded. */
+    authAt?: number;
+  }
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -85,12 +93,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       } else if (user?.id) {
         token.sub = user.id;
       }
-      return token;
+      // A sign-in starts a session; every later call checks it is still good, so a password reset
+      // signs out the sessions from before it (DIG-107).
+      if (account || user) markSignedIn(token);
+      return checkSessionToken(token);
     },
     async session({ session, token }) {
       if (session.user && token.sub) {
         session.user.id = token.sub;
       }
+      if (typeof token.authAt === "number") session.authAt = token.authAt;
       return session;
     },
   },
@@ -120,5 +132,7 @@ export async function getAuthenticatedUser() {
   // billed tier. `billingTier` is what Stripe says, for the billing page.
   const viewAsFree = (await cookies()).get(VIEW_AS_FREE_COOKIE)?.value === "1";
   const access = effectiveAccess(user, viewAsFree);
-  return { ...user, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree };
+  // When this session began, for actions that ask for a recent sign-in (DIG-108).
+  const signedInAt = typeof session?.authAt === "number" ? session.authAt : null;
+  return { ...user, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree, signedInAt };
 }
