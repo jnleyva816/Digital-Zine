@@ -1,5 +1,5 @@
 import type { ImageLoaderProps } from "next/image";
-import { pickVariantUrl } from "@/lib/media/variant-urls";
+import { pickVariantUrl, splitSourceWidth } from "@/lib/media/variant-urls";
 
 /**
  * Custom next/image loader.
@@ -10,13 +10,16 @@ import { pickVariantUrl } from "@/lib/media/variant-urls";
  * from their local `/api/media/...` or S3 public URL without paid services.
  */
 export default function zineImageLoader({
-  src: requested,
+  src: tagged,
   width,
   quality,
 }: ImageLoaderProps): string {
   // A processed photo has smaller AVIF copies next to it; load the smallest that is wide enough
-  // (DIG-26). The `w` and `q` hints stay so next/image sees the width used, and a CDN can use them.
-  const src = pickVariantUrl(requested, width) ?? requested;
+  // (DIG-26). Photos narrower than a copy's width have no such copy, so the page tells the loader the
+  // photo's own width and it never asks for one that was not made (DIG-110). The `w` and `q` hints
+  // stay so next/image sees the width used, and a CDN can use them.
+  const { src: requested, sourceWidth } = splitSourceWidth(tagged);
+  const src = pickVariantUrl(requested, width, sourceWidth) ?? requested;
   const cdnBase = process.env.NEXT_PUBLIC_IMAGE_CDN_URL?.trim();
   const q = quality || 82;
 

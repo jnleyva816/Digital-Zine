@@ -1,4 +1,5 @@
 import { z } from "zod";
+import "@/lib/zod-setup";
 
 /**
  * Fujifilm film-simulation recipes (DIG-22): the in-camera settings the Fujifilm community shares
