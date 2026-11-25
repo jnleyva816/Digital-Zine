@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Hand, Maximize, MousePointer2, PanelLeftOpen, StickyNote as NoteIcon } from "lucide-react";
+import { prefersReducedMotion, transitionBoard } from "@/lib/board-transition";
 import { MAX_BOARD_NOTES, type BoardNote, type Placement } from "@/lib/board-layout";
 import { NUDGE, SIZE_STEP, bounds, clampWidth, fitView, nextTilt, resizeFrom, scatter, tidy, toBoard, zoomAt, type BoardViewport, type Corner, type Item } from "@/lib/freeform";
 import { assetLabel } from "./board-utils";
@@ -35,6 +36,8 @@ export interface FreeformBoardProps {
   findAsset: (id: string) => BoardAsset | undefined;
   layout: ReturnType<typeof useBoardLayout>;
   trayRevision: string;
+  /** The photo that must be on screen when the board opens. */
+  startAt: string | null;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFiles: (files: FileList) => void;
   /** A photo from the tray that the board may not have loaded yet. */
@@ -45,7 +48,7 @@ export interface FreeformBoardProps {
 }
 
 /** The free-form board (DIG-87): photos placed anywhere, over a tray to place them from (DIG-88). */
-export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision, fileInputRef, onFiles, onKnown, onEditPhoto, onEditRecipe, onAnnounce }: FreeformBoardProps) {
+export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision, startAt, fileInputRef, onFiles, onKnown, onEditPhoto, onEditRecipe, onAnnounce }: FreeformBoardProps) {
   const { placements, notes, commit, addNote, typeNote, finishNote, deleteNote, saveProblem } = layout;
   const [view, setView] = useState<BoardViewport>(START);
   const [size, setSize] = useState({ width: 0, height: 0 });
@@ -57,6 +60,7 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
   const [space, setSpace] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [animate, setAnimate] = useState(false);
+  const animateTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const [trayOpen, setTrayOpen] = useState(true);
   const [dropFiles, setDropFiles] = useState(false);
 
@@ -118,8 +122,14 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
   useLayoutEffect(() => {
     if (fitted.current || size.width === 0) return;
     fitted.current = true;
-    setView(fitView(now.current.items, size));
-  }, [size]);
+    const all = fitView(now.current.items, size);
+    const item = now.current.items.find((i) => i.id === startAt);
+    const x = item ? (item.x + item.width / 2) * all.zoom + all.x : size.width / 2;
+    const y = item ? (item.y + item.height / 2) * all.zoom + all.y : size.height / 2;
+    // A board too spread out to fit opens at the photo instead.
+    if (x >= 0 && y >= 0 && x <= size.width && y <= size.height) setView(all);
+    else setView({ ...all, x: all.x + size.width / 2 - x, y: all.y + size.height / 2 - y });
+  }, [size, startAt]);
 
   // Trackpad and wheel: scroll pans, ctrl or cmd (and a trackpad pinch) zooms. Not passive, so the page stays put.
   useEffect(() => {
@@ -411,13 +421,20 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
   function arrange(moves: ReturnType<typeof tidy>, said: string) {
     if (moves.length === 0) return;
     const to = new Map(moves.map(({ id, ...m }) => [id, m]));
-    setAnimate(true);
-    setTimeout(() => setAnimate(false), 350);
-    commit(
-      layers.flatMap((l) => (l.kind === "photo" ? [{ ...l.spot, ...to.get(l.id) }] : [])),
-      [],
-      layers.flatMap((l) => (l.kind === "note" ? [{ id: l.id, width: l.spot.width, z: l.z, x: l.spot.x, y: l.spot.y, rotation: l.spot.rotation, ...to.get(l.id) }] : []))
-    );
+    const move = () =>
+      commit(
+        layers.flatMap((l) => (l.kind === "photo" ? [{ ...l.spot, ...to.get(l.id) }] : [])),
+        [],
+        layers.flatMap((l) => (l.kind === "note" ? [{ id: l.id, width: l.spot.width, z: l.z, x: l.spot.x, y: l.spot.y, rotation: l.spot.rotation, ...to.get(l.id) }] : []))
+      );
+    // CSS moves them, so any number can move and the board still takes the pointer; only the cross-fade needs the browser's pictures.
+    if (prefersReducedMotion()) transitionBoard({ order: [], update: move });
+    else {
+      clearTimeout(animateTimer.current);
+      setAnimate(true);
+      animateTimer.current = setTimeout(() => setAnimate(false), 350);
+      move();
+    }
     onAnnounce(said);
   }
 

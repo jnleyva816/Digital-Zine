@@ -160,6 +160,8 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
               <li key={asset.id} className="min-w-0">
                 <button
                   type="button"
+                  // A placed photo is drawn on the board, and moves from there.
+                  data-flow={placed ? undefined : asset.id}
                   disabled={!ready}
                   aria-label={!ready ? `${label}, processing` : placed ? `${label}, on the board` : `Place ${label} on the board`}
                   onPointerDown={(e) => ready && !placed && onDragStart(asset, e)}

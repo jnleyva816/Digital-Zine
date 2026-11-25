@@ -52,6 +52,7 @@ export const PlacedPhoto = memo(function PlacedPhoto({ asset, placement, label, 
     >
       <div
         role="button"
+        data-flow={asset.id}
         tabIndex={0}
         aria-pressed={selected}
         aria-label={`${label}, on the board, ${position}`}

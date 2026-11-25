@@ -27,6 +27,8 @@ export interface StripCardLook {
 interface BoardStripProps {
   assets: BoardAsset[];
   total: number;
+  /** The photo to open at. */
+  startAt: string | null;
   heldId: string | null;
   keysHintId: string;
   loadError: string | null;
@@ -40,7 +42,7 @@ const dimsOf = (a: BoardAsset) => (a.width && a.height ? { width: a.width, heigh
 const smooth = () => (typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth");
 
 /** Every photo in board order, in one long row like a light table (DIG-91). */
-export function BoardStrip({ assets, total, heldId, keysHintId, loadError, onRetryLoad, onDragOver, onDrop, renderCard }: BoardStripProps) {
+export function BoardStrip({ assets, total, startAt, heldId, keysHintId, loadError, onRetryLoad, onDragOver, onDrop, renderCard }: BoardStripProps) {
   const row = useRef<HTMLDivElement>(null);
   const scrubber = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ width: 0, height: 0, scrubber: 0 });
@@ -93,6 +95,15 @@ export function BoardStrip({ assets, total, heldId, keysHintId, loadError, onRet
     if (scrubber.current) observer.observe(scrubber.current);
     return () => observer.disconnect();
   }, []);
+
+  // Before the first read, so the photos drawn are the ones beside it.
+  const started = useRef(false);
+  useLayoutEffect(() => {
+    if (started.current || size.width === 0) return;
+    started.current = true;
+    const card = cards[assets.findIndex((a) => a.id === startAt)];
+    if (card && row.current) row.current.scrollLeft = card.left;
+  }, [size, cards, assets, startAt]);
 
   useLayoutEffect(read, [read, size]);
   useLayoutEffect(readThumbs, [readThumbs, size, total]);

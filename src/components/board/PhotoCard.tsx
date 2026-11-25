@@ -118,7 +118,7 @@ export function PhotoCard(props: PhotoCardProps) {
 
   const body = () => (
     <>
-        <div className={`relative ${strip ? "rounded-[3px]" : "rounded-t-[11px]"} bg-ink-900 ${photoBox || "overflow-hidden"}`} {...(photoBox ? { "data-testid": "photo-cover" } : {})}>
+        <div data-flow={asset.id} className={`relative ${strip ? "rounded-[3px]" : "rounded-t-[11px]"} bg-ink-900 ${photoBox || "overflow-hidden"}`} {...(photoBox ? { "data-testid": "photo-cover" } : {})}>
           {asset.status === "ready" ? (
             ownShape ? (
               <EditedPhoto

@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
+import { flowElement, transitionBoard } from "@/lib/board-transition";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
 import { GRID_LAYOUTS, type BoardNote, type BoardViewPrefs, type GridLayout, type Placement } from "@/lib/board-layout";
 import type { RecipeData } from "@/lib/types";
@@ -83,6 +84,9 @@ export function VisionBoard({
   /** Null until the browser has said how wide the screen is. */
   const [wide, setWide] = useState<boolean | null>(null);
   const [chosenView, setChosenView] = useState(viewPrefs);
+  /** The photo last focused, and the one a view opens at because it was. */
+  const focusedId = useRef<string | null>(null);
+  const [startAt, setStartAt] = useState<string | null>(null);
   const layout = useBoardLayout(boardId, initialPlacements, initialNotes, () => setBoardError("This board was changed somewhere else, so its layout was reloaded."));
   const assetsRef = useRef(assets);
   assetsRef.current = assets;
@@ -129,12 +133,31 @@ export function VisionBoard({
     return () => query?.removeEventListener("change", update);
   }, []);
 
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const el = e.target instanceof Element ? e.target.closest<HTMLElement>("[data-asset-id], [data-placed], [data-flow]") : null;
+      const id = el?.dataset.assetId ?? el?.dataset.placed ?? el?.dataset.flow;
+      if (id) focusedId.current = id;
+    };
+    document.addEventListener("focusin", onFocus);
+    return () => document.removeEventListener("focusin", onFocus);
+  }, []);
+
   // Free form needs a wide screen.
   const view: BuiltView | null = wide === null ? null : wide ? (chosenView.wide ?? "free") : (chosenView.narrow ?? "grid");
 
   function chooseView(next: BuiltView) {
     const prefs: BoardViewPrefs = wide ? { wide: next } : { narrow: next === "strip" ? "strip" : "grid" };
-    setChosenView((v) => ({ ...v, ...prefs }));
+    if (next !== view) {
+      const keep = focusedId.current && flowElement(focusedId.current) ? focusedId.current : null;
+      transitionBoard({
+        order: assets.map((a) => a.id),
+        update: () => {
+          setStartAt(keep);
+          setChosenView((v) => ({ ...v, ...prefs }));
+        },
+      });
+    }
     const params = new URLSearchParams(location.search);
     params.set("view", next);
     history.replaceState(history.state, "", `${location.pathname}?${params}`);
@@ -199,6 +222,17 @@ export function VisionBoard({
 
   const gridLayout = chosenView.gridLayout ?? "masonry";
   const masonry = useMasonry(view === "grid" && gridLayout === "masonry", assets);
+
+  // The grid is as tall as the board, so the page scrolls to the photo, once the cards have their
+  // places. The other views open at it themselves.
+  const gridPlaced = view === "grid" && (gridLayout !== "masonry" || masonry.listStyle !== undefined);
+  const scrolledTo = useRef<string | null>(null);
+  useLayoutEffect(() => {
+    if (view !== "grid") scrolledTo.current = null;
+    if (!gridPlaced || !startAt || scrolledTo.current === startAt) return;
+    scrolledTo.current = startAt;
+    document.querySelector(`li[data-asset-id="${CSS.escape(startAt)}"]`)?.scrollIntoView?.({ block: "center" });
+  }, [view, gridPlaced, startAt]);
 
   function chooseLayout(next: GridLayout) {
     setChosenView((v) => ({ ...v, gridLayout: next }));
@@ -521,6 +555,7 @@ export function VisionBoard({
             findAsset={findAsset}
             layout={layout}
             trayRevision={`${total}:${assets.filter((a) => a.status === "ready").length}:${layout.savedCount}`}
+            startAt={startAt}
             fileInputRef={fileInputRef}
             onFiles={enqueue}
             onKnown={(asset) => setExtras((prev) => (prev.some((a) => a.id === asset.id) ? prev : [...prev, asset]))}
@@ -556,6 +591,7 @@ export function VisionBoard({
             <BoardStrip
               assets={assets}
               total={total}
+              startAt={startAt}
               heldId={reorder.heldId}
               keysHintId={`${inputId}-keys`}
               loadError={loadMoreError}

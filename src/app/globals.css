@@ -67,6 +67,22 @@ dialog[data-lightbox][open] {
   }
 }
 
+/* Photos move between the board's views (DIG-92). They differ in shape from view to view, so each picture fills its box. */
+[data-board-transition]::view-transition-group(*) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+[data-board-transition]::view-transition-old(*),
+[data-board-transition]::view-transition-new(*) {
+  height: 100%;
+  object-fit: cover;
+}
+
+[data-board-transition="fade"]::view-transition-group(*) {
+  animation-duration: 0.15s;
+}
+
 /* Reading modes on a public zine (DIG-50). Scrolling settles on a page; "proximity" never traps a tall one. */
 html:has([data-zine-scroll]) {
   scroll-snap-type: y proximity;
