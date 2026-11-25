@@ -4,8 +4,11 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { writeLocalObject } from "@/lib/storage/local";
+import { Prisma } from "@prisma/client";
 import { GET } from "@/app/api/pdf/[slug]/route";
+import { defaultPdfSettings, type PdfSettings } from "@/lib/pdf-settings";
 import { processAsset } from "@/lib/media/process";
+import { readPdf } from "../pdf-text";
 import { createTestUser, defaultBoardId, deleteTestUser, params, resetRateLimits } from "./helpers";
 
 vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
@@ -56,7 +59,11 @@ async function photo(ownerId: string, { writeFile = true } = {}) {
   });
 }
 
-async function zine(ownerId: string, assetIds: string[], { published = true } = {}) {
+async function zine(
+  ownerId: string,
+  assetIds: string[],
+  { published = true, settings = defaultPdfSettings("darkroom", "a4") }: { published?: boolean; settings?: PdfSettings | null } = {}
+) {
   return prisma.zine.create({
     data: {
       ownerId,
@@ -64,6 +71,7 @@ async function zine(ownerId: string, assetIds: string[], { published = true } = 
       title: "Brine & Light",
       slug: `pdf-${randomUUID().slice(0, 8)}`,
       published,
+      pdfSettings: settings ?? Prisma.DbNull,
       publishedAt: published ? new Date("2026-11-02T12:00:00Z") : null,
       pages: {
         create: assetIds.map((assetId, i) => ({ pageNumber: i + 1, content: { assetId, caption: `Plate ${i + 1}` } })),
@@ -109,6 +117,13 @@ describe("GET /api/pdf/[slug]", () => {
     const z = await zine(otherPro.id, [(await photo(otherPro.id)).id]);
     const res = await get(z.slug);
     expect(res.status).toBe(404);
+  });
+
+  it("asks the owner to choose a style first, rather than guessing one (DIG-64)", async () => {
+    const z = await zine(pro.id, [(await photo(pro.id)).id], { settings: null });
+    const res = await get(z.slug);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "STYLE_REQUIRED", error: expect.stringMatching(/template and paper size/i) });
   });
 
   it("streams a PDF to the Pro owner: a cover plus one page per zine page", async () => {
@@ -229,6 +244,82 @@ describe("GET /api/pdf/[slug]", () => {
     expect(pdfPageCount(Buffer.from(await res.arrayBuffer()))).toBe(2);
   });
 
+  // DIG-73: the one-sheet mini zine is free; the booklet stays Pro.
+  describe("mini zine", () => {
+    const mini = (slug: string, format = "mini") => GET(new Request(`http://test.local/api/pdf/${slug}?format=${format}`), params({ slug }));
+    const photos = async (ownerId: string, n: number) => Promise.all(Array.from({ length: n }, () => photo(ownerId))).then((all) => all.map((p) => p.id));
+    const sheet = async (res: Response) => readPdf(Buffer.from(await res.arrayBuffer()));
+    const style = defaultPdfSettings("darkroom", "letter");
+
+    it("is free, on one landscape sheet, while the booklet stays Pro", async () => {
+      mockedUser.mockResolvedValue(free);
+      const z = await zine(free.id, await photos(free.id, 4), { settings: style });
+      const res = await mini(z.slug);
+      expect(res.status).toBe(200);
+      expect(res.headers.get("content-disposition")).toContain(`${z.slug}-mini.pdf`);
+      expect(res.headers.get("cache-control")).toBe("private, no-store");
+      const pages = await sheet(res);
+      expect(pages.map((p) => [p.width, p.height])).toEqual([[792, 612]]);
+      expect(pages[0].text.replace(/\s/g, "")).toContain(`/z/${free.publicId}/${z.slug}`);
+      for (const r of [await mini(z.slug, "booklet"), await get(z.slug)]) {
+        expect(r.status).toBe(403);
+        expect(await r.json()).toMatchObject({ code: "PRO_REQUIRED" });
+      }
+    });
+
+    it("uses the stored format when none is asked for, and an asked-for one over it", async () => {
+      const z = await zine(pro.id, await photos(pro.id, 4), { settings: { ...style, format: "mini" } });
+      expect(await sheet(await get(z.slug))).toHaveLength(1);
+      expect(await sheet(await mini(z.slug, "booklet"))).toHaveLength(5);
+    });
+
+    it("prints the chosen photos in the chosen order, or the first six", async () => {
+      const ids = await photos(pro.id, 8);
+      const all = await zine(pro.id, ids, { settings: style });
+      const first = (await sheet(await mini(all.slug)))[0].text;
+      for (const n of [1, 6]) expect(first).toContain(`Plate ${n}`);
+      expect(first).not.toMatch(/Plate [78]/);
+      const picked = await zine(pro.id, ids, { settings: { ...style, miniPhotos: [ids[7], ids[0], ids[6], ids[2]] } });
+      const text = (await sheet(await mini(picked.slug)))[0].text;
+      // The top row is drawn first, left to right: pages 5, 4, 3. Page 6 starts the bottom row.
+      expect(text.match(/Plate \d/g)).toEqual(["Plate 7", "Plate 1", "Plate 8", "Plate 3"]);
+    });
+
+    it("skips chosen photos that have left the zine", async () => {
+      const ids = await photos(pro.id, 5);
+      const z = await zine(pro.id, ids.slice(0, 4), { settings: { ...style, miniPhotos: ids } });
+      expect((await mini(z.slug)).status).toBe(200);
+    });
+
+    it("asks for four photos when there are fewer, or when fewer can be read", async () => {
+      const ids = await photos(pro.id, 3);
+      const gone = await photo(pro.id, { writeFile: false });
+      for (const list of [ids, [...ids, gone.id]]) {
+        const res = await mini((await zine(pro.id, list, { settings: style })).slug);
+        expect(res.status).toBe(409);
+        expect(await res.json()).toMatchObject({ code: "MINI_PHOTOS_REQUIRED" });
+      }
+    });
+
+    it("keeps the booklet's other checks", async () => {
+      const ids = await photos(pro.id, 4);
+      const z = await zine(pro.id, ids, { settings: style });
+      expect((await mini(z.slug, "poster")).status).toBe(400);
+      expect((await mini((await zine(pro.id, ids, { settings: null })).slug)).status).toBe(409);
+      expect((await mini((await zine(pro.id, ids, { published: false, settings: style })).slug)).status).toBe(404);
+      mockedUser.mockResolvedValue(otherPro);
+      expect((await mini(z.slug)).status).toBe(404);
+      mockedUser.mockResolvedValue(null);
+      expect((await mini(z.slug)).status).toBe(401);
+    });
+
+    it("counts toward the same limit", async () => {
+      mockedUser.mockResolvedValue(free);
+      for (let i = 0; i < 10; i++) expect((await mini("missing")).status).toBe(404);
+      expect((await mini("missing")).status).toBe(429);
+    });
+  });
+
   it("never fetches images from the request's Host header", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const gone = await photo(pro.id, { writeFile: false });
@@ -238,5 +329,44 @@ describe("GET /api/pdf/[slug]", () => {
       params({ slug: z.slug })
     );
     expect(fetchSpy.mock.calls.map((c) => String(c[0]))).not.toContainEqual(expect.stringContaining("attacker.example"));
+  });
+});
+
+describe("cover (DIG-126)", () => {
+  const images = (content: string) => (content.match(/ Do\b/g) ?? []).length;
+  const covered = (cover: PdfSettings["cover"], over: Partial<PdfSettings> = {}) => ({ ...defaultPdfSettings("darkroom", "a4"), cover, ...over });
+  async function firstPage(assetIds: string[], settings: PdfSettings, format = "booklet") {
+    const { slug } = await zine(pro.id, assetIds, { settings });
+    const res = await GET(new Request(`http://test/api/pdf/${slug}?format=${format}`), params({ slug }));
+    expect(res.status).toBe(200);
+    return readPdf(Buffer.from(await res.arrayBuffer()))[0];
+  }
+
+  it("has no photo on Title only, and one on Full-page photo", async () => {
+    const a = await photo(pro.id);
+    expect(images((await firstPage([a.id], covered({ style: "title", photo: null }))).content)).toBe(0);
+    expect(images((await firstPage([a.id], covered({ style: "full", photo: null }))).content)).toBe(1);
+  });
+
+  it("falls back to the first photo when the chosen one has left the zine or cannot be read", async () => {
+    const a = await photo(pro.id);
+    const lost = await photo(pro.id, { writeFile: false });
+    expect(images((await firstPage([a.id], covered({ style: "full", photo: "gone" }))).content)).toBe(1);
+    expect(images((await firstPage([a.id, lost.id], covered({ style: "full", photo: lost.id }))).content)).toBe(1);
+  });
+
+  it("puts a photo on the mini zine's cover that is not one of its inside photos", async () => {
+    const all = await Promise.all(Array.from({ length: 7 }, () => photo(pro.id)));
+    const ids = all.map((a) => a.id);
+    const inside = { miniPhotos: ids.slice(0, 6) };
+    expect(images((await firstPage(ids, covered({ style: "title", photo: null }, inside), "mini")).content)).toBe(6);
+    expect(images((await firstPage(ids, covered({ style: "full", photo: ids[6] }, inside), "mini")).content)).toBe(7);
+  });
+
+  it("never prints another creator's photo, even if the settings name one", async () => {
+    const mine = await photo(pro.id);
+    const theirs = await photo(otherPro.id);
+    const page = await firstPage([mine.id, theirs.id], covered({ style: "full", photo: theirs.id }));
+    expect(images(page.content)).toBe(1);
   });
 });

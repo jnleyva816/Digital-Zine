@@ -45,7 +45,7 @@ export function Windowed({ label, children }: { label: string; children: React.R
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) focused.current = false;
       }}
-      style={!near && height ? { height: `${height}px` } : undefined}
+      style={!near && height ? { height: `${height}px`, flex: "none" } : undefined}
       className="flex flex-1 flex-col"
     >
       {near ? children : <span className="sr-only">{label}</span>}

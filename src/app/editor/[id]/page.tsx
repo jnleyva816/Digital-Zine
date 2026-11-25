@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { publicZinePath } from "@/lib/public-zine-path";
+import { parsePdfSettings } from "@/lib/pdf-settings";
 import { prisma } from "@/lib/prisma";
 import { BOARD_ASSET_SELECT, boardPhotoPage } from "@/lib/board-photos";
 import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
@@ -77,6 +78,8 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
           boardTotal={firstPage?.total ?? 0}
           pageAssets={pagePhotos.filter((p) => !firstPage?.assets.some((a) => a.id === p.id)).map(toBoardAsset)}
           tier={user.tier}
+          authorName={user.name?.trim() || null}
+          pdfSettings={parsePdfSettings(zine.pdfSettings)}
         />
       </main>
     </>
