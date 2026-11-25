@@ -1,6 +1,8 @@
 import React from "react";
 import { Document, Page, View, renderToBuffer } from "@react-pdf/renderer";
 import { registerPdfFonts } from "@/lib/pdf-fonts";
+import { miniPalette } from "@/lib/mini-zine";
+import { MiniSheet } from "@/lib/pdf-templates/mini";
 import { PALETTES, type PdfPaper, type PdfSettings } from "@/lib/pdf-settings";
 import { TYPEFACE_FACES } from "@/lib/pdf-typefaces";
 import { PDF_TEMPLATES } from "@/lib/pdf-templates";
@@ -60,4 +62,23 @@ function Booklet({ zine }: { zine: PdfZinePayload }) {
 export async function renderZinePdfBuffer(payload: PdfZinePayload): Promise<Buffer> {
   registerPdfFonts();
   return renderToBuffer(<Booklet zine={payload} />);
+}
+
+export interface MiniZinePayload extends PdfZinePayload {
+  /** The zine's full public address, printed on the back cover. */
+  publicUrl: string;
+}
+
+/** The one-sheet mini zine (DIG-73): a landscape sheet that folds into an eight-page booklet. */
+export async function renderMiniZinePdfBuffer(zine: MiniZinePayload): Promise<Buffer> {
+  registerPdfFonts();
+  const { width, height } = PAPER_POINTS[zine.settings.paper];
+  const ctx: TemplateContext = { ...templateContext(zine), palette: miniPalette(zine.settings), width: height, height: width };
+  return renderToBuffer(
+    <Document title={zine.title} author={zine.authorName ?? undefined} subject={zine.description ?? "Digital Zine Edition"}>
+      <Sheet ctx={ctx}>
+        <MiniSheet ctx={ctx} publicUrl={zine.publicUrl} />
+      </Sheet>
+    </Document>
+  );
 }
