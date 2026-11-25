@@ -72,7 +72,7 @@ export function AdminViewToggle({ viewingAsFree, reload = reloadPage }: { viewin
         </span>
       </button>
       {error ? (
-        <p role="alert" className="absolute right-0 top-full z-40 mt-1 w-64 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800 shadow">
+        <p role="alert" className="absolute right-0 top-full z-40 mt-1 w-64 rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-800 shadow-sm">
           {error}
         </p>
       ) : null}

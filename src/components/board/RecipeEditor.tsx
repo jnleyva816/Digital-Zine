@@ -142,7 +142,7 @@ function fromForm(form: FormState): { recipe: FujiRecipe } | { error: string } {
 }
 
 const inputClass =
-  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20";
+  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20";
 const labelClass = "block font-mono text-[11px] uppercase tracking-wider text-ink-700";
 
 /** A labelled select. Top level, so React keeps the same element (and focus) between renders. */
@@ -288,7 +288,7 @@ export function RecipeEditor({
           </button>
         </div>
 
-        <div className="space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="stack-y-5 overflow-y-auto px-5 py-5 sm:px-6">
           <p className="text-xs text-ink-500">
             The in-camera settings behind this photo. They&apos;re shown on the back of its card when the zine is
             published. Leave anything you didn&apos;t set as &ldquo;Not set&rdquo;.
@@ -486,7 +486,7 @@ export function RecipeEditor({
               type="submit"
               disabled={saving}
               aria-busy={saving}
-              className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+              className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save recipe"}
             </button>

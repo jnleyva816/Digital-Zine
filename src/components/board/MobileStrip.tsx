@@ -137,7 +137,7 @@ export function MobileStrip({ assets, total, startAt, keepIds, listRef, loadErro
         }}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        className="overflow-x-auto overflow-y-hidden [scroll-padding-left:20px] [scroll-snap-type:x_mandatory] [scrollbar-width:none] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
+        className="overflow-x-auto overflow-y-hidden scroll-pl-[20px] [scroll-snap-type:x_mandatory] scrollbar-none focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
       >
         {/* The last photo can come to the left edge too. */}
         <ol ref={listRef} aria-label="Vision Board photos" className="relative" style={{ width: assets.length * pitch + Math.max(0, size.width - pitch), height: photo.height + 100 }}>
@@ -150,7 +150,7 @@ export function MobileStrip({ assets, total, startAt, keepIds, listRef, loadErro
           )}
         </ol>
       </div>
-      <div ref={thumbRow} role="group" aria-label="All photos" onScroll={readThumbs} className="overflow-x-auto [scrollbar-width:none]">
+      <div ref={thumbRow} role="group" aria-label="All photos" onScroll={readThumbs} className="overflow-x-auto scrollbar-none">
         <div className="relative h-[52px]" style={{ width: assets.length * THUMB + PAD * 2 }}>
           {assets.slice(thumbs[0], thumbs[1]).map((asset, n) => {
             const i = thumbs[0] + n;
@@ -164,9 +164,9 @@ export function MobileStrip({ assets, total, startAt, keepIds, listRef, loadErro
                 tabIndex={i === at ? 0 : -1}
                 onClick={() => goTo(i)}
                 style={{ left: PAD + i * THUMB }}
-                className="absolute top-0 flex h-[52px] w-11 items-center justify-center rounded-sm focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
+                className="absolute top-0 flex h-[52px] w-11 items-center justify-center rounded-xs focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
               >
-                <span className={`block h-[42px] w-[34px] overflow-hidden rounded-sm bg-ink-900 ${i === at ? "outline outline-2 outline-paper-50" : "opacity-45"}`}>
+                <span className={`block h-[42px] w-[34px] overflow-hidden rounded-xs bg-ink-900 ${i === at ? "outline-solid outline-2 outline-paper-50" : "opacity-45"}`}>
                   {asset.status === "ready" ? <EditedPhoto as="span" src={asset.publicUrl} alt="" edit={null} dims={asset.width && asset.height ? { width: asset.width, height: asset.height } : null} sizes="34px" blurDataUrl={asset.blurDataUrl} /> : null}
                 </span>
               </button>

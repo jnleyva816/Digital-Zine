@@ -100,9 +100,9 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
 
   return (
     <aside ref={trayRef} aria-label="Photos on this board" className="flex w-[280px] shrink-0 flex-col border-r border-paper-300 bg-paper-50">
-      <div className="space-y-3 p-4 pb-3">
+      <div className="stack-y-3 p-4 pb-3">
         <div className="flex items-center gap-2">
-          <label className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-paper-300 text-[13px] text-ink-700 focus-within:outline focus-within:outline-2 focus-within:outline-vermilion-500 hover:bg-paper-100">
+          <label className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-paper-300 text-[13px] text-ink-700 focus-within:outline-solid focus-within:outline-2 focus-within:outline-vermilion-500 hover:bg-paper-100">
             <ImagePlus className="h-[18px] w-[18px] text-vermilion-600" aria-hidden="true" />
             <span>
               Drop photos or <span className="font-semibold text-vermilion-600 underline underline-offset-2">browse</span>
@@ -118,7 +118,7 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
               }}
             />
           </label>
-          <button type="button" aria-label="Hide photo tray" onClick={onHide} className="rounded-lg p-2 text-ink-500 hover:bg-paper-200 hover:text-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500">
+          <button type="button" aria-label="Hide photo tray" onClick={onHide} className="rounded-lg p-2 text-ink-500 hover:bg-paper-200 hover:text-ink-900 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500">
             <PanelLeftClose className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
@@ -131,7 +131,7 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
             maxLength={100}
             value={text}
             onChange={(e) => setText(e.target.value)}
-            className="w-full min-w-0 bg-transparent text-[13px] text-ink-900 placeholder:text-ink-500 focus:outline-none"
+            className="w-full min-w-0 bg-transparent text-[13px] text-ink-900 placeholder:text-ink-500 focus:outline-hidden"
           />
         </div>
         <div role="group" aria-label="Show" className="flex flex-wrap gap-1.5">
@@ -141,7 +141,7 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
               type="button"
               aria-pressed={show === f.show}
               onClick={() => setShow(f.show)}
-              className={`min-h-8 rounded-full border px-3 text-[13px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${show === f.show ? "border-ink-900 bg-ink-900 text-paper-50" : "border-paper-300 bg-white text-ink-900"}`}
+              className={`min-h-8 rounded-full border px-3 text-[13px] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${show === f.show ? "border-ink-900 bg-ink-900 text-paper-50" : "border-paper-300 bg-white text-ink-900"}`}
             >
               {f.label} {counts ? counts[f.show] : ""}
             </button>
@@ -170,7 +170,7 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
                     // A keyboard or screen reader "click"; the pointer drags instead.
                     else if (e.detail === 0) onPlace(asset);
                   }}
-                  className={`relative block w-full touch-pan-y overflow-hidden rounded-md bg-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${placed ? "ring-2 ring-ink-900" : ready ? "cursor-grab" : ""}`}
+                  className={`relative block w-full touch-pan-y overflow-hidden rounded-md bg-ink-900 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${placed ? "ring-2 ring-ink-900" : ready ? "cursor-grab" : ""}`}
                   style={{ aspectRatio: "4 / 5" }}
                 >
                   {ready ? (

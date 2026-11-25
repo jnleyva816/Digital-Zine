@@ -6,7 +6,7 @@ import { signOut } from "next-auth/react";
 import { Trash2 } from "lucide-react";
 
 const inputClass =
-  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20";
+  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-red-500 focus:outline-hidden focus:ring-2 focus:ring-red-500/20";
 const labelClass = "block font-mono text-xs uppercase tracking-wider text-ink-700";
 
 interface DeleteAccountPanelProps {
@@ -64,7 +64,7 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
 
   if (deleted) {
     return (
-      <section className="rounded-2xl border border-paper-300 bg-white p-6 shadow-sm">
+      <section className="rounded-2xl border border-paper-300 bg-white p-6 shadow-xs">
         <p role="status" className="font-serif text-lg font-bold text-ink-900">
           Your account has been deleted.
         </p>
@@ -79,12 +79,12 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
   }
 
   return (
-    <section aria-labelledby="delete-account-heading" className="rounded-2xl border border-red-300 bg-white p-6 shadow-sm">
+    <section aria-labelledby="delete-account-heading" className="rounded-2xl border border-red-300 bg-white p-6 shadow-xs">
       <h2 id="delete-account-heading" className="font-serif text-xl font-bold text-ink-900">
         Delete account
       </h2>
       <p className="mt-2 text-sm text-ink-700">Deleting your account permanently removes:</p>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-700">
+      <ul className="mt-2 list-disc stack-y-1 pl-5 text-sm text-ink-700">
         <li>Your Vision Boards and photos, and every stored copy of them.</li>
         <li>Your zines. Published zines stop working at once, and their links show a not-found page.</li>
         <li>Your saved recipes.</li>
@@ -103,26 +103,26 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="mt-5 inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 shadow-sm transition hover:bg-red-50"
+          className="mt-5 inline-flex items-center gap-2 rounded-xl border border-red-300 bg-white px-4 py-2.5 text-sm font-semibold text-red-700 shadow-xs transition hover:bg-red-50"
         >
           <Trash2 className="h-4 w-4" aria-hidden="true" />
           Delete my account…
         </button>
       ) : needsSignIn ? (
-        <div className="mt-5 space-y-3 rounded-xl border border-paper-300 bg-paper-100 p-4">
+        <div className="mt-5 stack-y-3 rounded-xl border border-paper-300 bg-paper-100 p-4">
           <p className="text-sm text-ink-700">
             For your security, sign in with Google once more, then come back here within five minutes to finish.
           </p>
           <button
             type="button"
             onClick={() => signOut({ callbackUrl: "/signin?callbackUrl=%2Faccount" })}
-            className="rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-paper-50 shadow-sm hover:bg-ink-800"
+            className="rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-paper-50 shadow-xs hover:bg-ink-800"
           >
             Sign in again
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate aria-label="Confirm account deletion" className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} noValidate aria-label="Confirm account deletion" className="mt-5 stack-y-4">
           <div>
             <label htmlFor="confirm-email" className={labelClass}>
               Type your email address to confirm
@@ -166,7 +166,7 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
               type="submit"
               disabled={!ready || loading}
               aria-busy={loading}
-              className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-red-800 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white shadow-xs transition hover:bg-red-800 disabled:opacity-50"
             >
               <Trash2 className="h-4 w-4" aria-hidden="true" />
               {loading ? "Deleting..." : "Permanently delete my account"}
@@ -180,7 +180,7 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
                 setPassword("");
               }}
               disabled={loading}
-              className="rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm font-semibold text-ink-800 shadow-sm hover:bg-paper-100 disabled:opacity-50"
+              className="rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm font-semibold text-ink-800 shadow-xs hover:bg-paper-100 disabled:opacity-50"
             >
               Cancel
             </button>

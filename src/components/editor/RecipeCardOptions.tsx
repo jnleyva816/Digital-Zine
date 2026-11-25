@@ -88,7 +88,7 @@ export function RecipeCardOptions({ style, look, zine, onBack, onClose }: { styl
       onClose={onClose}
       header={
         <>
-          <h2 ref={heading} tabIndex={-1} className="font-serif text-2xl font-bold outline-none">
+          <h2 ref={heading} tabIndex={-1} className="font-serif text-2xl font-bold outline-hidden">
             Recipe card
           </h2>
           <p className="mt-1 text-sm text-ink-700">Shown on photos that have a Fujifilm recipe. Applies to every page.</p>
@@ -124,7 +124,7 @@ export function RecipeCardOptions({ style, look, zine, onBack, onClose }: { styl
             <div className="grid grid-cols-3 gap-1.5">
               {keysOf<CardLocation>(CARD_LOCATIONS).map((key) => (
                 <Choice key={key} pressed={card.location === key} onClick={() => edit({ location: key })} className="flex flex-col items-center justify-center gap-1.5 p-2">
-                  <span aria-hidden="true" className="relative box-border h-10 w-[30px] rounded-sm border border-[#A89F92] bg-white">
+                  <span aria-hidden="true" className="relative box-border h-10 w-[30px] rounded-xs border border-[#A89F92] bg-white">
                     <span className="absolute inset-x-[3px] top-[3px] h-[22px] bg-[#CFC7BC]" />
                     <span className="absolute bg-vermilion-500" style={MARKS[key]} />
                   </span>
@@ -162,7 +162,7 @@ export function RecipeCardOptions({ style, look, zine, onBack, onClose }: { styl
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             Back to style
           </button>
-          <p aria-live="polite" className="min-h-[1rem] text-xs text-ink-500">
+          <p aria-live="polite" className="min-h-4 text-xs text-ink-500">
             {savedMessage(style)}
           </p>
         </>
@@ -179,7 +179,7 @@ export function RecipeCardOptions({ style, look, zine, onBack, onClose }: { styl
             </p>
           )}
           {page ? (
-            <div className="max-[479px]:[zoom:0.7]">
+            <div className="max-[479px]:zoom-[0.7]">
               <PdfPagePreview settings={shown} zine={own ? zine : { ...zine, pages: [page, ...zine.pages.slice(1)] }} page={page} label="Photo page with its recipe card" width={CARD_PREVIEW_WIDTH} />
             </div>
           ) : (

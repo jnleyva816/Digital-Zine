@@ -72,9 +72,9 @@ export function BookReader({ pages, current, onTurn, keysEnabled, renderPage }: 
   }, [keysEnabled]);
 
   const turnButton =
-    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-paper-300 bg-white text-ink-900 shadow-sm transition hover:bg-paper-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-40";
+    "inline-flex h-11 w-11 items-center justify-center rounded-full border border-paper-300 bg-white text-ink-900 shadow-xs transition hover:bg-paper-100 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-40";
   // Over the photo but under the card's own buttons (z-10). The named buttons below do the same for keyboards and screen readers.
-  const edge = "absolute inset-y-0 z-[5] w-[12%] max-w-16 cursor-pointer";
+  const edge = "absolute inset-y-0 z-5 w-[12%] max-w-16 cursor-pointer";
 
   return (
     <section aria-label="Book" className="lg:mx-[calc(50%-min(50vw-1.5rem,38rem))]">

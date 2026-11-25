@@ -55,7 +55,7 @@ export function DeleteZineDialog({ open, title, published, onCancel, onConfirm }
       aria-labelledby={`${id}-heading`}
       className="w-[min(100vw-2rem,28rem)] rounded-2xl border border-paper-300 bg-paper-50 p-0 text-ink-900 shadow-2xl backdrop:bg-ink-900/50"
     >
-      <form onSubmit={handleSubmit} className="space-y-4 p-6">
+      <form onSubmit={handleSubmit} className="stack-y-4 p-6">
         <h2 id={`${id}-heading`} className="font-serif text-xl font-bold">
           Delete this zine?
         </h2>
@@ -72,7 +72,7 @@ export function DeleteZineDialog({ open, title, published, onCancel, onConfirm }
             value={typed}
             autoComplete="off"
             onChange={(e) => setTyped(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm shadow-xs focus:border-red-500 focus:outline-hidden focus:ring-2 focus:ring-red-500/20"
           />
         </div>
         {error ? (

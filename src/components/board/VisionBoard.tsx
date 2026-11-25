@@ -69,7 +69,7 @@ const FILTERS = [
   { show: "recipes", label: "Recipes", none: "No photos with a recipe on this board." },
   { show: "unused", label: "Not in a zine", none: "Every photo on this board is in a zine." },
 ] as const;
-const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
+const focusRing = "focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
 type Show = (typeof FILTERS)[number]["show"];
 
 /**
@@ -617,7 +617,7 @@ export function VisionBoard({
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
-        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800"
       >
         <ImagePlus className="h-4 w-4" aria-hidden="true" />
         Add photos
@@ -630,7 +630,7 @@ export function VisionBoard({
   // Above the navigation, where it is seen however far the page has scrolled.
   const floating =
     compact && (view === "grid" || problem) ? (
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 space-y-2 px-4 pb-3 [&>*]:pointer-events-auto">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 stack-y-2 px-4 pb-3 *:pointer-events-auto">
         {problem}
         {view === "grid" ? (
           <div role="group" aria-label="Board actions" className="mx-auto flex max-w-xl gap-2">
@@ -682,7 +682,7 @@ export function VisionBoard({
       {view === "free" ? (
         <>
           {uploads.length > 0 || problem ? (
-            <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
+            <div className="stack-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
               <UploadList uploads={uploads} onDismiss={dismiss} />
               {problem}
             </div>
@@ -708,7 +708,7 @@ export function VisionBoard({
         <>
           {picker}
           {uploads.length > 0 || (problem && !compact) ? (
-            <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
+            <div className="stack-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
               <UploadList uploads={uploads} onDismiss={dismiss} />
               {problem}
             </div>
@@ -744,7 +744,7 @@ export function VisionBoard({
       ) : null}
 
       {view === "grid" && compact ? (
-        <div className="space-y-4 px-4 pb-24 pt-3">
+        <div className="stack-y-4 px-4 pb-24 pt-3">
           {picker}
           {uploads.length > 0 ? (
             <div className="[&_button]:min-h-11 [&_button]:min-w-11">
@@ -755,7 +755,7 @@ export function VisionBoard({
             emptyBoard
           ) : (
             <>
-              <div role="group" aria-label="Show" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 py-1 [scrollbar-width:none]">
+              <div role="group" aria-label="Show" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 py-1 scrollbar-none">
                 {FILTERS.map((f) => (
                   <button
                     key={f.show}
@@ -780,7 +780,7 @@ export function VisionBoard({
       ) : null}
 
       {view === "grid" && !compact ? (
-      <div className="space-y-5 px-4 py-5 sm:px-7">
+      <div className="stack-y-5 px-4 py-5 sm:px-7">
 
       <div className="grid items-center gap-4 lg:grid-cols-[1fr_18rem]">
         <UploadDropzone inputId={inputId} fileInputRef={fileInputRef} onFiles={enqueue} isReordering={reorder.isDragging} />
@@ -803,7 +803,7 @@ export function VisionBoard({
                   type="button"
                   aria-pressed={gridLayout === l}
                   onClick={() => chooseLayout(l)}
-                  className={`min-h-[34px] rounded-full border px-3.5 text-[13px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${gridLayout === l ? "border-ink-900 bg-ink-900 text-paper-50" : "border-paper-300 bg-white text-ink-900"}`}
+                  className={`min-h-[34px] rounded-full border px-3.5 text-[13px] focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${gridLayout === l ? "border-ink-900 bg-ink-900 text-paper-50" : "border-paper-300 bg-white text-ink-900"}`}
                 >
                   {GRID_LAYOUT_NAMES[l]}
                 </button>

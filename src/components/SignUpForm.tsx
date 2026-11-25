@@ -8,7 +8,7 @@ import { useResendVerification } from "@/lib/use-resend-verification";
 import { GoogleButton, OrDivider } from "@/components/GoogleButton";
 
 const inputClass =
-  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20";
+  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20";
 const labelClass = "block font-mono text-xs uppercase tracking-wider text-ink-700";
 
 /** Creates a password account (DIG-94), then asks the creator to verify their email. */
@@ -55,7 +55,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   if (sentTo) {
     return (
-      <div className="space-y-4 text-center">
+      <div className="stack-y-4 text-center">
         <MailCheck className="mx-auto h-8 w-8 text-vermilion-500" aria-hidden="true" />
         <h2 className="font-serif text-xl font-bold text-ink-900">Check your email</h2>
         <p className="text-sm text-ink-700">
@@ -85,7 +85,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       {googleEnabled ? (
         <>
           <GoogleButton callbackUrl="/board" />
@@ -93,7 +93,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
         </>
       ) : null}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="stack-y-5">
         <div>
           <label htmlFor="name" className={labelClass}>
             Name
@@ -153,7 +153,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
             type="checkbox"
             checked={acceptTerms}
             onChange={(e) => setAcceptTerms(e.target.checked)}
-            className="mt-0.5 h-4 w-4 rounded border-paper-300 text-vermilion-500 focus:ring-vermilion-500/30"
+            className="mt-0.5 h-4 w-4 rounded-sm border-paper-300 text-vermilion-500 focus:ring-vermilion-500/30"
           />
           <label htmlFor="acceptTerms" className="text-sm text-ink-700">
             I agree to the{" "}
@@ -178,7 +178,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
           type="submit"
           disabled={loading}
           aria-busy={loading}
-          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
         >
           {loading ? "Creating account..." : "Create account"}
           <ArrowRight className="h-4 w-4" aria-hidden="true" />

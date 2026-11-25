@@ -24,7 +24,7 @@ export function LoadMore({ sentinelRef, loading, error, onLoadMore }: LoadMorePr
         onClick={onLoadMore}
         disabled={loading}
         aria-busy={loading}
-        className="inline-flex items-center gap-2 rounded-xl border border-paper-300 bg-white px-5 py-2.5 text-sm font-medium text-ink-800 shadow-sm transition hover:bg-paper-100 disabled:opacity-60"
+        className="inline-flex items-center gap-2 rounded-xl border border-paper-300 bg-white px-5 py-2.5 text-sm font-medium text-ink-800 shadow-xs transition hover:bg-paper-100 disabled:opacity-60"
       >
         {loading ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
         {loading ? "Loading…" : "Load more photos"}

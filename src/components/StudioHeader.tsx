@@ -21,7 +21,7 @@ const TABS = [
   { href: "/account", matches: ["/account", "/billing"], label: "Account", icon: CircleUserRound },
 ] as const;
 
-const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
+const focus = "focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
 
 const initials = (name: string) =>
   name
@@ -77,11 +77,11 @@ export function StudioHeader({ user, publishedPath }: StudioHeaderProps) {
 
   return (
     <>
-    <header className="sticky top-0 z-30 border-b border-paper-300 bg-paper-50/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-paper-300 bg-paper-50/95 backdrop-blur-sm">
       {isAdmin && user.viewingAsFree ? <AdminViewBanner /> : null}
       <div className="flex min-h-14 flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-1.5 sm:px-6">
         <div className="flex items-center gap-3 sm:gap-7">
-          <Link href="/boards" aria-label="Folio Digital Zine" className={`flex min-h-11 items-center gap-2 rounded ${focus}`}>
+          <Link href="/boards" aria-label="Folio Digital Zine" className={`flex min-h-11 items-center gap-2 rounded-sm ${focus}`}>
             <span className="font-serif text-xl font-bold tracking-tight text-ink-900">FOLIO</span>
             <span className="hidden font-mono text-[10px] uppercase tracking-[0.2em] text-ink-500 md:inline">Digital Zine</span>
           </Link>

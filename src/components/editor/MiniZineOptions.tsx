@@ -54,7 +54,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
   return (
     <>
       <Group title="Photos">
-        <p ref={counter} tabIndex={-1} aria-live="polite" className="text-[13px] text-ink-700 outline-none">
+        <p ref={counter} tabIndex={-1} aria-live="polite" className="text-[13px] text-ink-700 outline-hidden">
           {photos.length} of {MINI_PHOTO_LIMIT}
         </p>
         <ul aria-label="Mini zine photos" className="grid grid-cols-3 gap-2">
@@ -96,7 +96,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
           ))}
         </ul>
         {picking && !full && others.length > 0 ? (
-          <div role="group" aria-labelledby={`${id}-add`} className="space-y-2 rounded-xl bg-paper-100 p-3">
+          <div role="group" aria-labelledby={`${id}-add`} className="stack-y-2 rounded-xl bg-paper-100 p-3">
             <p id={`${id}-add`} className="text-[13px] font-medium">
               Add a photo
             </p>
@@ -107,7 +107,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
                   type="button"
                   aria-label={`Add ${nameOf(page)}`}
                   onClick={() => add(page)}
-                  className="relative h-20 overflow-hidden rounded-md bg-ink-900 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500"
+                  className="relative h-20 overflow-hidden rounded-md bg-ink-900 hover:opacity-80 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500"
                 >
                   <WebPhoto photo={page.photo} fit="cover" sizes="90px" />
                 </button>
@@ -153,8 +153,8 @@ export function MiniZineGuide({ style, zine }: { style: PdfStyle; zine: PreviewZ
     { label: "Back", note: "Link to the online zine" },
   ];
   return (
-    <div className="max-w-[960px] space-y-7">
-      <div className="space-y-4">
+    <div className="max-w-[960px] stack-y-7">
+      <div className="stack-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h3 id={`${id}-fold`} className="font-serif text-2xl font-bold">
             How to fold it
@@ -165,7 +165,7 @@ export function MiniZineGuide({ style, zine }: { style: PdfStyle; zine: PreviewZ
         </div>
         <FoldingSteps labelledBy={`${id}-fold`} />
       </div>
-      <div className="space-y-2.5">
+      <div className="stack-y-2.5">
         <h3 id={`${id}-order`} className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-ink-700">
           Reading order once folded
         </h3>

@@ -55,14 +55,14 @@ export function NewZineForm({
 
   if (limitReached) {
     return (
-      <section aria-labelledby={`${id}-limit`} className="rounded-2xl border border-paper-300 bg-white p-5 shadow-sm">
+      <section aria-labelledby={`${id}-limit`} className="rounded-2xl border border-paper-300 bg-white p-5 shadow-xs">
         <h2 id={`${id}-limit`} className="font-serif text-lg font-bold text-ink-900">
           Start a new zine
         </h2>
         <p className="mt-1 text-sm text-ink-700">{limitReached}</p>
         <Link
           href="/billing"
-          className="mt-3 inline-flex rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+          className="mt-3 inline-flex rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800"
         >
           Upgrade to Pro
         </Link>
@@ -71,7 +71,7 @@ export function NewZineForm({
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="rounded-2xl border border-paper-300 bg-white p-5 shadow-sm">
+    <form onSubmit={handleSubmit} noValidate className="rounded-2xl border border-paper-300 bg-white p-5 shadow-xs">
       <h2 className="font-serif text-lg font-bold text-ink-900">Start a new zine</h2>
       <p id={`${id}-hint`} className="mt-1 text-xs text-ink-500">
         A new zine starts with up to 8 photos from the board you pick. You can change the pages in the editor.
@@ -87,7 +87,7 @@ export function NewZineForm({
             maxLength={ZINE_LIMITS.title}
             aria-describedby={`${id}-hint`}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
           />
         </div>
         <div className="sm:w-48">
@@ -98,7 +98,7 @@ export function NewZineForm({
             id={`${id}-board`}
             value={boardId}
             onChange={(e) => setBoardId(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
           >
             {boards.map((b) => (
               <option key={b.id} value={b.id}>
@@ -111,7 +111,7 @@ export function NewZineForm({
           type="submit"
           disabled={creating}
           aria-busy={creating}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
         >
           <Plus className="h-4 w-4" aria-hidden="true" />
           {creating ? "Creating…" : "Create zine"}

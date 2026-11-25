@@ -59,20 +59,20 @@ export const PlacedPhoto = memo(function PlacedPhoto({ asset, placement, label, 
         onFocus={() => onFocus(asset.id)}
         onPointerDown={(e) => onPointerDown(asset.id, e)}
         onKeyDown={(e) => onKeyDown(asset.id, e)}
-        className={`relative touch-none select-none ${selected ? "outline outline-2 outline-offset-4 outline-vermilion-500" : "outline-none"} ${print ? "bg-white" : ""} shadow-[0_6px_16px_rgba(22,20,18,0.18)]`}
+        className={`relative touch-none select-none ${selected ? "outline-solid outline-2 outline-offset-4 outline-vermilion-500" : "outline-hidden"} ${print ? "bg-white" : ""} shadow-[0_6px_16px_rgba(22,20,18,0.18)]`}
         style={print ? { padding: `${BORDER}px ${BORDER}px 0` } : undefined}
       >
         {asset.status === "ready" ? (
           <EditedPhoto src={asset.publicUrl} alt="" edit={asset.edit} dims={dimsOf(asset)} sizes="(min-width: 1024px) 380px, 50vw" blurDataUrl={asset.blurDataUrl} className="pointer-events-none" />
         ) : (
-          <div className="flex aspect-[4/5] items-center justify-center bg-ink-900 text-xs text-paper-50">Processing…</div>
+          <div className="flex aspect-4/5 items-center justify-center bg-ink-900 text-xs text-paper-50">Processing…</div>
         )}
         {print ? (
           <p aria-hidden="true" className="truncate px-0.5 text-center text-[18px] leading-none text-ink-700" style={{ height: LABEL_HEIGHT, lineHeight: `${LABEL_HEIGHT}px`, fontFamily: "var(--font-caveat), cursive" }}>
             {label}
           </p>
         ) : null}
-        {placement.tape ? <span aria-hidden="true" className="absolute -top-2.5 left-1/2 -ml-[35px] h-5 w-[70px] -rotate-[4deg] bg-[#E8D6AA]/75" /> : null}
+        {placement.tape ? <span aria-hidden="true" className="absolute -top-2.5 left-1/2 ml-[-35px] h-5 w-[70px] rotate-[-4deg] bg-[#E8D6AA]/75" /> : null}
       </div>
       {selected ? <ResizeHandles id={asset.id} onResizeStart={onResizeStart} /> : null}
     </div>
@@ -89,7 +89,7 @@ export function ResizeHandles({ id, onResizeStart }: { id: string; onResizeStart
       onPointerDown={(e) => onResizeStart(id, corner, e)}
       className={`absolute flex h-5 w-5 touch-none items-center justify-center ${CORNERS[corner]}`}
     >
-      <span className="h-2.5 w-2.5 rounded-sm border-2 border-vermilion-500 bg-white" />
+      <span className="h-2.5 w-2.5 rounded-xs border-2 border-vermilion-500 bg-white" />
     </span>
   ));
 }

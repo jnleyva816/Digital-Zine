@@ -31,7 +31,7 @@ export default async function SignInPage() {
           </span>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-paper-300 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mt-8 rounded-2xl border border-paper-300 bg-white p-6 shadow-xs sm:p-8">
           <h1 className="font-serif text-2xl font-bold text-ink-900">Sign in to your studio</h1>
           <p className="mt-1.5 text-sm text-ink-500">
             Your Vision Board is private. Published zines are public.
@@ -50,7 +50,7 @@ export default async function SignInPage() {
 
 function SignInFormSkeleton() {
   return (
-    <div className="space-y-5" aria-hidden="true">
+    <div className="stack-y-5" aria-hidden="true">
       <div className="h-[66px] animate-pulse rounded-xl bg-paper-100" />
       <div className="h-[66px] animate-pulse rounded-xl bg-paper-100" />
       <div className="h-11 animate-pulse rounded-xl bg-paper-200" />

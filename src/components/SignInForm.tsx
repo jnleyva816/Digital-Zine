@@ -81,14 +81,14 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
     {googleEnabled ? (
       <>
         <GoogleButton callbackUrl={callbackUrl} />
         <OrDivider />
       </>
     ) : null}
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="stack-y-5">
       <div>
         <label
           htmlFor="email"
@@ -104,7 +104,7 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+          className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
         />
       </div>
 
@@ -128,7 +128,7 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
           required
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+          className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
         />
       </div>
 
@@ -142,7 +142,7 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
       ) : null}
 
       {unverified ? (
-        <div className="space-y-2">
+        <div className="stack-y-2">
           <button
             type="button"
             onClick={() => resend(email)}
@@ -164,7 +164,7 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
         type="submit"
         disabled={loading}
         aria-busy={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
       >
         {loading ? "Opening Studio..." : "Sign in to Studio"}
         <ArrowRight className="h-4 w-4" aria-hidden="true" />

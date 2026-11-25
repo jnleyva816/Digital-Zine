@@ -77,8 +77,8 @@ export function PhotoCard(props: PhotoCardProps) {
   const featured = layout === "feature" && index === 0;
   const twoByTwo = featured || (large && !ownShape);
   const photoBox =
-    ownShape ? "" : layout === "even" ? "aspect-[4/5] w-full grow overflow-hidden" : "min-h-[188px] grow overflow-hidden";
-  const stateBox = ownShape ? "aspect-[4/5]" : "absolute inset-0";
+    ownShape ? "" : layout === "even" ? "aspect-4/5 w-full grow overflow-hidden" : "min-h-[188px] grow overflow-hidden";
+  const stateBox = ownShape ? "aspect-4/5" : "absolute inset-0";
   const dims = asset.width && asset.height ? { width: asset.width, height: asset.height } : null;
   const meta = photoMeta(asset);
   // Panels keep their light look on the strip's dark table.
@@ -119,7 +119,7 @@ export function PhotoCard(props: PhotoCardProps) {
                 type="button"
                 onClick={props.onRetryProcessing}
                 aria-label={`Retry processing ${label}`}
-                className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-paper-50 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow hover:bg-white"
+                className="relative z-10 inline-flex items-center gap-1.5 rounded-full bg-paper-50 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-sm hover:bg-white"
               >
                 <RotateCw className="h-3.5 w-3.5" aria-hidden="true" />
                 Retry
@@ -134,7 +134,7 @@ export function PhotoCard(props: PhotoCardProps) {
 
         {/* With a mouse, the actions lie over the photo's foot on hover or focus. Touch screens always show them. */}
         <div className="relative">
-          <div className="flex flex-wrap justify-center gap-1 p-1.5 transition-opacity [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:bottom-0 [@media(hover:hover)]:opacity-0 group-focus-within:!opacity-100 group-hover:!opacity-100">
+          <div className="flex flex-wrap justify-center gap-1 p-1.5 transition-opacity [@media(hover:hover)]:absolute [@media(hover:hover)]:inset-x-0 [@media(hover:hover)]:bottom-0 [@media(hover:hover)]:opacity-0 group-focus-within:opacity-100! group-hover:opacity-100!">
             <Action label={`Move ${label} earlier`} icon={ArrowLeft} onClick={() => props.onMoveBy(-1)} disabled={index === 0} />
             <Action label={`Move ${label} later`} icon={ArrowRight} onClick={() => props.onMoveBy(1)} disabled={index === count - 1} />
             {asset.status === "ready" ? <Action label={`Edit ${label}`} icon={Crop} onClick={props.onEditPhoto} /> : null}
@@ -209,7 +209,7 @@ export function PhotoCard(props: PhotoCardProps) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
       }}
-      className={`group relative flex min-w-0 flex-col ${strip ? "rounded-[3px] pt-[26px] [scroll-snap-align:start]" : "rounded-xl border bg-paper-50"} ${twoByTwo ? "col-span-2 row-span-2" : large ? "col-span-2" : ""} ${
+      className={`group relative flex min-w-0 flex-col ${strip ? "rounded-[3px] pt-[26px] snap-start" : "rounded-xl border bg-paper-50"} ${twoByTwo ? "col-span-2 row-span-2" : large ? "col-span-2" : ""} ${
         props.dragging ? "opacity-40" : ""
       } ${strip && props.held ? "z-20 ring-2 ring-vermilion-500 ring-offset-4 ring-offset-[#1B1917]" : props.held ? "z-20 border-vermilion-500 shadow-xl ring-2 ring-vermilion-500" : "border-paper-300"}`}
     >
@@ -241,7 +241,7 @@ function Action({ label, icon: Icon, onClick, disabled, expanded }: { label: str
       aria-expanded={expanded}
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-paper-300 bg-paper-50 text-ink-800 hover:bg-paper-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:text-ink-500/40"
+      className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-paper-300 bg-paper-50 text-ink-800 hover:bg-paper-200 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:text-ink-500/40"
     >
       <Icon className="h-3.5 w-3.5" aria-hidden="true" />
     </button>
@@ -252,7 +252,7 @@ function Action({ label, icon: Icon, onClick, disabled, expanded }: { label: str
 export function CoverPhoto({ asset, label, dims, sizes }: { asset: BoardAsset; label: string; dims: { width: number; height: number } | null; sizes: string }) {
   const edit = { ...(asset.edit ?? DEFAULT_EDIT), frame: "none" as const };
   return (
-    <div className="absolute inset-0 [container-type:size]">
+    <div className="absolute inset-0 @container-size">
       <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2" style={{ width: `max(100cqw, calc(100cqh * ${targetAspect(edit, dims)}))` }}>
         <EditedPhoto src={asset.publicUrl} alt={label} edit={edit} dims={dims} sizes={sizes} blurDataUrl={asset.blurDataUrl} />
       </div>

@@ -22,7 +22,7 @@ export function GoogleButton({ callbackUrl = "/board" }: { callbackUrl?: string 
       onClick={start}
       disabled={loading}
       aria-busy={loading}
-      className="inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-paper-300 bg-white px-5 py-3 text-sm font-semibold text-ink-900 shadow-sm transition hover:bg-paper-100 disabled:opacity-60"
+      className="inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-paper-300 bg-white px-5 py-3 text-sm font-semibold text-ink-900 shadow-xs transition hover:bg-paper-100 disabled:opacity-60"
     >
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
         <path fill="#4285F4" d="M22.5 12.27c0-.79-.07-1.54-.2-2.27H12v4.51h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.32z" />

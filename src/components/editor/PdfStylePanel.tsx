@@ -26,7 +26,7 @@ const THUMBS: Record<PdfTemplate, string> = {
 function Thumb({ template, photo }: { template: PdfTemplate; photo?: WebPhotoSource }) {
   const holes = { backgroundImage: "radial-gradient(circle, #E4E8E2 1.4px, transparent 1.6px)", backgroundSize: "7px 6px" };
   return (
-    <span className={`relative block h-14 w-11 shrink-0 overflow-hidden rounded ${THUMBS[template]}`}>
+    <span className={`relative block h-14 w-11 shrink-0 overflow-hidden rounded-sm ${THUMBS[template]}`}>
       {template === "contact" ? (
         <>
           <span className="absolute inset-x-0 top-0 h-1.5" style={holes} />
@@ -42,7 +42,7 @@ function Thumb({ template, photo }: { template: PdfTemplate; photo?: WebPhotoSou
 
 function Figure({ caption, children }: { caption: string; children: ReactNode }) {
   return (
-    <figure className="space-y-2.5">
+    <figure className="stack-y-2.5">
       {children}
       <figcaption className="text-center text-xs text-ink-700">{caption}</figcaption>
     </figure>
@@ -141,7 +141,7 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
           header={
             <>
               <h2 className="font-serif text-2xl font-bold">Style your PDF</h2>
-              <p className="mt-1 break-words text-sm text-ink-700">
+              <p className="mt-1 wrap-break-word text-sm text-ink-700">
                 {zine.title} · {count} {count === 1 ? "page" : "pages"}
               </p>
             </>
@@ -211,7 +211,7 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
                     return (
                       <Choice key={key} pressed={look?.palette === key} disabled={!look} onClick={() => style.edit({ palette: key })} className="flex flex-col justify-center gap-1.5 px-1.5 py-2 text-center">
                         <span aria-hidden="true" className="flex h-[26px] w-full overflow-hidden rounded-md border border-black/10">
-                          <span className="flex-[2]" style={{ backgroundColor: page }} />
+                          <span className="flex-2" style={{ backgroundColor: page }} />
                           <span className="flex-1" style={{ backgroundColor: text }} />
                           <span className="flex-1" style={{ backgroundColor: accent }} />
                         </span>
@@ -279,7 +279,7 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
                   Reset
                 </button>
               </div>
-              <p aria-live="polite" className="min-h-[1rem] text-xs text-ink-500">
+              <p aria-live="polite" className="min-h-4 text-xs text-ink-500">
                 {message}
               </p>
               {dirty ? <p className="text-xs text-ink-500">The preview and PDF use the last saved version. Save first to include your changes.</p> : null}

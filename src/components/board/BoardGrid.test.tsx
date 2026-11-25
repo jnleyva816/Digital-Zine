@@ -63,7 +63,7 @@ describe("grid layouts", () => {
 
   it("draws every photo 4:5 in Even, without a frame the crop would cut", () => {
     board({ viewPrefs: { gridLayout: "even" }, initialAssets: [boardAsset("wide", { edit: { ...DEFAULT_EDIT, ratio: "16:9", frame: "black" } }), dune] });
-    for (const cover of screen.getAllByTestId("photo-cover")) expect(cover.className).toContain("aspect-[4/5]");
+    for (const cover of screen.getAllByTestId("photo-cover")) expect(cover.className).toContain("aspect-4/5");
     expect(screen.getAllByTestId("edited-photo")[0]).toHaveAttribute("data-frame", "none");
   });
 

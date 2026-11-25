@@ -6,7 +6,7 @@ import { WebPhoto, nameOf, onePerPhoto, type PreviewZine } from "./PdfPagePrevie
 import { Choice, Group } from "./pdf-panel-ui";
 import type { PdfStyle } from "./usePdfStyle";
 
-const bar = "block rounded-sm bg-ink-900";
+const bar = "block rounded-xs bg-ink-900";
 const tone = "bg-[#CFC7BC]";
 const PICTURES: Record<CoverStyle, ReactNode> = {
   title: (
@@ -79,7 +79,7 @@ export function CoverOptions({ style, zine }: { style: PdfStyle; zine: PreviewZi
                   aria-pressed={pressed}
                   aria-label={nameOf(page)}
                   onClick={() => style.edit({ cover: { ...cover, photo: page.assetId } })}
-                  className={`relative h-16 overflow-hidden rounded-md bg-ink-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${
+                  className={`relative h-16 overflow-hidden rounded-md bg-ink-900 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${
                     pressed ? "ring-2 ring-ink-900 ring-offset-2 ring-offset-paper-50" : "opacity-80 hover:opacity-100"
                   }`}
                 >

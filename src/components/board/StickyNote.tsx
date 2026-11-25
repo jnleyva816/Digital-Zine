@@ -66,11 +66,11 @@ export const StickyNote = memo(function StickyNote({ note, position, selected, e
               onKeyDown: (e: React.KeyboardEvent) => onKeyDown(id, e),
               onDoubleClick: () => onEdit(id),
             })}
-        className={`relative bg-[#F6E7A8] p-3.5 text-2xl leading-[1.05] text-[#3D3730] shadow-[0_6px_16px_rgba(22,20,18,0.18)] ${editing ? "" : "touch-none select-none"} ${selected ? "outline outline-2 outline-offset-4 outline-vermilion-500" : "outline-none"}`}
+        className={`relative bg-[#F6E7A8] p-3.5 text-2xl leading-[1.05] text-ink-700 shadow-[0_6px_16px_rgba(22,20,18,0.18)] ${editing ? "" : "touch-none select-none"} ${selected ? "outline-solid outline-2 outline-offset-4 outline-vermilion-500" : "outline-hidden"}`}
         style={{ minHeight: noteMinHeight(width), fontFamily: "var(--font-caveat), cursive" }}
       >
         {/* While editing, this keeps the note as tall as what is written; a last empty line counts too. */}
-        <p aria-hidden={editing} className={`whitespace-pre-wrap break-words ${editing ? "invisible" : ""}`}>
+        <p aria-hidden={editing} className={`whitespace-pre-wrap wrap-break-word ${editing ? "invisible" : ""}`}>
           {editing ? `${note.text}​` : note.text}
         </p>
         {editing ? (
@@ -87,7 +87,7 @@ export const StickyNote = memo(function StickyNote({ note, position, selected, e
               refocus.current = true;
               onFinish(id);
             }}
-            className="absolute inset-0 h-full w-full resize-none overflow-hidden whitespace-pre-wrap break-words bg-transparent p-3.5 text-2xl leading-[1.05] text-[#3D3730] outline-none"
+            className="absolute inset-0 h-full w-full resize-none overflow-hidden whitespace-pre-wrap wrap-break-word bg-transparent p-3.5 text-2xl leading-[1.05] text-ink-700 outline-hidden"
             style={{ fontFamily: "inherit" }}
           />
         ) : null}

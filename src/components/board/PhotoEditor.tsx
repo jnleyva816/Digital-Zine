@@ -43,10 +43,10 @@ function RatioShape({ aspect, value }: { aspect: number; value: string }) {
 
 const SWATCH_FRAMES: Record<PhotoFrame, string> = {
   none: "",
-  "thin-white": "bg-white p-[1.5px] shadow-sm ring-1 ring-paper-300",
-  "white-mat": "bg-white p-[5px] shadow-sm ring-1 ring-paper-300",
+  "thin-white": "bg-white p-[1.5px] shadow-xs ring-1 ring-paper-300",
+  "white-mat": "bg-white p-[5px] shadow-xs ring-1 ring-paper-300",
   black: "bg-ink-900 p-[3px]",
-  polaroid: "bg-white p-[3px] pb-[9px] shadow ring-1 ring-paper-300",
+  polaroid: "bg-white p-[3px] pb-[9px] shadow-sm ring-1 ring-paper-300",
 };
 
 /** A small picture with the frame around it, so creators see the frame instead of reading its name. */
@@ -54,7 +54,7 @@ function FrameSwatch({ frame }: { frame: PhotoFrame }) {
   return (
     <div className="flex h-7 w-7 shrink-0 items-center justify-center" aria-hidden="true">
       <div data-frame-swatch={frame} className={`box-border h-[26px] w-[26px] ${SWATCH_FRAMES[frame]}`}>
-        <div className="h-full w-full bg-gradient-to-br from-paper-300 to-vermilion-500" />
+        <div className="h-full w-full bg-linear-to-br from-paper-300 to-vermilion-500" />
       </div>
     </div>
   );
@@ -81,7 +81,7 @@ function OptionTile({
   preview?: React.ReactNode;
 }) {
   return (
-    <label className="relative flex min-h-12 cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm transition has-[:checked]:border-ink-900 has-[:checked]:bg-paper-100 has-[:checked]:ring-1 has-[:checked]:ring-ink-900 has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-vermilion-500">
+    <label className="relative flex min-h-12 cursor-pointer items-center gap-2.5 whitespace-nowrap rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm transition has-checked:border-ink-900 has-checked:bg-paper-100 has-checked:ring-1 has-checked:ring-ink-900 has-focus-visible:ring-2 has-focus-visible:ring-vermilion-500">
       <input
         type="radio"
         name={name}
@@ -221,7 +221,7 @@ export function PhotoEditor({ open, label, src, blurDataUrl, dims, initial, used
               onPointerMove={onPointerMove}
               onPointerUp={() => (dragRef.current = null)}
               onPointerCancel={() => (dragRef.current = null)}
-              className="mx-auto max-w-[min(24rem,calc(var(--aspect)*34dvh))] cursor-grab touch-none rounded-lg bg-paper-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-vermilion-500 active:cursor-grabbing lg:max-w-[min(34rem,calc(var(--aspect)*58dvh))]"
+              className="mx-auto max-w-[min(24rem,calc(var(--aspect)*34dvh))] cursor-grab touch-none rounded-lg bg-paper-200 focus:outline-hidden focus-visible:ring-2 focus-visible:ring-vermilion-500 active:cursor-grabbing lg:max-w-[min(34rem,calc(var(--aspect)*58dvh))]"
               style={{ "--aspect": layout.aspect } as React.CSSProperties}
             >
               <EditedPhoto src={src} alt={`Preview of ${label}`} edit={draft} dims={dims} sizes="544px" blurDataUrl={blurDataUrl} />
@@ -231,7 +231,7 @@ export function PhotoEditor({ open, label, src, blurDataUrl, dims, initial, used
             </p>
           </div>
 
-          <div className="space-y-6 pb-5 pt-2 text-sm lg:py-4">
+          <div className="stack-y-6 pb-5 pt-2 text-sm lg:py-4">
             <fieldset>
               <legend className="font-mono text-xs uppercase tracking-wider text-ink-700">Ratio</legend>
               <div className={`${tiles} grid-cols-2 min-[420px]:grid-cols-3 lg:grid-cols-2`}>
@@ -335,7 +335,7 @@ export function PhotoEditor({ open, label, src, blurDataUrl, dims, initial, used
               onClick={() => void save()}
               disabled={saving}
               aria-busy={saving}
-              className="min-h-11 rounded-xl bg-ink-900 px-6 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+              className="min-h-11 rounded-xl bg-ink-900 px-6 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
             >
               {saving ? "Saving…" : "Save"}
             </button>

@@ -178,3 +178,17 @@ test("a sticky note is written, moved, and still there after a reload", async ({
   await gone;
   expect(await testDb.boardNote.count({ where: { boardId } })).toBe(0);
 });
+
+// DIG-140: Tailwind 4 moved `-translate-x-*` to its own CSS property, which adds to an inline transform.
+test("a photo dragged from the tray stays under the pointer", async ({ page }) => {
+  await open(page);
+  const from = await centre(tray(page).getByRole("button", { name: "Place persimmon.jpg on the board" }));
+  const at = { x: 700, y: 450 };
+  await page.mouse.move(from.x, from.y);
+  await page.mouse.down();
+  await page.mouse.move(at.x, at.y, { steps: 8 });
+  const ghost = page.locator('[aria-hidden="true"].fixed:has(> img)');
+  await expect.poll(async () => Math.abs((await centre(ghost)).x - at.x)).toBeLessThan(3);
+  await expect.poll(async () => Math.abs((await centre(ghost)).y - at.y)).toBeLessThan(3);
+  await page.mouse.up();
+});

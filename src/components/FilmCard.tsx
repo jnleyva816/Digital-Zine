@@ -69,8 +69,8 @@ function CardShell({ kicker, title, subtitle, settings, footer }: CardShellProps
   return (
     <div className="mt-4 border-t-4 border-ink-900 pt-4">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-vermilion-600">{kicker}</p>
-      <h3 className="mt-1 break-words font-serif text-2xl font-bold leading-tight text-ink-900 sm:text-3xl">{title}</h3>
-      {subtitle ? <p className="mt-1 break-words text-sm text-ink-700">{subtitle}</p> : null}
+      <h3 className="mt-1 wrap-break-word font-serif text-2xl font-bold leading-tight text-ink-900 sm:text-3xl sm:leading-9">{title}</h3>
+      {subtitle ? <p className="mt-1 wrap-break-word text-sm text-ink-700">{subtitle}</p> : null}
       <Settings settings={settings} />
       {footer ? <p className="mt-4 border-t border-paper-300 pt-3 font-mono text-[11px] text-ink-700">{footer}</p> : null}
     </div>
@@ -135,13 +135,13 @@ export function CopyRecipeButton({ recipe }: { recipe: RecipeData }) {
 
   return (
     <div className="absolute bottom-3 right-3 z-10 flex items-center gap-2 sm:bottom-4 sm:right-4">
-      <span role="status" className={state === "idle" ? "sr-only" : "rounded-full bg-paper-50 px-3 py-1.5 text-xs text-ink-800 shadow"}>
+      <span role="status" className={state === "idle" ? "sr-only" : "rounded-full bg-paper-50 px-3 py-1.5 text-xs text-ink-800 shadow-sm"}>
         {state === "copied" ? "Recipe copied" : state === "failed" ? "Could not copy. Select the text instead." : ""}
       </span>
       <button
         type="button"
         onClick={copy}
-        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink-900 px-4 text-sm font-semibold text-paper-50 shadow-md transition hover:bg-ink-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500"
+        className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink-900 px-4 text-sm font-semibold text-paper-50 shadow-md transition hover:bg-ink-800 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500"
       >
         {state === "copied" ? <Check className="h-4 w-4" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
         Copy recipe

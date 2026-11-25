@@ -171,7 +171,7 @@ export function BoardStrip({ assets, total, startAt, heldId, keysHintId, loadErr
         }}
         onDragOver={onDragOver}
         onDrop={onDrop}
-        className="min-h-0 flex-1 overflow-x-auto overflow-y-auto pt-7 [scroll-padding-left:28px] [scroll-snap-type:x_proximity] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
+        className="min-h-0 flex-1 overflow-x-auto overflow-y-auto pt-7 scroll-pl-[28px] [scroll-snap-type:x_proximity] focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
       >
         <ol aria-label="Vision Board photos" aria-describedby={keysHintId} className="relative h-full" style={{ width: width + PAD * 2, minHeight: photoHeight + AROUND - 28 }}>
           {assets.map((asset, i) =>
@@ -200,7 +200,7 @@ export function BoardStrip({ assets, total, startAt, heldId, keysHintId, loadErr
                   tabIndex={i === first ? 0 : -1}
                   onClick={() => goTo(i)}
                   style={{ left: i * THUMB + 2 }}
-                  className={`absolute top-0 h-[38px] w-[30px] overflow-hidden rounded-sm bg-ink-900 outline-offset-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500 ${shown ? "outline outline-[1.5px] outline-paper-50" : "opacity-45 hover:opacity-80"}`}
+                  className={`absolute top-0 h-[38px] w-[30px] overflow-hidden rounded-xs bg-ink-900 outline-offset-0 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500 ${shown ? "outline-solid outline-[1.5px] outline-paper-50" : "opacity-45 hover:opacity-80"}`}
                 >
                   {asset.status === "ready" ? (
                     <EditedPhoto as="span" src={asset.publicUrl} alt="" edit={null} dims={dimsOf(asset)} sizes="30px" blurDataUrl={asset.blurDataUrl} />

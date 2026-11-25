@@ -24,7 +24,7 @@ interface PdfExportProps {
 }
 
 const quietButton =
-  "inline-flex items-center gap-1.5 rounded-xl border border-paper-300 bg-paper-50 px-3.5 py-1.5 text-sm font-medium text-ink-900 shadow-sm transition hover:bg-paper-200 disabled:opacity-60";
+  "inline-flex items-center gap-1.5 rounded-xl border border-paper-300 bg-paper-50 px-3.5 py-1.5 text-sm font-medium text-ink-900 shadow-xs transition hover:bg-paper-200 disabled:opacity-60";
 
 /** Every creator can style their published zine's PDF; Pro creators download the booklet, Free creators see the upgrade path, and anyone can download the mini zine. */
 export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyled }: PdfExportProps) {
@@ -69,7 +69,7 @@ export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyl
 
   return (
     <>
-      <div className="space-y-1.5">
+      <div className="stack-y-1.5">
         <div className="flex flex-wrap items-center gap-3">
           {allowed && style.settings ? (
             <button type="button" onClick={() => void download()} disabled={busy} aria-busy={busy} className={quietButton}>

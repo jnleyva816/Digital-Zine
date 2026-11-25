@@ -56,7 +56,7 @@ export function PhotoSheet(props: PhotoSheetProps) {
     content = <MovePhotoPanel label={label} boards={props.otherBoards} usedIn={props.usedIn} onMove={(id) => unlessFailed(props.onMoveToBoard(id))} onCancel={onClose} />;
   } else if (panel === "delete") {
     content = (
-      <div className="space-y-3">
+      <div className="stack-y-3">
         <p className="text-sm text-ink-700">Delete this photo? This cannot be undone.</p>
         <div className="flex gap-2">
           <button
@@ -111,7 +111,7 @@ export function PhotoSheet(props: PhotoSheetProps) {
       <div className="px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-2 [&_button]:min-h-11 [&_button]:min-w-11 [&_input]:min-h-11 [&_input]:text-base [&_select]:min-h-11 [&_select]:text-base">
         <div className="flex items-center justify-between gap-3">
           <h2 className="truncate text-sm font-semibold">{label}</h2>
-          <button type="button" aria-label="Close" onClick={onClose} className="flex items-center justify-center rounded-full text-ink-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500">
+          <button type="button" aria-label="Close" onClick={onClose} className="flex items-center justify-center rounded-full text-ink-700 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500">
             <X className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
@@ -127,7 +127,7 @@ function Item({ icon: Icon, children, onClick, disabled, danger }: { icon: Lucid
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className={`flex items-center gap-3 rounded-lg px-2 text-left text-[15px] hover:bg-paper-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:opacity-40 ${danger ? "text-red-800" : "text-ink-900"}`}
+      className={`flex items-center gap-3 rounded-lg px-2 text-left text-[15px] hover:bg-paper-100 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:opacity-40 ${danger ? "text-red-800" : "text-ink-900"}`}
     >
       <Icon className="h-[18px] w-[18px] shrink-0" aria-hidden="true" />
       {children}

@@ -8,7 +8,7 @@ import type { PdfStyle } from "./usePdfStyle";
 export function Group({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
   const id = useId();
   return (
-    <section role="group" aria-labelledby={id} className="space-y-2.5">
+    <section role="group" aria-labelledby={id} className="stack-y-2.5">
       <h3 id={id} className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-ink-700">
         {title}
       </h3>
@@ -26,7 +26,7 @@ export function Choice({ pressed, disabled, onClick, className = "", children }:
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-[44px] rounded-xl text-ink-900 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-40 ${
+      className={`min-h-[44px] rounded-xl text-ink-900 transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-40 ${
         pressed ? "bg-paper-100 shadow-[inset_0_0_0_2px_#161412]" : "bg-white shadow-[inset_0_0_0_1px_#DDD0B6] enabled:hover:bg-paper-100"
       } ${className}`}
     >
@@ -50,7 +50,7 @@ export function Segment({ pressed, onClick, children }: { pressed: boolean; onCl
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`min-h-[44px] flex-1 px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-vermilion-500 ${
+      className={`min-h-[44px] flex-1 px-3 py-2 text-sm font-medium transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-vermilion-500 ${
         pressed ? "bg-ink-900 text-paper-50" : "bg-white text-ink-900 hover:bg-paper-100"
       }`}
     >
@@ -81,7 +81,7 @@ export function PanelLayout({ header, choices, footer, aside, asideLabel, onClos
   return (
     <div className="flex min-h-full flex-col lg:h-full lg:flex-row">
       <div className="flex shrink-0 flex-col bg-paper-50 lg:w-[440px] lg:border-r lg:border-paper-300">
-        <div className="min-h-0 flex-1 space-y-6 px-5 py-6 sm:px-8 lg:overflow-y-auto">
+        <div className="min-h-0 flex-1 stack-y-6 px-5 py-6 sm:px-8 lg:overflow-y-auto">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">{header}</div>
             <button
@@ -95,7 +95,7 @@ export function PanelLayout({ header, choices, footer, aside, asideLabel, onClos
           </div>
           {choices}
         </div>
-        <div className="sticky bottom-0 space-y-2 border-t border-paper-300 bg-paper-50 px-5 py-4 sm:px-8">{footer}</div>
+        <div className="sticky bottom-0 stack-y-2 border-t border-paper-300 bg-paper-50 px-5 py-4 sm:px-8">{footer}</div>
       </div>
       <section aria-label={asideLabel} className="flex min-w-0 flex-1 lg:overflow-y-auto">
         <div className="m-auto min-w-0 max-w-full px-5 py-8">{aside}</div>

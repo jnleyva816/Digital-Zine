@@ -127,7 +127,7 @@ export function BoardList({ boards: initial, limitReached }: { boards: BoardSumm
   }
 
   return (
-    <div className="space-y-6">
+    <div className="stack-y-6">
       <p aria-live="polite" className="sr-only">
         {announcement}
       </p>
@@ -161,14 +161,14 @@ export function BoardList({ boards: initial, limitReached }: { boards: BoardSumm
                         maxLength={BOARD_NAME_MAX}
                         autoFocus
                         onChange={(e) => setRenameValue(e.target.value)}
-                        className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+                        className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
                       />
                     </div>
                     <button
                       type="submit"
                       disabled={busy}
                       aria-busy={busy}
-                      className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+                      className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
                     >
                       Save name
                     </button>
@@ -296,20 +296,20 @@ export function BoardList({ boards: initial, limitReached }: { boards: BoardSumm
       </ol>
 
       {limitReached ? (
-        <section aria-labelledby={`${id}-limit`} className="rounded-2xl border border-paper-300 bg-white p-5 shadow-sm">
+        <section aria-labelledby={`${id}-limit`} className="rounded-2xl border border-paper-300 bg-white p-5 shadow-xs">
           <h2 id={`${id}-limit`} className="font-serif text-lg font-bold text-ink-900">
             New board
           </h2>
           <p className="mt-1 text-sm text-ink-700">{limitReached}</p>
           <Link
             href="/billing"
-            className="mt-3 inline-flex rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+            className="mt-3 inline-flex rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800"
           >
             Upgrade to Pro
           </Link>
         </section>
       ) : (
-        <form onSubmit={(e) => void create(e)} noValidate className="rounded-2xl border border-paper-300 bg-white p-5 shadow-sm">
+        <form onSubmit={(e) => void create(e)} noValidate className="rounded-2xl border border-paper-300 bg-white p-5 shadow-xs">
           <h2 className="font-serif text-lg font-bold text-ink-900">New board</h2>
           <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
             <div className="flex-1">
@@ -321,14 +321,14 @@ export function BoardList({ boards: initial, limitReached }: { boards: BoardSumm
                 value={newName}
                 maxLength={BOARD_NAME_MAX}
                 onChange={(e) => setNewName(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+                className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
               />
             </div>
             <button
               type="submit"
               disabled={creating}
               aria-busy={creating}
-              className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
             >
               <Plus className="h-4 w-4" aria-hidden="true" />
               {creating ? "Creating…" : "Create board"}
