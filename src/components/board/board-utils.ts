@@ -36,3 +36,10 @@ export function quoteList(titles: string[]): string {
   if (quoted.length <= 2) return quoted.join(" and ");
   return `${quoted.slice(0, -1).join(", ")}, and ${quoted.at(-1)}`;
 }
+
+/** A phone card's camera line: the camera and aperture, or every setting (DIG-93). */
+export function cameraLine({ exif }: BoardAsset, detail: "short" | "full"): string {
+  const iso = exif?.iso !== null && exif?.iso !== undefined && String(exif.iso).trim() ? `ISO ${exif.iso}` : null;
+  const parts = detail === "short" ? [exif?.cameraModel, exif?.aperture, exif?.cameraModel ? null : iso] : [exif?.cameraModel, exif?.focalLength, exif?.aperture, exif?.shutterSpeed, iso];
+  return parts.filter(Boolean).join(" · ") || "No camera details";
+}

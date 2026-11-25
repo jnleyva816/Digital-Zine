@@ -8,6 +8,13 @@
   }
 }
 
+/* Small screens have a bottom bar (DIG-93); no page ends under it. */
+@media (max-width: 1023.98px) {
+  body:has([data-studio-tabs]) {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* 3D Flip Card utilities */
 .flip-perspective {
   perspective: 1400px;

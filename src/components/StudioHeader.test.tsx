@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import { StudioHeader } from "./StudioHeader";
@@ -16,9 +16,19 @@ describe("StudioHeader", () => {
   it("links Boards, Zines, and Recipes, and marks the current one", () => {
     path = "/boards/b1";
     render(<StudioHeader user={user} />);
-    expect(screen.getByRole("link", { name: "Boards" })).toHaveAttribute("aria-current", "page");
-    expect(screen.getByRole("link", { name: "Zines" })).toHaveAttribute("href", "/editor");
-    expect(screen.getByRole("link", { name: "Recipes" })).not.toHaveAttribute("aria-current");
+    const bar = within(within(screen.getByRole("banner")).getByRole("navigation", { name: "Studio" }));
+    expect(bar.getByRole("link", { name: "Boards" })).toHaveAttribute("aria-current", "page");
+    expect(bar.getByRole("link", { name: "Zines" })).toHaveAttribute("href", "/editor");
+    expect(bar.getByRole("link", { name: "Recipes" })).not.toHaveAttribute("aria-current");
+  });
+
+  it("has a bottom bar for small screens, with Account in it (DIG-93)", () => {
+    path = "/billing";
+    render(<StudioHeader user={user} />);
+    const tabs = within(screen.getAllByRole("navigation", { name: "Studio" })[1]);
+    expect(tabs.getAllByRole("link").map((l) => [l.textContent, l.getAttribute("href")])).toEqual([["Boards", "/boards"], ["Zines", "/editor"], ["Recipes", "/recipes"], ["Account", "/account"]]);
+    expect(tabs.getByRole("link", { name: "Account" })).toHaveAttribute("aria-current", "page");
+    expect(tabs.getByRole("link", { name: "Boards" })).not.toHaveAttribute("aria-current");
   });
 
   it("shows the plan, leading to billing", () => {
@@ -34,7 +44,7 @@ describe("StudioHeader", () => {
     expect(menu()).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("sam@example.com")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Billing" })).toHaveAttribute("href", "/billing");
-    expect(screen.getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");
+    expect(within(screen.getByRole("banner")).getByRole("link", { name: "Account" })).toHaveAttribute("href", "/account");
     expect(screen.getByRole("link", { name: "Public Viewer" })).toHaveAttribute("href", "/z/a/b");
     await userEvent.click(screen.getByRole("button", { name: "Sign out" }));
     expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/signin" });

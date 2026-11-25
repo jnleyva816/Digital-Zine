@@ -1,6 +1,6 @@
 "use client";
 
-import type { CSSProperties, DragEvent, KeyboardEvent } from "react";
+import type { CSSProperties, DragEvent } from "react";
 import {
   ArrowLeft,
   ArrowRight,
@@ -20,13 +20,11 @@ import { DEFAULT_EDIT, targetAspect } from "@/lib/photo-edit";
 import { photoMeta } from "./board-utils";
 import { MovePhotoPanel } from "./MovePhotoPanel";
 import { PhotoNameForm } from "./PhotoNameForm";
+import { ReorderHandle, type ReorderHandleProps } from "./ReorderHandle";
 import type { BoardAsset } from "./types";
 
-export interface PhotoCardProps {
+export interface PhotoCardProps extends ReorderHandleProps {
   asset: BoardAsset;
-  index: number;
-  count: number;
-  label: string;
   layout: GridLayout | "strip";
   /** The day this photo starts, in the strip. */
   heading?: string | null;
@@ -34,15 +32,6 @@ export interface PhotoCardProps {
   near?: boolean;
   /** Where Masonry puts the card. */
   style?: CSSProperties;
-  /** Picked up from the keyboard. */
-  held: boolean;
-  onToggleHeld: () => void;
-  onCancelHeld: () => void;
-  onHoldAt: (index: number) => void;
-  /** How many columns the grid has now: how far up and down move a held card. */
-  columns: () => number;
-  /** The element that explains the reorder keys. */
-  keysHintId?: string;
   /** Drag and drop state for this card. */
   dragging: boolean;
   /** Which edge of this card the dragged one would land at. */
@@ -79,27 +68,6 @@ export interface PhotoCardProps {
 /** One photo on the Vision Board, with its actions (DIG-47, moved out of VisionBoard). */
 export function PhotoCard(props: PhotoCardProps) {
   const { asset, index, count, label } = props;
-
-  function reorderKeys(e: KeyboardEvent) {
-    if (e.key === " " || e.key === "Enter") {
-      e.preventDefault();
-      props.onToggleHeld();
-      return;
-    }
-    if (!props.held) return;
-    if (e.key === "Escape") return props.onCancelHeld();
-    const target = {
-      ArrowLeft: () => index - 1,
-      ArrowRight: () => index + 1,
-      ArrowUp: () => index - props.columns(),
-      ArrowDown: () => index + props.columns(),
-      Home: () => 0,
-      End: () => count - 1,
-    }[e.key];
-    if (!target) return;
-    e.preventDefault();
-    props.onHoldAt(target());
-  }
 
   const { layout } = props;
   const strip = layout === "strip";
@@ -158,22 +126,7 @@ export function PhotoCard(props: PhotoCardProps) {
               </button>
             </div>
           )}
-          {/* A div, not a button: Firefox will not start a drag from a button. */}
-          <div
-            role="button"
-            tabIndex={0}
-            data-reorder=""
-            aria-label={`Reorder ${label}, position ${index + 1} of ${count}`}
-            aria-pressed={props.held}
-            aria-describedby={props.keysHintId}
-            onKeyDown={reorderKeys}
-            onClick={(e) => {
-              // A screen reader's click; the pointer drags instead.
-              if (e.detail === 0) props.onToggleHeld();
-            }}
-            onBlur={() => props.held && props.onCancelHeld()}
-            className="absolute inset-0 cursor-grab rounded-t-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500"
-          />
+          <ReorderHandle {...props} className="cursor-grab rounded-t-[11px]" />
           <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-ink-900/80 px-[7px] py-[3px] font-mono text-[10.5px] leading-none text-paper-50">
             {String(index + 1).padStart(2, "0")}
           </span>
@@ -296,7 +249,7 @@ function Action({ label, icon: Icon, onClick, disabled, expanded }: { label: str
 }
 
 /** The photo's crop, filling a cell of another shape. Its frame is left off: the cell would cut it. */
-function CoverPhoto({ asset, label, dims, sizes }: { asset: BoardAsset; label: string; dims: { width: number; height: number } | null; sizes: string }) {
+export function CoverPhoto({ asset, label, dims, sizes }: { asset: BoardAsset; label: string; dims: { width: number; height: number } | null; sizes: string }) {
   const edit = { ...(asset.edit ?? DEFAULT_EDIT), frame: "none" as const };
   return (
     <div className="absolute inset-0 [container-type:size]">

@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { ImagePlus } from "lucide-react";
+import Link from "next/link";
+import { ImagePlus, Upload } from "lucide-react";
 import { flowElement, transitionBoard } from "@/lib/board-transition";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
 import { GRID_LAYOUTS, type BoardNote, type BoardViewPrefs, type GridLayout, type Placement } from "@/lib/board-layout";
@@ -16,6 +17,9 @@ import type { PhotoEdit } from "@/lib/photo-edit";
 import type { SavedRecipe } from "@/lib/recipe-library";
 import { RecipeEditor } from "./RecipeEditor";
 import { LoadMore } from "./LoadMore";
+import { MobileCard } from "./MobileCard";
+import { MobileStrip, type MobileStripLook } from "./MobileStrip";
+import { PhotoSheet } from "./PhotoSheet";
 import { PhotoCard } from "./PhotoCard";
 import { UploadDropzone } from "./UploadDropzone";
 import { UploadList } from "./UploadList";
@@ -23,6 +27,7 @@ import { useBoardLayout } from "./useBoardLayout";
 import { useBoardPaging } from "./useBoardPaging";
 import { useMasonry } from "./useMasonry";
 import { useBoardReorder } from "./useBoardReorder";
+import { useLongPressReorder } from "./useLongPressReorder";
 import { useProcessingPoll } from "./useProcessingPoll";
 import { useUploadQueue } from "./useUploadQueue";
 import { ACCEPTED_IMAGE_TYPES, readApiError, toBoardAsset, type BoardAsset } from "./types";
@@ -49,6 +54,8 @@ export interface VisionBoardProps {
   initialTotal?: number;
   /** Titles of the zines whose pages use each photo, by photo id. */
   usedIn: Record<string, string[]>;
+  /** How many of the whole board's photos each filter holds (DIG-93). Without it, the loaded ones are counted. */
+  filterCounts?: Record<"recipes" | "unused", number>;
   /** The creator's recipe library (DIG-24). */
   savedRecipes?: SavedRecipe[];
 }
@@ -56,6 +63,14 @@ export interface VisionBoardProps {
 const GRID_LAYOUT_NAMES: Record<GridLayout, string> = { masonry: "Masonry", even: "Even", feature: "Feature" };
 const VIEW_NAMES: Record<BuiltView, string> = { free: "Free form", grid: "Grid", strip: "Strip" };
 const WIDE_SCREEN = "(min-width: 1024px)";
+const SMALL_SCREEN = "(max-width: 1023.98px)";
+const FILTERS = [
+  { show: "all", label: "All", none: "" },
+  { show: "recipes", label: "Recipes", none: "No photos with a recipe on this board." },
+  { show: "unused", label: "Not in a zine", none: "Every photo on this board is in a zine." },
+] as const;
+const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
+type Show = (typeof FILTERS)[number]["show"];
 
 /**
  * The Vision Board: its bar, its views, uploads, and each photo's actions. Uploading, paging, the
@@ -72,6 +87,7 @@ export function VisionBoard({
   otherBoards,
   otherBoardsBytes,
   usedIn,
+  filterCounts,
   savedRecipes: initialSavedRecipes = [],
   initialCursor = null,
   initialTotal,
@@ -83,6 +99,11 @@ export function VisionBoard({
   const [boardName, setBoardName] = useState(initialName);
   /** Null until the browser has said how wide the screen is. */
   const [wide, setWide] = useState<boolean | null>(null);
+  /** The phone's board (DIG-93). */
+  const [compact, setCompact] = useState(false);
+  const [mouse, setMouse] = useState(false);
+  const [show, setShow] = useState<Show>("all");
+  const [sheetId, setSheetId] = useState<string | null>(null);
   const [chosenView, setChosenView] = useState(viewPrefs);
   /** The photo last focused, and the one a view opens at because it was. */
   const focusedId = useRef<string | null>(null);
@@ -127,7 +148,11 @@ export function VisionBoard({
     if (asked === "strip") setChosenView((v) => ({ ...v, wide: "strip", narrow: "strip" }));
     if (asked === "grid") setChosenView((v) => ({ ...v, wide: "grid", narrow: "grid" }));
     const query = typeof matchMedia === "function" ? matchMedia(WIDE_SCREEN) : null;
-    const update = () => setWide(query?.matches ?? false);
+    const update = () => {
+      setWide(query?.matches ?? false);
+      setCompact(query ? matchMedia(SMALL_SCREEN).matches : false);
+      setMouse(query ? matchMedia("(hover: hover) and (pointer: fine)").matches : false);
+    };
     update();
     query?.addEventListener("change", update);
     return () => query?.removeEventListener("change", update);
@@ -197,6 +222,10 @@ export function VisionBoard({
     loadedIds: () => new Set(assetsRef.current.map((a) => a.id)),
     onPage: (added) => {
       setAssets((prev) => [...prev, ...added.filter((a) => !prev.some((p) => p.id === a.id))]);
+      setUnloaded((left) => ({
+        recipes: Math.max(0, left.recipes - countLoaded(added, "recipes")),
+        unused: Math.max(0, left.unused - countLoaded(added, "unused")),
+      }));
       // These photos' bytes were counted as "elsewhere" until now.
       setElsewhereBytes((bytes) => Math.max(0, bytes - added.reduce((sum, a) => sum + a.sizeBytes, 0)));
     },
@@ -206,6 +235,20 @@ export function VisionBoard({
   useEffect(() => {
     if (view === "strip" && cursor && !loadingMore && !loadMoreError) void loadMore();
   }, [view, cursor, loadingMore, loadMoreError, loadMore]);
+
+  // A filter looks through the whole board.
+  useEffect(() => {
+    if (compact && view === "grid" && show !== "all" && cursor && !loadingMore && !loadMoreError) void loadMore();
+  }, [compact, view, show, cursor, loadingMore, loadMoreError, loadMore]);
+
+  const inFilter = (a: BoardAsset, filter: Show) => filter === "all" || (filter === "recipes" ? a.kind === "recipe" : !usedIn[a.id]);
+  const countLoaded = (list: BoardAsset[], filter: Show) => list.filter((a) => inFilter(a, filter)).length;
+  /** Photos in each filter that the paged list has not reached yet. */
+  const [unloaded, setUnloaded] = useState(() => ({
+    recipes: Math.max(0, (filterCounts?.recipes ?? 0) - countLoaded(initialAssets, "recipes")),
+    unused: Math.max(0, (filterCounts?.unused ?? 0) - countLoaded(initialAssets, "unused")),
+  }));
+  const filterCount = (filter: Show) => (filter === "all" ? total : countLoaded(assets, filter) + (cursor ? unloaded[filter] : 0));
 
   useProcessingPoll(boardId, assets, setAssets);
 
@@ -221,11 +264,11 @@ export function VisionBoard({
   });
 
   const gridLayout = chosenView.gridLayout ?? "masonry";
-  const masonry = useMasonry(view === "grid" && gridLayout === "masonry", assets);
+  const masonry = useMasonry(view === "grid" && !compact && gridLayout === "masonry", assets);
 
   // The grid is as tall as the board, so the page scrolls to the photo, once the cards have their
   // places. The other views open at it themselves.
-  const gridPlaced = view === "grid" && (gridLayout !== "masonry" || masonry.listStyle !== undefined);
+  const gridPlaced = view === "grid" && (compact || gridLayout !== "masonry" || masonry.listStyle !== undefined);
   const scrolledTo = useRef<string | null>(null);
   useLayoutEffect(() => {
     if (view !== "grid") scrolledTo.current = null;
@@ -241,11 +284,40 @@ export function VisionBoard({
   }
 
   function gridColumns() {
-    if (gridLayout === "masonry" || !masonry.list) return masonry.columns;
+    if ((gridLayout === "masonry" && !compact) || !masonry.list) return masonry.columns;
     return getComputedStyle(masonry.list).gridTemplateColumns.split(" ").length;
   }
 
   const reorder = useBoardReorder({ assets, setAssets, onAnnounce: setAnnouncement, onError: setBoardError });
+
+  const stopDrag = () => {
+    reorder.setDrag(null);
+    reorder.setDrop(null);
+  };
+  const canReorder = show === "all" || view === "strip";
+  const longPressRef = useLongPressReorder({
+    enabled: compact && canReorder && busyId === null,
+    axis: view === "strip" ? "x" : "y",
+    onLift: (id) => {
+      reorder.setDrag(id);
+      const at = assetsRef.current.findIndex((a) => a.id === id);
+      if (at >= 0) setAnnouncement(`${assetLabel(assetsRef.current[at], at)} picked up.`);
+    },
+    onOver: (id, after) => {
+      const at = assetsRef.current.findIndex((a) => a.id === id);
+      const gap = after ? at + 1 : at;
+      if (at >= 0 && reorder.currentDropIndex() !== gap) reorder.setDrop(gap);
+    },
+    onDrop: reorder.handleDrop,
+    onCancel: stopDrag,
+  });
+  const listRef = useCallback(
+    (el: HTMLOListElement | null) => {
+      masonry.listRef(el);
+      longPressRef(el);
+    },
+    [masonry.listRef, longPressRef]
+  );
 
   // A card moved from the keyboard stays on screen.
   const heldAt = reorder.heldId ? assets.findIndex((a) => a.id === reorder.heldId) : -1;
@@ -431,12 +503,50 @@ export function VisionBoard({
     </div>
   ) : null;
 
-  function renderCard(asset: BoardAsset, index: number, layout: GridLayout | "strip", look: Partial<StripCardLook>) {
+  function dragOverSide(index: number, after: boolean) {
+    if (!reorder.isDragging()) return false;
+    const gap = after ? index + 1 : index;
+    if (reorder.currentDropIndex() !== gap) reorder.setDrop(gap);
+    return true;
+  }
+
+  function renderCard(asset: BoardAsset, index: number, layout: GridLayout | "strip", look: Partial<StripCardLook & MobileStripLook>) {
     const label = assetLabel(asset, index);
     const { dragId, dropIndex } = reorder;
     const showDropBefore = dragId !== null && dropIndex === index;
     const showDropAfter = dragId !== null && dropIndex === assets.length && index === assets.length - 1;
     const busy = busyId === asset.id;
+    if (compact)
+      return (
+        <MobileCard
+          key={asset.id}
+          asset={asset}
+          index={index}
+          count={assets.length}
+          label={label}
+          layout={layout === "strip" ? "strip" : "grid"}
+          {...look}
+          held={reorder.heldId === asset.id}
+          onToggleHeld={() => {
+            if (!canReorder) setAnnouncement("Show all photos to change the order.");
+            else if (reorder.heldId === asset.id) reorder.dropHeld();
+            else reorder.pickUp(index);
+          }}
+          onCancelHeld={reorder.cancelHeld}
+          onHoldAt={reorder.holdAt}
+          columns={layout === "strip" ? () => 0 : gridColumns}
+          keysHintId={`${inputId}-keys`}
+          lifted={dragId === asset.id}
+          dropSide={showDropBefore ? "before" : showDropAfter ? "after" : null}
+          draggable={mouse && canReorder && !busy}
+          onDragStart={() => reorder.setDrag(asset.id)}
+          onDragEnd={stopDrag}
+          onDragOverSide={(after) => dragOverSide(index, after)}
+          hasFoundRecipe={!asset.recipe && Boolean(foundRecipes[asset.id])}
+          onMore={() => setSheetId(asset.id)}
+          onRetryProcessing={() => void retryProcessing(asset)}
+        />
+      );
     return (
       <PhotoCard
         key={asset.id}
@@ -456,16 +566,8 @@ export function VisionBoard({
         keysHintId={`${inputId}-keys`}
         draggable={!busy}
         onDragStart={() => reorder.setDrag(asset.id)}
-        onDragEnd={() => {
-          reorder.setDrag(null);
-          reorder.setDrop(null);
-        }}
-        onDragOverSide={(after) => {
-          if (!reorder.isDragging()) return false;
-          const gap = after ? index + 1 : index;
-          if (reorder.currentDropIndex() !== gap) reorder.setDrop(gap);
-          return true;
-        }}
+        onDragEnd={stopDrag}
+        onDragOverSide={(after) => dragOverSide(index, after)}
         onMoveBy={(delta) => reorder.moveBy(index, delta)}
         confirmingDelete={confirmDeleteId === asset.id}
         deleting={busy}
@@ -511,6 +613,7 @@ export function VisionBoard({
       <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">
         Add photos to start collecting ideas. Nothing on the board is public until you publish a zine.
       </p>
+      {compact && view === "grid" ? null : (
       <button
         type="button"
         onClick={() => fileInputRef.current?.click()}
@@ -519,8 +622,43 @@ export function VisionBoard({
         <ImagePlus className="h-4 w-4" aria-hidden="true" />
         Add photos
       </button>
+      )}
     </div>
   );
+  const sheetIndex = assets.findIndex((a) => a.id === sheetId);
+  const sheetAsset = sheetIndex >= 0 ? assets[sheetIndex] : null;
+  // Above the navigation, where it is seen however far the page has scrolled.
+  const floating =
+    compact && (view === "grid" || problem) ? (
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 space-y-2 px-4 pb-3 [&>*]:pointer-events-auto">
+        {problem}
+        {view === "grid" ? (
+          <div role="group" aria-label="Board actions" className="mx-auto flex max-w-xl gap-2">
+            <button type="button" onClick={() => fileInputRef.current?.click()} className={`flex min-h-[50px] flex-1 items-center justify-center gap-2 rounded-[14px] bg-ink-900 text-[15px] font-semibold text-paper-50 shadow-lg ${focusRing}`}>
+              <Upload className="h-[18px] w-[18px]" aria-hidden="true" />
+              Add photos
+            </button>
+            <Link href={`/editor?board=${encodeURIComponent(boardId)}`} className={`flex min-h-[50px] items-center rounded-[14px] border border-paper-300 bg-paper-50 px-4 text-[15px] font-semibold text-ink-900 shadow-lg ${focusRing}`}>
+              Make a zine
+            </Link>
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+  const picker = (
+    <input
+      ref={fileInputRef}
+      type="file"
+      multiple
+      hidden
+      accept={ACCEPTED_IMAGE_TYPES.join(",")}
+      onChange={(e) => {
+        if (e.target.files) enqueue(e.target.files);
+        e.target.value = "";
+      }}
+    />
+  );
+  const filtered = assets.map((asset, index) => ({ asset, index })).filter(({ asset }) => inFilter(asset, show));
 
   return (
     <>
@@ -568,18 +706,8 @@ export function VisionBoard({
 
       {view === "strip" ? (
         <>
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            hidden
-            accept={ACCEPTED_IMAGE_TYPES.join(",")}
-            onChange={(e) => {
-              if (e.target.files) enqueue(e.target.files);
-              e.target.value = "";
-            }}
-          />
-          {uploads.length > 0 || problem ? (
+          {picker}
+          {uploads.length > 0 || (problem && !compact) ? (
             <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
               <UploadList uploads={uploads} onDismiss={dismiss} />
               {problem}
@@ -587,6 +715,18 @@ export function VisionBoard({
           ) : null}
           {assets.length === 0 ? (
             isUploading ? null : <div className="px-4 py-5 sm:px-7">{emptyBoard}</div>
+          ) : compact ? (
+            <MobileStrip
+              assets={assets}
+              total={total}
+              startAt={startAt}
+              keepIds={[reorder.heldId, reorder.dragId]}
+              listRef={listRef}
+              loadError={loadMoreError}
+              onRetryLoad={() => void loadMore()}
+              {...dropZone}
+              renderCard={(asset, index, look) => renderCard(asset, index, "strip", look)}
+            />
           ) : (
             <BoardStrip
               assets={assets}
@@ -603,7 +743,43 @@ export function VisionBoard({
         </>
       ) : null}
 
-      {view === "grid" ? (
+      {view === "grid" && compact ? (
+        <div className="space-y-4 px-4 pb-24 pt-3">
+          {picker}
+          {uploads.length > 0 ? (
+            <div className="[&_button]:min-h-11 [&_button]:min-w-11">
+              <UploadList uploads={uploads} onDismiss={dismiss} />
+            </div>
+          ) : null}
+          {assets.length === 0 && !isUploading ? (
+            emptyBoard
+          ) : (
+            <>
+              <div role="group" aria-label="Show" className="-mx-4 flex gap-1.5 overflow-x-auto px-4 py-1 [scrollbar-width:none]">
+                {FILTERS.map((f) => (
+                  <button
+                    key={f.show}
+                    type="button"
+                    aria-pressed={show === f.show}
+                    onClick={() => setShow(f.show)}
+                    className={`min-h-11 shrink-0 whitespace-nowrap rounded-full border px-3.5 text-[13px] ${focusRing} ${show === f.show ? "border-ink-900 bg-ink-900 text-paper-50" : "border-paper-300 bg-white text-ink-900"}`}
+                  >
+                    {f.label} {filterCount(f.show).toLocaleString("en-US")}
+                  </button>
+                ))}
+              </div>
+              {filtered.length === 0 && !cursor ? <p className="py-6 text-center text-sm text-ink-700">{FILTERS.find((f) => f.show === show)?.none}</p> : null}
+              <ol ref={listRef} aria-label="Vision Board photos" className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4" {...dropZone}>
+                {filtered.map(({ asset, index }) => renderCard(asset, index, "even", {}))}
+              </ol>
+              {cursor ? <LoadMore sentinelRef={sentinelRef} loading={loadingMore} error={loadMoreError} onLoadMore={() => void loadMore()} /> : null}
+            </>
+          )}
+          <StorageMeter usedBytes={usedBytes} />
+        </div>
+      ) : null}
+
+      {view === "grid" && !compact ? (
       <div className="space-y-5 px-4 py-5 sm:px-7">
 
       <div className="grid items-center gap-4 lg:grid-cols-[1fr_18rem]">
@@ -655,6 +831,30 @@ export function VisionBoard({
       )}
 
       </div>
+      ) : null}
+
+      {floating}
+
+      {compact && sheetAsset ? (
+        <PhotoSheet
+          key={sheetAsset.id}
+          asset={sheetAsset}
+          label={assetLabel(sheetAsset, sheetIndex)}
+          index={sheetIndex}
+          count={assets.length}
+          canReorder={canReorder}
+          hasFoundRecipe={!sheetAsset.recipe && Boolean(foundRecipes[sheetAsset.id])}
+          otherBoards={otherBoards}
+          usedIn={usedIn[sheetAsset.id] ?? []}
+          deleting={busyId === sheetAsset.id}
+          onClose={() => setSheetId(null)}
+          onEditPhoto={() => setPhotoEditId(sheetAsset.id)}
+          onEditRecipe={() => setEditingId(sheetAsset.id)}
+          onMoveBy={(delta) => reorder.moveBy(sheetIndex, delta)}
+          onSaveName={(name) => saveName(sheetAsset, name)}
+          onMoveToBoard={(id) => moveAsset(sheetAsset, sheetIndex, id)}
+          onDelete={() => deleteAsset(sheetAsset, sheetIndex)}
+        />
       ) : null}
 
       {photoEditing ? (

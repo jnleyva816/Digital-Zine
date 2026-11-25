@@ -66,6 +66,13 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
     (usedIn[assetId] ??= []).push(page.zine.title);
   }
 
+  // The phone's filters count the whole board, loaded or not (DIG-93).
+  const onBoard = { ownerId: user.id, boardId: board.id };
+  const [recipes, used] = await Promise.all([
+    prisma.mediaAsset.count({ where: { ...onBoard, kind: "recipe" } }),
+    prisma.mediaAsset.count({ where: { ...onBoard, id: { in: Object.keys(usedIn) } } }),
+  ]);
+
   return (
     <>
       <StudioHeader
@@ -88,6 +95,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
           initialCursor={firstPage?.nextCursor ?? null}
           initialTotal={firstPage?.total ?? 0}
           usedIn={usedIn}
+          filterCounts={{ recipes, unused: Math.max(0, (firstPage?.total ?? 0) - used) }}
           savedRecipes={savedRecipes}
         />
       </main>

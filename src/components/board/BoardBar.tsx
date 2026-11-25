@@ -43,13 +43,13 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
     <div className="border-b border-paper-300 bg-paper-50">
       <div className="grid min-h-16 grid-cols-1 items-center gap-3 px-4 py-2.5 sm:px-6 lg:grid-cols-[1fr_auto_1fr]">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Link href="/boards" className={`shrink-0 rounded text-sm text-ink-500 hover:text-ink-900 ${focus}`}>
+          <Link href="/boards" className={`hidden shrink-0 rounded text-sm text-ink-500 hover:text-ink-900 lg:inline ${focus}`}>
             Boards /
           </Link>
           {draft === null ? (
             <>
-              <h1 className="truncate font-serif text-[22px] font-bold text-ink-900">{name}</h1>
-              <button type="button" aria-label="Rename board" onClick={() => setDraft(name)} className={`shrink-0 rounded-full p-2 text-ink-500 hover:bg-paper-200 hover:text-ink-900 ${focus}`}>
+              <h1 className="truncate font-serif text-2xl lg:text-[22px] font-bold text-ink-900">{name}</h1>
+              <button type="button" aria-label="Rename board" onClick={() => setDraft(name)} className={`inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-500 lg:h-8 lg:w-8 hover:bg-paper-200 hover:text-ink-900 ${focus}`}>
                 <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
               </button>
             </>
@@ -72,7 +72,7 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
                   setDraft(null);
                   setError(null);
                 }}
-                className="w-full min-w-0 rounded-lg border border-paper-300 bg-white px-2 py-1 font-serif text-xl font-bold text-ink-900 focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+                className="w-full min-w-0 min-h-11 rounded-lg border border-paper-300 bg-white px-2 py-1 font-serif lg:min-h-0 text-xl font-bold text-ink-900 focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
               />
             </form>
           )}
@@ -81,7 +81,7 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
           </span>
         </div>
 
-        <div role="group" aria-label="Board view" className="flex gap-0.5 justify-self-start rounded-xl bg-paper-200 p-1 lg:justify-self-center">
+        <div role="group" aria-label="Board view" className="grid auto-cols-fr grid-flow-col gap-0.5 rounded-xl bg-paper-200 p-1 lg:flex lg:justify-self-center">
           {views.map((v) => {
             const { label, icon: Icon } = VIEWS[v];
             return (
@@ -90,7 +90,7 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => onView(v)}
-                className={`inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3.5 text-sm ${focus} ${view === v ? "bg-paper-50 font-semibold text-ink-900 shadow-sm" : "font-medium text-ink-700 hover:text-ink-900"}`}
+                className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg lg:min-h-9 px-3.5 text-sm ${focus} ${view === v ? "bg-paper-50 font-semibold text-ink-900 shadow-sm" : "font-medium text-ink-700 hover:text-ink-900"}`}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 {label}
@@ -99,7 +99,8 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
           })}
         </div>
 
-        <div className="flex gap-2 lg:justify-end">
+        {/* Small screens have these above the navigation. */}
+        <div className="hidden gap-2 lg:flex lg:justify-end">
           <button type="button" onClick={onUpload} className={`inline-flex min-h-10 items-center gap-1.5 rounded-[10px] border border-paper-300 bg-white px-3.5 text-sm font-medium text-ink-900 hover:bg-paper-100 ${focus}`}>
             <Upload className="h-4 w-4" aria-hidden="true" />
             Upload
