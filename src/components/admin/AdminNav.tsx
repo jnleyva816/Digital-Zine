@@ -4,11 +4,12 @@ import { focusRing } from "./styles";
 const SECTIONS = [
   { key: "users", href: "/admin", label: "Users" },
   { key: "zines", href: "/admin/zines", label: "Zines" },
+  { key: "subscriptions", href: "/admin/subscriptions", label: "Subscriptions" },
 ] as const;
 
 export type AdminSection = (typeof SECTIONS)[number]["key"];
 
-/** The admin panel's sections (DIG-138). */
+/** The admin panel's sections (DIG-138, DIG-139). */
 export function AdminNav({ current }: { current: AdminSection }) {
   return (
     <nav aria-label="Admin" className="mt-4 flex gap-1 overflow-x-auto border-b border-paper-300">

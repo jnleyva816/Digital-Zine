@@ -186,3 +186,22 @@ test("the zines page is a real 404 for anyone but an admin", async ({ page }) =>
   expect((await page.goto("/admin/zines"))?.status()).toBe(404);
   expect((await page.request.get("/api/admin/zines")).status()).toBe(403);
 });
+
+test("an admin sees who is paying, read-only, and the page fits a phone (DIG-139)", async ({ page }) => {
+  const admin = await make("admin");
+  const payer = await make("user");
+  await testDb.user.update({
+    where: { id: payer.id },
+    data: { tier: "pro", subscriptionStatus: "past_due", stripeCustomerId: `cus_${randomUUID()}`, stripeSubscriptionId: `sub_${randomUUID().replaceAll("-", "")}` },
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await signIn(page, admin.email, admin.password);
+  await page.goto("/admin");
+  await page.getByRole("navigation", { name: "Admin" }).getByRole("link", { name: "Subscriptions" }).click();
+  await expect(page).toHaveURL(/\/admin\/subscriptions$/);
+  // The test server has no Stripe key: the list still shows, and says why there are no links.
+  await expect(page.getByRole("note")).toContainText("Billing is not set up");
+  const row = page.getByRole("list", { name: "Subscriptions" }).getByRole("listitem").filter({ hasText: payer.email });
+  await expect(row.getByText("Payment failed")).toBeVisible();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
