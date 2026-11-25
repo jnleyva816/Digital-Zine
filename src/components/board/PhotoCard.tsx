@@ -27,7 +27,11 @@ export interface PhotoCardProps {
   index: number;
   count: number;
   label: string;
-  layout: GridLayout;
+  layout: GridLayout | "strip";
+  /** The day this photo starts, in the strip. */
+  heading?: string | null;
+  /** False for a strip card too far off to draw. */
+  near?: boolean;
   /** Where Masonry puts the card. */
   style?: CSSProperties;
   /** Picked up from the keyboard. */
@@ -98,55 +102,31 @@ export function PhotoCard(props: PhotoCardProps) {
   }
 
   const { layout } = props;
+  const strip = layout === "strip";
+  // Masonry and the strip keep the photo's own shape; Even and Feature fill a cell with it.
+  const ownShape = layout === "masonry" || strip;
   const large = asset.edit?.cardSize === "large";
   const featured = layout === "feature" && index === 0;
-  const twoByTwo = featured || (large && layout !== "masonry");
-  // In Even and Feature the photo fills its cell; in Masonry it keeps its own shape.
+  const twoByTwo = featured || (large && !ownShape);
   const photoBox =
-    layout === "masonry" ? "" : layout === "even" ? "aspect-[4/5] w-full grow overflow-hidden" : "min-h-[188px] grow overflow-hidden";
-  const stateBox = layout === "masonry" ? "aspect-[4/5]" : "absolute inset-0";
+    ownShape ? "" : layout === "even" ? "aspect-[4/5] w-full grow overflow-hidden" : "min-h-[188px] grow overflow-hidden";
+  const stateBox = ownShape ? "aspect-[4/5]" : "absolute inset-0";
   const dims = asset.width && asset.height ? { width: asset.width, height: asset.height } : null;
   const meta = photoMeta(asset);
+  // Panels keep their light look on the strip's dark table.
+  const panel = strip ? "rounded-lg bg-paper-50 p-2.5 text-ink-900" : "";
 
-  return (
-    <li
-      data-asset-id={asset.id}
-      draggable={props.draggable}
-      style={props.style}
-      onDragStart={(e) => {
-        e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", asset.id);
-        props.onDragStart();
-      }}
-      onDragEnd={props.onDragEnd}
-      onDragOver={(e: DragEvent<HTMLLIElement>) => {
-        const rect = e.currentTarget.getBoundingClientRect();
-        if (!props.onDragOverSide(e.clientX > rect.left + rect.width / 2)) return;
-        e.preventDefault();
-        e.dataTransfer.dropEffect = "move";
-      }}
-      className={`group relative flex min-w-0 flex-col rounded-xl border bg-paper-50 ${twoByTwo ? "col-span-2 row-span-2" : large ? "col-span-2" : ""} ${
-        props.dragging ? "opacity-40" : ""
-      } ${props.held ? "z-20 border-vermilion-500 shadow-xl ring-2 ring-vermilion-500" : "border-paper-300"}`}
-    >
-      {props.dropSide ? (
-        <span
-          data-testid="drop-marker"
-          data-side={props.dropSide}
-          aria-hidden="true"
-          className={`absolute inset-y-0 z-30 w-1 rounded-full bg-vermilion-500 ${props.dropSide === "before" ? "-left-2.5" : "-right-2.5"}`}
-        />
-      ) : null}
-      <Windowed label={label}>
-        <div className={`relative rounded-t-[11px] bg-ink-900 ${photoBox || "overflow-hidden"}`} {...(photoBox ? { "data-testid": "photo-cover" } : {})}>
+  const body = () => (
+    <>
+        <div className={`relative ${strip ? "rounded-[3px]" : "rounded-t-[11px]"} bg-ink-900 ${photoBox || "overflow-hidden"}`} {...(photoBox ? { "data-testid": "photo-cover" } : {})}>
           {asset.status === "ready" ? (
-            layout === "masonry" ? (
+            ownShape ? (
               <EditedPhoto
                 src={asset.publicUrl}
                 alt={label}
                 edit={asset.edit}
                 dims={dims}
-                sizes={large ? "(max-width: 640px) 100vw, 40vw" : "(max-width: 640px) 50vw, 20vw"}
+                sizes={strip ? "(max-width: 640px) 90vw, 440px" : large ? "(max-width: 640px) 100vw, 40vw" : "(max-width: 640px) 50vw, 20vw"}
                 blurDataUrl={asset.blurDataUrl}
               />
             ) : (
@@ -182,6 +162,7 @@ export function PhotoCard(props: PhotoCardProps) {
           <div
             role="button"
             tabIndex={0}
+            data-reorder=""
             aria-label={`Reorder ${label}, position ${index + 1} of ${count}`}
             aria-pressed={props.held}
             aria-describedby={props.keysHintId}
@@ -217,16 +198,16 @@ export function PhotoCard(props: PhotoCardProps) {
           </div>
         </div>
 
-        <div className="flex flex-col gap-[3px] px-2.5 pb-2.5 pt-[9px]">
-          <p className="truncate text-[13px] font-semibold leading-tight text-ink-900" title={label}>
+        <div className={strip ? "flex flex-col gap-1 pb-4 pt-2.5" : "flex flex-col gap-[3px] px-2.5 pb-2.5 pt-[9px]"}>
+          <p className={strip ? "truncate font-[Georgia,serif] text-[17px] leading-tight" : "truncate text-[13px] font-semibold leading-tight text-ink-900"} title={label}>
             {label}
           </p>
-          <p className="truncate font-mono text-[10.5px] leading-tight text-ink-500" title={meta}>
+          <p className={strip ? "truncate font-mono text-[11px] leading-tight text-[#CFC7BC]" : "truncate font-mono text-[10.5px] leading-tight text-ink-500"} title={meta}>
             {meta}
           </p>
-          {props.hasFoundRecipe && !asset.recipe ? <p className="text-xs text-vermilion-600">Recipe found in this photo</p> : null}
+          {props.hasFoundRecipe && !asset.recipe ? <p className={`text-xs ${strip ? "text-[#E8A08F]" : "text-vermilion-600"}`}>Recipe found in this photo</p> : null}
           {props.confirmingDelete ? (
-            <div className="mt-1.5 flex flex-wrap items-center gap-2 text-xs">
+            <div className={`mt-1.5 flex flex-wrap items-center gap-2 text-xs ${panel}`}>
               <span className="text-ink-700">Delete?</span>
               <button
                 type="button"
@@ -243,13 +224,57 @@ export function PhotoCard(props: PhotoCardProps) {
             </div>
           ) : null}
           {props.naming ? (
+            <div className={panel}>
             <PhotoNameForm fileName={asset.originalName} initialName={asset.name} onSave={props.onSaveName} onCancel={props.onToggleNaming} />
+            </div>
           ) : null}
           {props.moving ? (
+            <div className={panel}>
             <MovePhotoPanel label={label} boards={props.otherBoards} usedIn={props.usedIn} onMove={props.onMoveToBoard} onCancel={props.onToggleMoving} />
+            </div>
           ) : null}
         </div>
-      </Windowed>
+    </>
+  );
+  // The strip knows where its cards are; the grid's cards watch the screen.
+  const content = !strip ? <Windowed label={label}>{body()}</Windowed> : props.near ? body() : <span className="sr-only">{label}</span>;
+
+  return (
+    <li
+      data-asset-id={asset.id}
+      draggable={props.draggable}
+      style={props.style}
+      onDragStart={(e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", asset.id);
+        props.onDragStart();
+      }}
+      onDragEnd={props.onDragEnd}
+      onDragOver={(e: DragEvent<HTMLLIElement>) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        if (!props.onDragOverSide(e.clientX > rect.left + rect.width / 2)) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+      }}
+      className={`group relative flex min-w-0 flex-col ${strip ? "rounded-[3px] pt-[26px] [scroll-snap-align:start]" : "rounded-xl border bg-paper-50"} ${twoByTwo ? "col-span-2 row-span-2" : large ? "col-span-2" : ""} ${
+        props.dragging ? "opacity-40" : ""
+      } ${strip && props.held ? "z-20 ring-2 ring-vermilion-500 ring-offset-4 ring-offset-[#1B1917]" : props.held ? "z-20 border-vermilion-500 shadow-xl ring-2 ring-vermilion-500" : "border-paper-300"}`}
+    >
+      {props.dropSide ? (
+        <span
+          data-testid="drop-marker"
+          data-side={props.dropSide}
+          aria-hidden="true"
+          className={`absolute inset-y-0 z-30 w-1 rounded-full bg-vermilion-500 ${props.dropSide === "before" ? "-left-2.5" : "-right-2.5"}`}
+        />
+      ) : null}
+      {props.heading ? (
+        <>
+          {index > 0 ? <span aria-hidden="true" className="absolute -left-7 top-0 h-full w-px bg-paper-50/15" /> : null}
+          <h2 className="absolute left-0 top-0 whitespace-nowrap font-mono text-xs font-medium uppercase tracking-[0.14em] text-[#D9CFBE]">{props.heading}</h2>
+        </>
+      ) : null}
+      {content}
     </li>
   );
 }

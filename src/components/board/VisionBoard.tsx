@@ -5,6 +5,7 @@ import { ImagePlus } from "lucide-react";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
 import { GRID_LAYOUTS, type BoardNote, type BoardViewPrefs, type GridLayout, type Placement } from "@/lib/board-layout";
 import type { RecipeData } from "@/lib/types";
+import { BoardStrip, type StripCardLook } from "./BoardStrip";
 import { BoardBar, type BuiltView } from "./BoardBar";
 import { FreeformBoard } from "./FreeformBoard";
 import { assetLabel } from "./board-utils";
@@ -23,7 +24,7 @@ import { useMasonry } from "./useMasonry";
 import { useBoardReorder } from "./useBoardReorder";
 import { useProcessingPoll } from "./useProcessingPoll";
 import { useUploadQueue } from "./useUploadQueue";
-import { readApiError, toBoardAsset, type BoardAsset } from "./types";
+import { ACCEPTED_IMAGE_TYPES, readApiError, toBoardAsset, type BoardAsset } from "./types";
 
 export interface VisionBoardProps {
   /** The board on screen (DIG-25). Uploads land here. */
@@ -52,6 +53,7 @@ export interface VisionBoardProps {
 }
 
 const GRID_LAYOUT_NAMES: Record<GridLayout, string> = { masonry: "Masonry", even: "Even", feature: "Feature" };
+const VIEW_NAMES: Record<BuiltView, string> = { free: "Free form", grid: "Grid", strip: "Strip" };
 const WIDE_SCREEN = "(min-width: 1024px)";
 
 /**
@@ -118,6 +120,7 @@ export function VisionBoard({
   useEffect(() => {
     const asked = new URLSearchParams(location.search).get("view");
     if (asked === "free") setChosenView((v) => ({ ...v, wide: "free" }));
+    if (asked === "strip") setChosenView((v) => ({ ...v, wide: "strip", narrow: "strip" }));
     if (asked === "grid") setChosenView((v) => ({ ...v, wide: "grid", narrow: "grid" }));
     const query = typeof matchMedia === "function" ? matchMedia(WIDE_SCREEN) : null;
     const update = () => setWide(query?.matches ?? false);
@@ -126,16 +129,17 @@ export function VisionBoard({
     return () => query?.removeEventListener("change", update);
   }, []);
 
-  // Free form needs a wide screen; a narrow one always has the grid.
-  const view: BuiltView | null = wide === null ? null : wide && (chosenView.wide ?? "free") === "free" ? "free" : "grid";
+  // Free form needs a wide screen.
+  const view: BuiltView | null = wide === null ? null : wide ? (chosenView.wide ?? "free") : (chosenView.narrow ?? "grid");
 
   function chooseView(next: BuiltView) {
-    setChosenView((v) => (wide ? { ...v, wide: next } : { ...v, narrow: "grid" }));
+    const prefs: BoardViewPrefs = wide ? { wide: next } : { narrow: next === "strip" ? "strip" : "grid" };
+    setChosenView((v) => ({ ...v, ...prefs }));
     const params = new URLSearchParams(location.search);
     params.set("view", next);
     history.replaceState(history.state, "", `${location.pathname}?${params}`);
-    setAnnouncement(next === "free" ? "Free form view" : "Grid view");
-    rememberView(wide ? { wide: next } : { narrow: "grid" });
+    setAnnouncement(`${VIEW_NAMES[next]} view`);
+    rememberView(prefs);
   }
 
   /** Remembering is a convenience: if it fails, the view still changed. */
@@ -174,6 +178,11 @@ export function VisionBoard({
       setElsewhereBytes((bytes) => Math.max(0, bytes - added.reduce((sum, a) => sum + a.sizeBytes, 0)));
     },
   });
+
+  // The strip shows the whole board, so it loads the rest of it page by page.
+  useEffect(() => {
+    if (view === "strip" && cursor && !loadingMore && !loadMoreError) void loadMore();
+  }, [view, cursor, loadingMore, loadMoreError, loadMore]);
 
   useProcessingPoll(boardId, assets, setAssets);
 
@@ -388,8 +397,102 @@ export function VisionBoard({
     </div>
   ) : null;
 
+  function renderCard(asset: BoardAsset, index: number, layout: GridLayout | "strip", look: Partial<StripCardLook>) {
+    const label = assetLabel(asset, index);
+    const { dragId, dropIndex } = reorder;
+    const showDropBefore = dragId !== null && dropIndex === index;
+    const showDropAfter = dragId !== null && dropIndex === assets.length && index === assets.length - 1;
+    const busy = busyId === asset.id;
+    return (
+      <PhotoCard
+        key={asset.id}
+        asset={asset}
+        index={index}
+        count={assets.length}
+        label={label}
+        dragging={dragId === asset.id}
+        dropSide={showDropBefore ? "before" : showDropAfter ? "after" : null}
+        layout={layout}
+        {...look}
+        held={reorder.heldId === asset.id}
+        onToggleHeld={() => (reorder.heldId === asset.id ? reorder.dropHeld() : reorder.pickUp(index))}
+        onCancelHeld={reorder.cancelHeld}
+        onHoldAt={reorder.holdAt}
+        columns={layout === "strip" ? () => 0 : gridColumns}
+        keysHintId={`${inputId}-keys`}
+        draggable={!busy}
+        onDragStart={() => reorder.setDrag(asset.id)}
+        onDragEnd={() => {
+          reorder.setDrag(null);
+          reorder.setDrop(null);
+        }}
+        onDragOverSide={(after) => {
+          if (!reorder.isDragging()) return false;
+          const gap = after ? index + 1 : index;
+          if (reorder.currentDropIndex() !== gap) reorder.setDrop(gap);
+          return true;
+        }}
+        onMoveBy={(delta) => reorder.moveBy(index, delta)}
+        confirmingDelete={confirmDeleteId === asset.id}
+        deleting={busy}
+        onAskDelete={() => setConfirmDeleteId(asset.id)}
+        onCancelDelete={() => setConfirmDeleteId(null)}
+        onDelete={() => void deleteAsset(asset, index)}
+        onRetryProcessing={() => void retryProcessing(asset)}
+        onEditPhoto={() => setPhotoEditId(asset.id)}
+        onEditRecipe={() => setEditingId(asset.id)}
+        hasFoundRecipe={!asset.recipe && Boolean(foundRecipes[asset.id])}
+        naming={namingId === asset.id}
+        onToggleNaming={() => {
+          setMovingId(null);
+          setNamingId(namingId === asset.id ? null : asset.id);
+        }}
+        onSaveName={(name) => saveName(asset, name)}
+        otherBoards={otherBoards}
+        moving={movingId === asset.id}
+        onToggleMoving={() => {
+          setNamingId(null);
+          setMovingId(movingId === asset.id ? null : asset.id);
+        }}
+        onMoveToBoard={(targetId) => moveAsset(asset, index, targetId)}
+        usedIn={usedIn[asset.id] ?? []}
+      />
+    );
+  }
+
+  const dropZone = {
+    onDragOver: (e: React.DragEvent) => {
+      if (reorder.isDragging()) e.preventDefault();
+    },
+    onDrop: (e: React.DragEvent) => {
+      if (!reorder.isDragging()) return;
+      e.preventDefault();
+      reorder.handleDrop();
+    },
+  };
+
+  const emptyBoard = (
+    <div className="rounded-2xl border border-paper-300 bg-white px-6 py-14 text-center">
+      <h2 className="font-serif text-xl font-bold text-ink-900">Your board is empty</h2>
+      <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">
+        Add photos to start collecting ideas. Nothing on the board is public until you publish a zine.
+      </p>
+      <button
+        type="button"
+        onClick={() => fileInputRef.current?.click()}
+        className="mt-5 inline-flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+      >
+        <ImagePlus className="h-4 w-4" aria-hidden="true" />
+        Add photos
+      </button>
+    </div>
+  );
+
   return (
     <>
+      <p id={`${inputId}-keys`} className="hidden">
+        Press Space to pick up, arrow keys to move, Space to drop, Escape to cancel.
+      </p>
       <p aria-live="polite" className="sr-only">
         {announcement}
       </p>
@@ -398,7 +501,7 @@ export function VisionBoard({
         name={boardName}
         total={total}
         view={view}
-        views={wide ? ["free", "grid"] : ["grid"]}
+        views={wide ? ["free", "grid", "strip"] : ["grid", "strip"]}
         onView={chooseView}
         onRename={renameBoard}
         onUpload={() => fileInputRef.current?.click()}
@@ -428,6 +531,42 @@ export function VisionBoard({
         </>
       ) : null}
 
+      {view === "strip" ? (
+        <>
+          <input
+            ref={fileInputRef}
+            type="file"
+            multiple
+            hidden
+            accept={ACCEPTED_IMAGE_TYPES.join(",")}
+            onChange={(e) => {
+              if (e.target.files) enqueue(e.target.files);
+              e.target.value = "";
+            }}
+          />
+          {uploads.length > 0 || problem ? (
+            <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
+              <UploadList uploads={uploads} onDismiss={dismiss} />
+              {problem}
+            </div>
+          ) : null}
+          {assets.length === 0 ? (
+            isUploading ? null : <div className="px-4 py-5 sm:px-7">{emptyBoard}</div>
+          ) : (
+            <BoardStrip
+              assets={assets}
+              total={total}
+              heldId={reorder.heldId}
+              keysHintId={`${inputId}-keys`}
+              loadError={loadMoreError}
+              onRetryLoad={() => void loadMore()}
+              {...dropZone}
+              renderCard={(asset, index, look) => renderCard(asset, index, "strip", look)}
+            />
+          )}
+        </>
+      ) : null}
+
       {view === "grid" ? (
       <div className="space-y-5 px-4 py-5 sm:px-7">
 
@@ -441,20 +580,7 @@ export function VisionBoard({
       {problem}
 
       {assets.length === 0 && !isUploading ? (
-        <div className="rounded-2xl border border-paper-300 bg-white px-6 py-14 text-center">
-          <h2 className="font-serif text-xl font-bold text-ink-900">Your board is empty</h2>
-          <p className="mx-auto mt-2 max-w-sm text-sm text-ink-500">
-            Add photos to start collecting ideas. Nothing on the board is public until you publish a zine.
-          </p>
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            className="mt-5 inline-flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
-          >
-            <ImagePlus className="h-4 w-4" aria-hidden="true" />
-            Add photos
-          </button>
-        </div>
+        emptyBoard
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-2">
@@ -475,9 +601,6 @@ export function VisionBoard({
               {assets.length < total ? <span>{`Showing ${assets.length} of ${total.toLocaleString("en-US")} photos. `}</span> : null}
               <span>Drag cards to change the order. The order is the zine&apos;s starting order.</span>
             </p>
-            <p id={`${inputId}-keys`} className="hidden">
-              Press Space to pick up, arrow keys to move, Space to drop, Escape to cancel.
-            </p>
           </div>
           <ol
             ref={masonry.listRef}
@@ -485,77 +608,9 @@ export function VisionBoard({
             data-layout={gridLayout}
             style={masonry.listStyle}
             className={`grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 ${gridLayout === "feature" ? "auto-rows-[minmax(248px,auto)]" : ""}`}
-            onDragOver={(e) => {
-              if (reorder.isDragging()) e.preventDefault();
-            }}
-            onDrop={(e) => {
-              if (!reorder.isDragging()) return;
-              e.preventDefault();
-              reorder.handleDrop();
-            }}
+            {...dropZone}
           >
-            {assets.map((asset, index) => {
-              const label = assetLabel(asset, index);
-              const { dragId, dropIndex } = reorder;
-              const showDropBefore = dragId !== null && dropIndex === index;
-              const showDropAfter = dragId !== null && dropIndex === assets.length && index === assets.length - 1;
-              const busy = busyId === asset.id;
-              return (
-                <PhotoCard
-                  key={asset.id}
-                  asset={asset}
-                  index={index}
-                  count={assets.length}
-                  label={label}
-                  dragging={dragId === asset.id}
-                  dropSide={showDropBefore ? "before" : showDropAfter ? "after" : null}
-                  layout={gridLayout}
-                  style={masonry.cardStyle(index)}
-                  held={reorder.heldId === asset.id}
-                  onToggleHeld={() => (reorder.heldId === asset.id ? reorder.dropHeld() : reorder.pickUp(index))}
-                  onCancelHeld={reorder.cancelHeld}
-                  onHoldAt={reorder.holdAt}
-                  columns={gridColumns}
-                  keysHintId={`${inputId}-keys`}
-                  draggable={!busy}
-                  onDragStart={() => reorder.setDrag(asset.id)}
-                  onDragEnd={() => {
-                    reorder.setDrag(null);
-                    reorder.setDrop(null);
-                  }}
-                  onDragOverSide={(after) => {
-                    if (!reorder.isDragging()) return false;
-                    const gap = after ? index + 1 : index;
-                    if (reorder.currentDropIndex() !== gap) reorder.setDrop(gap);
-                    return true;
-                  }}
-                  onMoveBy={(delta) => reorder.moveBy(index, delta)}
-                  confirmingDelete={confirmDeleteId === asset.id}
-                  deleting={busy}
-                  onAskDelete={() => setConfirmDeleteId(asset.id)}
-                  onCancelDelete={() => setConfirmDeleteId(null)}
-                  onDelete={() => void deleteAsset(asset, index)}
-                  onRetryProcessing={() => void retryProcessing(asset)}
-                  onEditPhoto={() => setPhotoEditId(asset.id)}
-                  onEditRecipe={() => setEditingId(asset.id)}
-                  hasFoundRecipe={!asset.recipe && Boolean(foundRecipes[asset.id])}
-                  naming={namingId === asset.id}
-                  onToggleNaming={() => {
-                    setMovingId(null);
-                    setNamingId(namingId === asset.id ? null : asset.id);
-                  }}
-                  onSaveName={(name) => saveName(asset, name)}
-                  otherBoards={otherBoards}
-                  moving={movingId === asset.id}
-                  onToggleMoving={() => {
-                    setNamingId(null);
-                    setMovingId(movingId === asset.id ? null : asset.id);
-                  }}
-                  onMoveToBoard={(targetId) => moveAsset(asset, index, targetId)}
-                  usedIn={usedIn[asset.id] ?? []}
-                />
-              );
-            })}
+            {assets.map((asset, index) => renderCard(asset, index, gridLayout, { style: masonry.cardStyle(index) }))}
           </ol>
           {cursor ? (
             <LoadMore sentinelRef={sentinelRef} loading={loadingMore} error={loadMoreError} onLoadMore={() => void loadMore()} />

@@ -2,11 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LayoutGrid, Pencil, Shapes, Upload } from "lucide-react";
+import { GalleryHorizontal, LayoutGrid, Pencil, Shapes, Upload } from "lucide-react";
 import type { BoardView } from "@/lib/board-layout";
 
-const VIEWS = { free: { label: "Free form", icon: Shapes }, grid: { label: "Grid", icon: LayoutGrid } } as const;
-/** The views that exist. Strip joins them with DIG-91. */
+const VIEWS = { free: { label: "Free form", icon: Shapes }, grid: { label: "Grid", icon: LayoutGrid }, strip: { label: "Strip", icon: GalleryHorizontal } } as const;
 export type BuiltView = Extract<BoardView, keyof typeof VIEWS>;
 
 const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
