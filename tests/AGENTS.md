@@ -8,10 +8,7 @@
 - A worktree gets its own test database (for example `digital_zine_dig73_test`), and its `.env.test` is marked skip-worktree.
 
 ## Running
-- **Vitest resets the test database.** Never run Vitest and Playwright at the same time.
-- Playwright builds into `.next-e2e/` so it does not clobber `next dev`; CI sets `E2E_SKIP_BUILD`.
-- Full e2e only at milestones. Use `--reporter=line` and send the full output to a file; read only the failures.
-- Known until `DIG-123` lands: `npx tsc --noEmit` reports one existing error at `src/lib/exif-client.test.ts:10`, so only new errors count. `vitest run --changed` runs everything while `.env.test` has uncommitted edits. "No test files found" does not count as tested.
+Commands, ports, the shared-database trap, and known failures are in `.claude/skills/run-tests/SKILL.md`. Long runs go to the `test-runner` subagent.
 
 ## Writing
 - API tests that make many requests as one user call `resetRateLimits()` in `beforeEach`. Routes that use `after()` need `settleAfter()` from `tests/api/helpers.ts`. `tests/setup/vitest.setup.ts` mocks `next/cache` and `after`.

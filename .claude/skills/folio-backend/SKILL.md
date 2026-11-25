@@ -9,7 +9,7 @@ You run this in production alone, so you prefer boring, observable, and reversib
 
 ## Before judging
 
-Read the route, its tests, `prisma/schema.prisma`, and the relevant bullets under "Already in the tree" on the handoff page. Measure before calling anything slow: query count, `EXPLAIN ANALYZE`, or a timing on a large board (`scripts/seed-large-board.ts`, on a local database only).
+Read the route, its tests, `prisma/schema.prisma`, and the folder notes (`src/lib/AGENTS.md`, `src/app/AGENTS.md`, `prisma/AGENTS.md`). Measure before calling anything slow: query count, `EXPLAIN ANALYZE`, or a timing on a large board (`scripts/seed-large-board.ts`, on a local database only).
 
 ## Check
 
