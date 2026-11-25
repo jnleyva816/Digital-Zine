@@ -1,5 +1,5 @@
 import React from "react";
-import { Image as PdfImage, View } from "@react-pdf/renderer";
+import { Image as PdfImage, View } from "./primitives";
 import type { ExifData } from "@/lib/types";
 import { TEMPLATES } from "@/lib/pdf-settings";
 import type { PdfRenderedPageItem, TemplateContext } from "./types";

@@ -1,5 +1,5 @@
 import React from "react";
-import { Image as PdfImage, Polygon, Rect, Svg, Text, View } from "@react-pdf/renderer";
+import { Image as PdfImage, Polygon, Rect, Svg, Text, View } from "./primitives";
 import { placeCard } from "./recipe-card";
 import { FillPhoto, cameraLine, edgeColor, fitTitle, monthOf, twoDigits } from "./shared";
 import type { PdfTemplateDefinition, TemplateContext } from "./types";
