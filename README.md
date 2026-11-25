@@ -6,7 +6,7 @@ Live at **https://folio-digital-zine.app**.
 
 **Stack:** Next.js 15 (App Router) and React 19, PostgreSQL with Prisma 6, Auth.js (email and password, and Google), Tailwind CSS, `sharp` for images and `pg-boss` for the background worker, `@react-pdf/renderer` for PDFs, Stripe for subscriptions, and Resend for email. It runs on Railway with Cloudflare R2 for photos and Sentry for errors.
 
-> The project's current state and active work live on the [Agent handoff](https://linear.app/digital-zine/document/agent-handoff-186930851c71) page in Linear, not in this file.
+> The project's current state and active work live on the [Agent handoff](https://linear.app/joshsws/document/agent-handoff-1dfe2c98ac86) page in Linear, not in this file.
 
 | Vision Board | Zine editor |
 | --- | --- |
@@ -182,7 +182,7 @@ The forwarder's secret is not the same as the one on a webhook endpoint in the S
 
 ## Testing
 
-This project is test-driven. Write a failing test, make it pass, then refactor. `CLAUDE.md` and `.cursor/rules/test-driven.mdc` hold the full rules.
+This project is test-driven. Write a failing test, make it pass, then refactor. `AGENTS.md` holds the full rules, and `tests/AGENTS.md` the commands and traps.
 
 | Layer | Tool | Where |
 | --- | --- | --- |
