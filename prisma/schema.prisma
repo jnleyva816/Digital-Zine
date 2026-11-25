@@ -32,26 +32,26 @@ enum AssetKind {
 }
 
 model User {
-  id                   String       @id @default(cuid())
+  id                   String                   @id @default(cuid())
   /// Short, lowercase, public: the creator part of a zine's address, /z/<publicId>/<slug> (DIG-102).
   /// The database makes it, so every way of creating a user gets one.
-  publicId             String       @unique @default(dbgenerated("substr(md5(((random())::text || (clock_timestamp())::text)), 1, 8)"))
-  email                String       @unique
+  publicId             String                   @unique @default(dbgenerated("substr(md5(((random())::text || (clock_timestamp())::text)), 1, 8)"))
+  email                String                   @unique
   name                 String?
   /// Null for accounts that only sign in with Google (DIG-94).
   passwordHash         String?
   /// Google's stable `sub` for the account, once linked (DIG-94).
-  googleId             String?      @unique
+  googleId             String?                  @unique
   /// Null until the creator proves they own the email. Password sign-in needs it (DIG-94).
   emailVerifiedAt      DateTime?
   termsAcceptedAt      DateTime?
-  stripeCustomerId     String?      @unique
-  stripeSubscriptionId String?      @unique
-  subscriptionStatus   String       @default("inactive")
-  tier                 Tier         @default(free)
-  role                 Role         @default(user)
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  stripeCustomerId     String?                  @unique
+  stripeSubscriptionId String?                  @unique
+  subscriptionStatus   String                   @default("inactive")
+  tier                 Tier                     @default(free)
+  role                 Role                     @default(user)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
   assets               MediaAsset[]
   zines                Zine[]
   boards               Board[]
@@ -107,37 +107,77 @@ model Recipe {
 /// DIG-25: a creator keeps several Vision Boards. Every photo is on one board and every zine is
 /// built from one board. Storage is one quota for the whole account, not per board.
 model Board {
-  id        String       @id @default(cuid())
-  ownerId   String
-  owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  name      String
-  sortOrder Int          @default(0)
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  assets    MediaAsset[]
-  zines     Zine[]
+  id         String           @id @default(cuid())
+  ownerId    String
+  owner      User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name       String
+  sortOrder  Int              @default(0)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  assets     MediaAsset[]
+  zines      Zine[]
+  placements BoardPlacement[]
+  notes      BoardNote[]
+  /// The last view used on wide and narrow screens, and the grid layout (DIG-85): `boardViewPrefsSchema`.
+  viewPrefs  Json?            @db.JsonB
 
   @@index([ownerId, sortOrder])
 }
 
+/// DIG-85: where a photo sits on its board's free-form canvas. Never changes board order. A photo is
+/// on one board, so it has at most one placement.
+model BoardPlacement {
+  assetId  String     @id
+  asset    MediaAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  boardId  String
+  board    Board      @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  x        Float
+  y        Float
+  width    Float
+  /// Degrees, -15 to 15.
+  rotation Float      @default(0)
+  z        Int        @default(0)
+  /// "print" (white border) or "plain".
+  look     String     @default("print")
+  tape     Boolean    @default(false)
+
+  @@index([boardId])
+}
+
+/// DIG-85: a sticky note on a board's free-form canvas. Never part of a zine or PDF.
+model BoardNote {
+  id        String   @id @default(cuid())
+  boardId   String
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  text      String
+  x         Float
+  y         Float
+  width     Float
+  rotation  Float    @default(0)
+  z         Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([boardId])
+}
+
 model MediaAsset {
-  id              String      @id @default(cuid())
+  id              String          @id @default(cuid())
   ownerId         String
-  owner           User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner           User            @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   /// The app moves photos to another board before deleting one. NoAction (checked at the end of
   /// the statement) still lets deleting a user cascade through boards and photos together.
   boardId         String
-  board           Board       @relation(fields: [boardId], references: [id], onDelete: NoAction)
-  storageKey      String      @unique
+  board           Board           @relation(fields: [boardId], references: [id], onDelete: NoAction)
+  storageKey      String          @unique
   publicUrl       String
   originalName    String?
   /// A name the creator gives the photo in the app (DIG-34). Null means "use the file name".
   name            String?
-  mimeType        String      @default("image/jpeg")
+  mimeType        String          @default("image/jpeg")
   /// Bytes in storage, read from the storage driver at create time, never from the client (DIG-32).
   /// Rows from before DIG-32 are 0.
-  sizeBytes       Int         @default(0)
-  status          AssetStatus @default(ready)
+  sizeBytes       Int             @default(0)
+  status          AssetStatus     @default(ready)
   /// Why processing failed, shown to the owner with a Retry button.
   processingError String?
   /// Pixel size after the camera's rotation is applied. Null until processed.
@@ -147,16 +187,17 @@ model MediaAsset {
   blurDataUrl     String?
   /// Crop, frame, and board card size (DIG-33): see `src/lib/photo-edit.ts`. Null is unedited.
   /// The stored image is never changed.
-  edit            Json?       @db.JsonB
-  kind            AssetKind   @default(photo)
-  exif            Json?       @db.JsonB
-  recipe          Json?       @db.JsonB
+  edit            Json?           @db.JsonB
+  kind            AssetKind       @default(photo)
+  exif            Json?           @db.JsonB
+  recipe          Json?           @db.JsonB
   /// The saved recipe this photo uses (DIG-24). `recipe` holds a copy of its settings.
   recipeId        String?
-  savedRecipe     Recipe?     @relation(fields: [recipeId], references: [id], onDelete: SetNull)
-  sortOrder       Int         @default(0)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  savedRecipe     Recipe?         @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+  sortOrder       Int             @default(0)
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  placement       BoardPlacement?
 
   @@index([ownerId, sortOrder])
   @@index([boardId, sortOrder])
