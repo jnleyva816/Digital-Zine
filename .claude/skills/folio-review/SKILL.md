@@ -26,7 +26,7 @@ Load each with the Skill tool and answer in this conversation. Do not spawn suba
 ## Ground it first
 
 1. Look at the real thing: run or screenshot the page, read the component or route, or read the ticket. Never critique from memory.
-2. Read "Already decided" on the Linear Agent handoff page. You may argue that a decision is wrong, but label it **Challenges a decision** and leave the decision to the owner. Never act on it.
+2. Read `docs/decisions/README.md` and the decision files that apply. You may argue that a decision is wrong, but label it **Challenges a decision** and leave the decision to the owner. Never act on it.
 3. Review only. Do not edit code or create tickets unless the owner asks.
 
 ## How every expert reports

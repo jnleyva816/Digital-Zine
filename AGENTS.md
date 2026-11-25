@@ -6,9 +6,7 @@ Linear is the source of truth for **what** to build and where each ticket stands
 
 ## Start of a session
 
-1. Read the [Agent handoff](https://linear.app/joshsws/document/agent-handoff-1dfe2c98ac86) page. It is short: the active project, the branch policy, and what waits on the owner.
-2. List the open tickets: `list_issues` with team Digital-Zine, state `started`, and only the fields you need. Read your ticket and its newest comment, which is the checkpoint.
-3. Do not read the archived handoff, the old log, or whole long documents "for context". Fetch what the ticket needs.
+Use the `start-ticket` skill (`.claude/skills/start-ticket/SKILL.md`; in Cursor, read that file and follow it). In short: read the short [Agent handoff](https://linear.app/joshsws/document/agent-handoff-1dfe2c98ac86) page, then only your ticket and its newest comment, which is the checkpoint. Do not read the archived handoff, the old log, or whole long documents "for context".
 
 ## Read when relevant
 
@@ -59,10 +57,8 @@ For each behavior in the acceptance: **red** (write the test; see it fail on an 
 - Tests use only `digital_zine_test` from `.env.test`, never the dev database.
 - Query by role and accessible name. If you cannot, fix the control's accessibility first.
 - No sleeps. No `.skip`, `.only`, or weakened assertions to reach green.
-- Before a commit: `npx vitest run --changed`, `npx tsc --noEmit`, and the e2e specs for the flow you touched. CI runs everything on the PR; do not repeat it locally.
-- Run everything locally only at a milestone the owner names, or for changes to dependencies, build config, route structure, the Prisma schema, auth, middleware, payments, or shared test helpers.
-- Docs-only changes: no local tests.
-- Never report a suite as passing unless you ran it or CI did. Commands, ports, and traps are in `tests/AGENTS.md`.
+- Which suites to run when, the commands, and the traps: the `run-tests` skill (`.claude/skills/run-tests/SKILL.md`). Hand long runs to the `test-runner` subagent so their output stays out of your context.
+- Never report a suite as passing unless you ran it or CI did.
 
 ## Linear status
 
@@ -71,22 +67,8 @@ For each behavior in the acceptance: **red** (write the test; see it fail on an 
 
 ## Before you stop
 
-Do this even when you are interrupted or the context is about to end.
+Use the `close-session` skill (`.claude/skills/close-session/SKILL.md`), even when interrupted or near the context limit. It covers the ticket comment template, the commit and push, the draft PR, the status, and the handoff page.
 
-1. **Ticket comment**, in this shape. It is the checkpoint the next session reads, so write it for a reader with no context:
-
-   ```
-   **Status:** In Progress | In Review, and why
-   **Changed:** what was built, with the main files
-   **Tests:** which you wrote, seen red then green; which suites you ran
-   **Decisions to check:** choices the owner should confirm (or "none")
-   **Next:** the file to open, then the exact command
-   ```
-
-   One comment per session. Put ticket IDs in backticks (`DIG-123`), or Linear expands each into a long link.
-2. **Commit** work that only exists in the working tree; mark it a checkpoint if the ticket is not done. Push, unless the handoff page says not to.
-3. **PR**: open or update it as a draft until the ticket is In Review. Do not merge.
-4. **Handoff page**: patch it only if the active project, the branch policy, or what waits on the owner changed. Never resend the whole page. Never add session history to it.
-5. **Milestones only** (a project goal met, a deploy, a merge into `main`): post a project status update on the active project of three to six lines.
+The ticket's newest comment is the checkpoint the next session reads. Without it, the next session starts blind.
 
 New owner decisions go into `docs/decisions/` in the same PR, as a new file plus one line in the index.
