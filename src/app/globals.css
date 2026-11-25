@@ -66,3 +66,55 @@ dialog[data-lightbox][open] {
     animation-duration: 0s;
   }
 }
+
+/* Reading modes on a public zine (DIG-50). Scrolling settles on a page; "proximity" never traps a tall one. */
+html:has([data-zine-scroll]) {
+  scroll-snap-type: y proximity;
+}
+
+/* A page turns on the spine: in from the right going forward, from the left going back. */
+.book-spread[data-turn] {
+  animation: book-turn-next 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left center;
+}
+
+.book-spread[data-turn="prev"] {
+  animation-name: book-turn-prev;
+  transform-origin: right center;
+}
+
+@keyframes book-turn-next {
+  from {
+    opacity: 0.2;
+    transform: perspective(1800px) rotateY(28deg);
+  }
+}
+
+@keyframes book-turn-prev {
+  from {
+    opacity: 0.2;
+    transform: perspective(1800px) rotateY(-28deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-spread[data-turn] {
+    animation: book-slide-next 0.15s ease-out;
+  }
+
+  .book-spread[data-turn="prev"] {
+    animation-name: book-slide-prev;
+  }
+}
+
+@keyframes book-slide-next {
+  from {
+    transform: translateX(1rem);
+  }
+}
+
+@keyframes book-slide-prev {
+  from {
+    transform: translateX(-1rem);
+  }
+}

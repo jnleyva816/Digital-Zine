@@ -60,7 +60,7 @@ export default async function PublicZinePage({ params }: Props) {
   return (
     <div className="min-h-screen bg-paper-100">
       <JsonLd data={zineJsonLd(zine, siteUrl())} />
-      <header className="border-b border-paper-300 bg-paper-50/80">
+      <header className="snap-start border-b border-paper-300 bg-paper-50/80">
         <div className="mx-auto max-w-2xl px-4 py-3 font-mono text-xs uppercase tracking-[0.2em] text-ink-500 sm:px-6">
           Folio · Digital Zine
         </div>

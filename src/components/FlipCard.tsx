@@ -127,7 +127,7 @@ export function FlipCard({
 
             {caption ? (
               <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-5 pb-5 pt-14 sm:px-7 sm:pb-6">
-                <p className="font-serif text-base leading-relaxed text-paper-50 sm:text-lg">
+                <p className={`font-serif text-base leading-relaxed text-paper-50 sm:text-lg ${onOpenFullScreen ? "mr-12" : ""}`}>
                   {caption}
                 </p>
               </div>
