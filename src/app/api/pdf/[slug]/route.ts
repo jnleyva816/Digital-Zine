@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { publicZinePath } from "@/lib/public-zine-path";
 import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
 import { parsePdfSettings } from "@/lib/pdf-settings";
@@ -129,14 +128,14 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
       const image = await loadPageImage(asset.storageKey, asset.publicUrl, edit);
       if (!image) return null;
       return {
+        name: asset.name?.trim() || null,
         caption: content.caption?.trim() ?? "",
-        flipEnabled: page.flipEnabled,
-        assetKind: asset.kind,
         imageSrc: { data: image, format: "jpg" as const },
         // An edited photo is already cropped and framed, so it is printed whole.
         imageFit: edit ? ("contain" as const) : ("cover" as const),
-        exif: parseExif(asset.exif),
-        recipe: parseRecipe(asset.recipe),
+        // A card that does not flip has no back, on screen or on paper.
+        exif: page.flipEnabled ? parseExif(asset.exif) : null,
+        recipe: page.flipEnabled ? parseRecipe(asset.recipe) : null,
       };
   });
   // Number the pages that made it, so the PDF never shows gaps.
@@ -150,9 +149,9 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
       title: zine.title,
       description: zine.description,
       authorName: zine.owner.name?.trim() || null,
-      path: publicZinePath(user.publicId, zine.slug),
-      publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString().slice(0, 10),
+      publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString(),
       pages,
+      settings,
     });
   } catch (error) {
     console.error(`PDF export failed for zine ${zine.id}`, error);
