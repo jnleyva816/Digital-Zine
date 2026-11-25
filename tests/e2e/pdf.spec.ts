@@ -166,3 +166,44 @@ test("a Free creator styles and previews on a phone without sideways scrolling",
   expect(await panel.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true);
   await expect.poll(() => savedStyle(zine.id)).toEqual(defaultPdfSettings("contact", "a4"));
 });
+
+test("a changed recipe card shows in the preview and in the export", async ({ page }) => {
+  const zine = await creatorWithZine(page, { pro: true, published: true });
+  const recipe = { name: "Harbor Chrome", filmSimulation: "Classic Chrome", dynamicRange: "DR200", sharpness: 1 };
+  await testDb.mediaAsset.updateMany({ where: { ownerId: zine.ownerId, originalName: "cellar.jpg" }, data: { recipe } });
+  await page.reload();
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  await panel.getByRole("button", { name: "Recipe card options" }).click();
+  const card = panel.getByRole("img", { name: "Photo page with its recipe card" });
+  await expect(card).toContainText("Harbor Chrome");
+
+  await panel.getByRole("button", { name: "Lab label" }).click();
+  await panel.getByRole("button", { name: /^Full/ }).click();
+  await panel.getByRole("button", { name: "On photo, bottom right" }).click();
+  await panel.getByRole("checkbox", { name: "Recipe name" }).uncheck();
+  await panel.getByRole("checkbox", { name: /^Camera settings/ }).check();
+  await expect(panel.getByRole("status")).toContainText("hides a lot of it");
+  await expect(card).toContainText("RECIPE · 02A");
+
+  await panel.getByRole("button", { name: "Back to style" }).click();
+  const downloading = page.waitForEvent("download");
+  await panel.getByRole("button", { name: "Export PDF" }).click();
+  const pages = readPdf(await fs.readFile(await (await downloading).path()));
+  expect(pages[2].text).toContain("RECIPE · 02A");
+  expect(pages[2].text).toContain("Sharp");
+  expect(pages[2].text).toContain("ISO 200");
+  expect(pages[2].text).not.toContain("Harbor Chrome");
+  expect(await savedStyle(zine.id)).toMatchObject({ card: { style: "label", size: "full", location: "over-br", showName: false, showExif: true } });
+});
+
+test("the recipe card preview fits a phone", async ({ page }) => {
+  await creatorWithZine(page, { pro: false, published: true });
+  await page.setViewportSize({ width: 360, height: 800 });
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  await panel.getByRole("button", { name: "Recipe card options" }).click();
+  const box = await panel.getByRole("img", { name: "Photo page with its recipe card" }).boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(360);
+});

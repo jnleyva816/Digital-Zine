@@ -126,6 +126,7 @@ const TEXT: CSSProperties = { ...BOX, whiteSpace: "pre-wrap", overflowWrap: "bre
 
 interface DrawContext {
   inks?: Inks;
+  sizes: string;
 }
 
 type AnyElement = ReactElement<Record<string, unknown> & { style?: PdfStyle; children?: ReactNode }>;
@@ -149,7 +150,7 @@ function draw(node: ReactNode, ctx: DrawContext): ReactNode {
       const { objectFit, ...style } = props.style ?? {};
       return (
         <div style={{ ...BOX, ...toCss(style) }}>
-          <WebPhoto photo={props.src as WebPhotoSource} fit={objectFit === "contain" ? "contain" : "cover"} inks={ctx.inks} sizes={`${PREVIEW_WIDTH}px`} />
+          <WebPhoto photo={props.src as WebPhotoSource} fit={objectFit === "contain" ? "contain" : "cover"} inks={ctx.inks} sizes={ctx.sizes} />
         </div>
       );
     }
@@ -170,8 +171,8 @@ function draw(node: ReactNode, ctx: DrawContext): ReactNode {
   }
 }
 
-/** One page of the PDF, a third of its size. Told to a screen reader as a picture: the controls and the zine's own text are elsewhere. */
-export function PdfPagePreview({ settings, zine, page, label }: { settings: PdfSettings; zine: PreviewZine; page: "cover" | PreviewPage; label: string }) {
+/** One page of the PDF, scaled down: a third of its size unless told otherwise. Told to a screen reader as a picture: the controls and the zine's own text are elsewhere. */
+export function PdfPagePreview({ settings, zine, page, label, width = PREVIEW_WIDTH }: { settings: PdfSettings; zine: PreviewZine; page: "cover" | PreviewPage; label: string; width?: number }) {
   const { payload, shown } = useMemo(() => {
     const pages = zine.pages.map(({ photo, ...rest }): PdfRenderedPageItem => ({
       ...rest,
@@ -185,19 +186,19 @@ export function PdfPagePreview({ settings, zine, page, label }: { settings: PdfS
 
   const ctx = templateContext(payload);
   const { Cover, PhotoPage } = PDF_TEMPLATES[settings.template];
-  const scale = PREVIEW_WIDTH / ctx.width;
+  const scale = width / ctx.width;
   const content = page === "cover" ? <Cover ctx={ctx} /> : shown ? <PhotoPage ctx={ctx} page={shown} /> : null;
   return (
     <div
       role="img"
       aria-label={label}
       className="relative shrink-0 overflow-hidden shadow-lg"
-      style={{ width: PREVIEW_WIDTH, height: ctx.height * scale, backgroundColor: ctx.palette.page, color: ctx.palette.text }}
+      style={{ width, height: ctx.height * scale, backgroundColor: ctx.palette.page, color: ctx.palette.text }}
     >
       <div
         style={{ ...VIEW, position: "absolute", top: 0, left: 0, width: ctx.width, height: ctx.height, overflow: "hidden", fontSize: 18, lineHeight: "normal", textRendering: "geometricPrecision", transform: `scale(${scale})`, transformOrigin: "0 0" }}
       >
-        {draw(content, { inks: settings.template === "riso" ? ctx.palette : undefined })}
+        {draw(content, { inks: settings.template === "riso" ? ctx.palette : undefined, sizes: `${width}px` })}
       </div>
     </div>
   );

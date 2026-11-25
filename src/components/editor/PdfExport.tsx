@@ -5,7 +5,8 @@ import { FileDown, Loader2, Palette } from "lucide-react";
 import { readApiError } from "@/components/board/types";
 import type { PdfSettings } from "@/lib/pdf-settings";
 import type { PreviewZine } from "./PdfPagePreview";
-import { PdfStylePanel, UpgradePrompt } from "./PdfStylePanel";
+import { PdfStylePanel } from "./PdfStylePanel";
+import { UpgradePrompt } from "./pdf-panel-ui";
 import { usePdfStyle } from "./usePdfStyle";
 
 interface PdfExportProps {
