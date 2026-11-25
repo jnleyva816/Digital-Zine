@@ -2,9 +2,12 @@
 
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
+import { BookOpen, GalleryVertical } from "lucide-react";
 import { FlipCard } from "@/components/FlipCard";
 import { pageHash, parsePageHash } from "@/lib/lightbox-hash";
+import { READING_VIEW_KEY, parseReadingView, withReadingView, type ReadingView } from "@/lib/reading-view";
 import { withViewTransition } from "@/lib/view-transition";
+import { BookReader } from "./BookReader";
 import { PhotoLightbox } from "./PhotoLightbox";
 import type { ZinePageData } from "./types";
 
@@ -21,6 +24,32 @@ export function ZinePages({ pages }: { pages: ZinePageData[] }) {
   /** True when opening added a history entry, so closing should step back over it. */
   const pushed = useRef(false);
   const lastViewed = useRef<number | null>(null);
+  /** The server always renders the scroll, so a zine reads without JavaScript (DIG-50). */
+  const [view, setView] = useState<ReadingView>("scroll");
+  const [bookPage, setBookPage] = useState(1);
+
+  // The mode a link asks for, or else the one this reader chose before.
+  useEffect(() => {
+    let chosen = parseReadingView(new URLSearchParams(location.search).get("view"));
+    if (!chosen) {
+      try {
+        chosen = parseReadingView(localStorage.getItem(READING_VIEW_KEY));
+      } catch {
+        // Storage is blocked: start with the scroll.
+      }
+    }
+    if (chosen) setView(chosen);
+  }, []);
+
+  function chooseView(next: ReadingView) {
+    setView(next);
+    history.replaceState(history.state, "", withReadingView(location.pathname, location.search, location.hash, next));
+    try {
+      localStorage.setItem(READING_VIEW_KEY, next);
+    } catch {
+      // Storage is blocked: the choice lasts for this visit.
+    }
+  }
 
   // A shared link, and the Back and Forward buttons.
   useEffect(() => {
@@ -47,6 +76,7 @@ export function ZinePages({ pages }: { pages: ZinePageData[] }) {
     const page = lastViewed.current;
     if (page === null) return;
     lastViewed.current = null;
+    setBookPage(page);
     // After the dialog has put focus back on the button it came from.
     const timer = setTimeout(() => {
       const button = document.querySelector<HTMLElement>(`[data-page-expand="${page}"]`);
@@ -83,30 +113,65 @@ export function ZinePages({ pages }: { pages: ZinePageData[] }) {
     }
   }
 
+  const card = (page: ZinePageData, priority: boolean) => (
+    <FlipCard
+      pageNumber={page.pageNumber}
+      totalPages={total}
+      imageUrl={page.imageUrl}
+      name={page.name}
+      edit={page.edit}
+      dims={page.dims}
+      blurDataUrl={page.blurDataUrl}
+      caption={page.caption || undefined}
+      flipEnabled={page.flipEnabled}
+      kind={page.kind}
+      exif={page.exif}
+      recipe={page.recipe}
+      priority={priority}
+      onOpenFullScreen={(element) => open(page.pageNumber, element)}
+    />
+  );
+
   return (
     <>
-      <ol aria-label="Pages" className="space-y-8 sm:space-y-12">
-        {pages.map((page, i) => (
-          <li key={page.pageNumber}>
-            <FlipCard
-              pageNumber={page.pageNumber}
-              totalPages={total}
-              imageUrl={page.imageUrl}
-              name={page.name}
-              edit={page.edit}
-              dims={page.dims}
-              blurDataUrl={page.blurDataUrl}
-              caption={page.caption || undefined}
-              flipEnabled={page.flipEnabled}
-              kind={page.kind}
-              exif={page.exif}
-              recipe={page.recipe}
-              priority={i === 0}
-              onOpenFullScreen={(card) => open(page.pageNumber, card)}
-            />
-          </li>
-        ))}
-      </ol>
+      <div role="group" aria-label="Reading mode" className="mb-6 flex justify-center">
+        <div className="inline-flex rounded-full border border-paper-300 bg-paper-50 p-1">
+          {(["scroll", "book"] as const).map((mode) => {
+            const Icon = mode === "book" ? BookOpen : GalleryVertical;
+            return (
+              <button
+                key={mode}
+                type="button"
+                aria-pressed={view === mode}
+                onClick={() => chooseView(mode)}
+                className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${
+                  view === mode ? "bg-ink-900 text-paper-50" : "text-ink-700 hover:text-ink-900"
+                }`}
+              >
+                <Icon className="h-4 w-4" aria-hidden="true" />
+                {mode === "book" ? "Book" : "Scroll"}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      {view === "book" ? (
+        <BookReader
+          pages={pages}
+          current={bookPage}
+          onTurn={setBookPage}
+          keysEnabled={openPage === null}
+          renderPage={(page, isCurrent) => card(page, isCurrent)}
+        />
+      ) : (
+        <ol aria-label="Pages" data-zine-scroll className="space-y-8 sm:space-y-12">
+          {pages.map((page, i) => (
+            <li key={page.pageNumber} className="snap-center">
+              {card(page, i === 0)}
+            </li>
+          ))}
+        </ol>
+      )}
       <PhotoLightbox pages={pages} current={openPage} onNavigate={navigate} onClose={close} />
     </>
   );

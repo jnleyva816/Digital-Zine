@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import path from "node:path";
 import bcrypt from "bcryptjs";
-import { PrismaClient } from "@prisma/client";
+import { Prisma, PrismaClient } from "@prisma/client";
 import { expect, type Page } from "@playwright/test";
 import { loadTestEnv } from "../../scripts/test-db";
 import { getOrCreateDefaultBoard } from "../../src/lib/boards";
@@ -24,6 +24,13 @@ export async function defaultBoardId(userId: string) {
 }
 
 export async function signIn(page: Page, email: string = SEEDED.email, password: string = SEEDED.password) {
+  // Wide screens open a board in free form (DIG-86). Tests that are about the grid start there, as a
+  // creator who chose it would; free-form tests open `?view=free`.
+  const creator = await testDb.user.findUnique({ where: { email }, select: { id: true } });
+  if (creator) {
+    await defaultBoardId(creator.id);
+    await testDb.board.updateMany({ where: { ownerId: creator.id, viewPrefs: { equals: Prisma.AnyNull } }, data: { viewPrefs: { wide: "grid" } } });
+  }
   await page.goto("/signin");
   await page.getByLabel("Studio Email").fill(email);
   await page.getByLabel("Password").fill(password);

@@ -1,297 +1,63 @@
 import React from "react";
-import {
-  Document,
-  Image as PdfImage,
-  Page,
-  StyleSheet,
-  Text,
-  View,
-  renderToBuffer,
-} from "@react-pdf/renderer";
-import { recipeRows } from "@/lib/fuji-recipe";
-import type { ExifData, RecipeData } from "@/lib/types";
+import { Document, Page, View, renderToBuffer } from "@react-pdf/renderer";
+import { registerPdfFonts } from "@/lib/pdf-fonts";
+import { miniPalette } from "@/lib/mini-zine";
+import { MiniSheet } from "@/lib/pdf-templates/mini";
+import { PDF_TEMPLATES } from "@/lib/pdf-templates";
+import { Cover } from "@/lib/pdf-templates/covers";
+import { PAPER_POINTS, templateContext } from "@/lib/pdf-templates/context";
+import type { PdfZinePayload, TemplateContext } from "@/lib/pdf-templates/types";
 
-export interface PdfRenderedPageItem {
-  pageNumber: number;
-  caption: string;
-  flipEnabled: boolean;
-  assetKind: "photo" | "recipe";
-  /** JPEG bytes, already read from storage. Pages without an image are left out before rendering. */
-  imageSrc: { data: Buffer; format: "jpg" };
-  /** "contain" for an edited photo, which arrives cropped and framed (DIG-33). */
-  imageFit: "cover" | "contain";
-  exif: ExifData | null;
-  recipe: RecipeData | null;
-}
+export type { PdfRenderedPageItem, PdfZinePayload } from "@/lib/pdf-templates/types";
 
-export interface PdfZinePayload {
-  title: string;
-  description: string | null;
-  /** The creator's display name, or null to leave the byline out. Never an email address. */
-  authorName: string | null;
-  /** The zine's public address, like /z/ab12cd34/golden-hour (DIG-102). */
-  path: string;
-  publishedAt: string;
-  pages: PdfRenderedPageItem[];
-}
-
-const styles = StyleSheet.create({
-  coverPage: {
-    backgroundColor: "#161412",
-    color: "#FDFBF7",
-    padding: 54,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-  kicker: {
-    fontSize: 9,
-    letterSpacing: 2.5,
-    textTransform: "uppercase",
-    color: "#D94E28",
-    marginBottom: 14,
-  },
-  coverTitle: {
-    fontSize: 34,
-    fontFamily: "Times-Roman",
-    lineHeight: 1.2,
-    marginBottom: 16,
-  },
-  coverDescription: {
-    fontSize: 12,
-    color: "#DDD0B6",
-    lineHeight: 1.55,
-    maxWidth: 400,
-  },
-  coverFooter: {
-    borderTopWidth: 1,
-    borderTopColor: "#3D3730",
-    paddingTop: 16,
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    fontSize: 9,
-    color: "#DDD0B6",
-  },
-  platePage: {
-    backgroundColor: "#FDFBF7",
-    color: "#161412",
-    padding: 36,
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "space-between",
-  },
-  pageHeader: {
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginBottom: 12,
-    fontSize: 8.5,
-    color: "#6E655B",
-    letterSpacing: 1.2,
-    textTransform: "uppercase",
-  },
-  imageFrame: {
-    width: "100%",
-    height: 430,
-    backgroundColor: "#161412",
-    overflow: "hidden",
-    marginBottom: 14,
-  },
-  plateImage: {
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-  },
-  caption: {
-    fontSize: 11.5,
-    fontFamily: "Times-Italic",
-    color: "#26221E",
-    lineHeight: 1.45,
-    marginBottom: 12,
-  },
-  reverseBox: {
-    borderTopWidth: 1,
-    borderTopColor: "#DDD0B6",
-    paddingTop: 12,
-    marginTop: "auto",
-  },
-  reverseHeading: {
-    fontSize: 8,
-    letterSpacing: 1.6,
-    textTransform: "uppercase",
-    color: "#D94E28",
-    marginBottom: 6,
-  },
-  exifGrid: {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 14,
-  },
-  exifCell: {
-    marginRight: 18,
-    marginBottom: 4,
-  },
-  exifLabel: {
-    fontSize: 7.5,
-    color: "#6E655B",
-    textTransform: "uppercase",
-  },
-  exifValue: {
-    fontSize: 9.5,
-    color: "#161412",
-    fontFamily: "Courier",
-  },
-  recipeTitle: {
-    fontSize: 12,
-    fontFamily: "Times-Bold",
-    marginBottom: 6,
-    color: "#161412",
-  },
-  recipeGrid: {
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  recipeRow: {
-    width: "50%",
-    display: "flex",
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingRight: 12,
-    paddingVertical: 2,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#E5DCCB",
-  },
-  recipeLabel: {
-    fontSize: 7,
-    textTransform: "uppercase",
-    color: "#6E655B",
-    letterSpacing: 0.6,
-  },
-  recipeValue: {
-    fontSize: 8.5,
-    color: "#161412",
-  },
-});
-
-function ZinePdfDocument({ zine }: { zine: PdfZinePayload }) {
+/** One sheet, exactly. A page that wraps grows a second sheet; a page that does not is resized to its content. */
+function Sheet({ ctx, children }: { ctx: TemplateContext; children: React.ReactNode }) {
   return (
-    <Document
-      title={zine.title}
-      author={zine.authorName ?? undefined}
-      subject={zine.description ?? "Digital Zine Edition"}
-    >
-      <Page size="A4" style={styles.coverPage}>
-        <View>
-          <Text style={styles.kicker}>Digital Zine · Published Edition</Text>
-          <Text style={styles.coverTitle}>{zine.title}</Text>
-          {zine.description ? (
-            <Text style={styles.coverDescription}>{zine.description}</Text>
-          ) : null}
-        </View>
-        <View style={styles.coverFooter}>
-          {zine.authorName ? <Text>By {zine.authorName}</Text> : null}
-          <Text>
-            {zine.pages.length} {zine.pages.length === 1 ? "Plate" : "Plates"} · {zine.path}
-          </Text>
-          <Text>{zine.publishedAt}</Text>
-        </View>
-      </Page>
+    <Page size={[ctx.width, ctx.height]} style={{ backgroundColor: ctx.palette.page, color: ctx.palette.text }}>
+      <View wrap={false} style={{ width: ctx.width, height: ctx.height, overflow: "hidden" }}>
+        {children}
+      </View>
+    </Page>
+  );
+}
 
-      {zine.pages.map((p) => {
-        const showRecipe =
-          p.flipEnabled &&
-          (p.assetKind === "recipe" || (!p.exif && Boolean(p.recipe))) &&
-          p.recipe;
-        const showExif = p.flipEnabled && !showRecipe && p.exif;
-
-        return (
-          <Page key={p.pageNumber} size="A4" style={styles.platePage}>
-            <View>
-              <View style={styles.pageHeader}>
-                <Text>{zine.title}</Text>
-                <Text>
-                  Page {String(p.pageNumber).padStart(2, "0")} /{" "}
-                  {String(zine.pages.length).padStart(2, "0")}
-                </Text>
-              </View>
-
-              <View style={styles.imageFrame}>
-                <PdfImage src={p.imageSrc} style={[styles.plateImage, { objectFit: p.imageFit }]} />
-              </View>
-
-              {p.caption ? <Text style={styles.caption}>{p.caption}</Text> : null}
-            </View>
-
-            {showRecipe && p.recipe ? (
-              <View style={styles.reverseBox}>
-                <Text style={styles.reverseHeading}>Card Reverse · Fujifilm Film Recipe</Text>
-                <Text style={styles.recipeTitle}>{p.recipe.name}</Text>
-                <View style={styles.recipeGrid}>
-                  {recipeRows(p.recipe).map((row) => (
-                    <View key={row.label} style={styles.recipeRow}>
-                      <Text style={styles.recipeLabel}>{row.label}</Text>
-                      <Text style={styles.recipeValue}>{row.value}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            ) : null}
-
-            {showExif && p.exif ? (
-              <View style={styles.reverseBox}>
-                <Text style={styles.reverseHeading}>
-                  Card Reverse · Camera EXIF
-                </Text>
-                <View style={styles.exifGrid}>
-                  {p.exif.iso ? (
-                    <View style={styles.exifCell}>
-                      <Text style={styles.exifLabel}>ISO</Text>
-                      <Text style={styles.exifValue}>{String(p.exif.iso)}</Text>
-                    </View>
-                  ) : null}
-                  {p.exif.aperture ? (
-                    <View style={styles.exifCell}>
-                      <Text style={styles.exifLabel}>Aperture</Text>
-                      <Text style={styles.exifValue}>{p.exif.aperture}</Text>
-                    </View>
-                  ) : null}
-                  {p.exif.shutterSpeed ? (
-                    <View style={styles.exifCell}>
-                      <Text style={styles.exifLabel}>Shutter</Text>
-                      <Text style={styles.exifValue}>{p.exif.shutterSpeed}</Text>
-                    </View>
-                  ) : null}
-                  {p.exif.focalLength ? (
-                    <View style={styles.exifCell}>
-                      <Text style={styles.exifLabel}>Focal Length</Text>
-                      <Text style={styles.exifValue}>{p.exif.focalLength}</Text>
-                    </View>
-                  ) : null}
-                  {p.exif.cameraModel ? (
-                    <View style={styles.exifCell}>
-                      <Text style={styles.exifLabel}>Camera</Text>
-                      <Text style={styles.exifValue}>
-                        {[p.exif.cameraMake, p.exif.cameraModel]
-                          .filter(Boolean)
-                          .join(" ")}
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-              </View>
-            ) : null}
-          </Page>
-        );
-      })}
+function Booklet({ zine }: { zine: PdfZinePayload }) {
+  const ctx = templateContext(zine);
+  const { PhotoPage } = PDF_TEMPLATES[zine.settings.template];
+  return (
+    <Document title={zine.title} author={zine.authorName ?? undefined} subject={zine.description ?? "Digital Zine Edition"}>
+      <Sheet ctx={ctx}>
+        <Cover ctx={ctx} />
+      </Sheet>
+      {zine.pages.map((page) => (
+        <Sheet key={page.pageNumber} ctx={ctx}>
+          <PhotoPage ctx={ctx} page={page} />
+        </Sheet>
+      ))}
     </Document>
   );
 }
 
-export async function renderZinePdfBuffer(
-  payload: PdfZinePayload
-): Promise<Buffer> {
-  return renderToBuffer(<ZinePdfDocument zine={payload} />);
+export async function renderZinePdfBuffer(payload: PdfZinePayload): Promise<Buffer> {
+  registerPdfFonts();
+  return renderToBuffer(<Booklet zine={payload} />);
+}
+
+export interface MiniZinePayload extends PdfZinePayload {
+  /** The zine's full public address, printed on the back cover. */
+  publicUrl: string;
+}
+
+/** The one-sheet mini zine (DIG-73): a landscape sheet that folds into an eight-page booklet. */
+export async function renderMiniZinePdfBuffer(zine: MiniZinePayload): Promise<Buffer> {
+  registerPdfFonts();
+  const { width, height } = PAPER_POINTS[zine.settings.paper];
+  const ctx: TemplateContext = { ...templateContext(zine), palette: miniPalette(zine.settings), width: height, height: width };
+  return renderToBuffer(
+    <Document title={zine.title} author={zine.authorName ?? undefined} subject={zine.description ?? "Digital Zine Edition"}>
+      <Sheet ctx={ctx}>
+        <MiniSheet ctx={ctx} publicUrl={zine.publicUrl} />
+      </Sheet>
+    </Document>
+  );
 }

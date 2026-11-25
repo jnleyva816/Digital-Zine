@@ -115,9 +115,10 @@ export async function PATCH(
     data.sortOrder = (_max.sortOrder ?? -1) + 1;
   }
 
-  const asset = await prisma.mediaAsset.update({
-    where: { id: existing.id },
-    data,
+  const asset = await prisma.$transaction(async (tx) => {
+    // Its place on the old board's free-form canvas goes with it (DIG-85).
+    if (data.board) await tx.boardPlacement.deleteMany({ where: { assetId: existing.id } });
+    return tx.mediaAsset.update({ where: { id: existing.id }, data });
   });
   // The name, crop, frame, and recipe all show on public pages (DIG-27).
   await revalidateZinesUsingAssets([existing.id]);

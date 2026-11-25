@@ -12,6 +12,23 @@ updates:
       # One pull request for the small stuff. A major version is always its own.
       minor-and-patch:
         update-types: ["minor", "patch"]
+    # Majors we have deferred (DIG-103, DIG-124): they cannot pass CI on Node 22, Next 15, and
+    # Prisma 6. Security updates ignore this list. Drop an entry when its upgrade is planned.
+    ignore:
+      - dependency-name: "@prisma/client"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint-config-next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "next"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "prisma"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     labels: ["Security"]
 
   - package-ecosystem: "github-actions"

@@ -24,7 +24,8 @@ export function useBoardPaging({ boardId, initialCursor, initialTotal, loadedIds
   const [loadingMore, setLoadingMore] = useState(false);
   const [loadMoreError, setLoadMoreError] = useState<string | null>(null);
   const loadingMoreRef = useRef(false);
-  const sentinelRef = useRef<HTMLDivElement>(null);
+  // State, not a ref: the end of the list comes and goes with the view, and each one must be watched.
+  const [sentinel, sentinelRef] = useState<HTMLDivElement | null>(null);
   const callbacks = useRef({ loadedIds, onPage });
   callbacks.current = { loadedIds, onPage };
 
@@ -55,14 +56,14 @@ export function useBoardPaging({ boardId, initialCursor, initialTotal, loadedIds
 
   // Load the next page as the end of the list comes near.
   useEffect(() => {
-    const el = sentinelRef.current;
+    const el = sentinel;
     if (!el || !cursor || typeof IntersectionObserver === "undefined") return;
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) void loadMore();
     }, { rootMargin: "800px 0px" });
     observer.observe(el);
     return () => observer.disconnect();
-  }, [cursor, loadMore]);
+  }, [sentinel, cursor, loadMore]);
 
   return { cursor, total, setTotal, loadingMore, loadMoreError, loadMore, sentinelRef };
 }

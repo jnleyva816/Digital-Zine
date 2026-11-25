@@ -23,7 +23,7 @@ test("a Pro creator creates, renames, reorders, and deletes boards, keeping the 
   try {
     await makePro(user.id);
     await signIn(page, user.email, user.password);
-    await page.getByRole("link", { name: "All boards" }).click();
+    await page.getByRole("link", { name: "Boards /" }).click();
     await expect(page).toHaveURL("/boards");
     await expect(boardRows(page)).toHaveCount(1);
     await expect(boardRows(page).first()).toContainText("My board");
@@ -55,6 +55,8 @@ test("a Pro creator creates, renames, reorders, and deletes boards, keeping the 
 
     await page.getByRole("link", { name: "Tokyo" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Tokyo" })).toBeVisible();
+    // A new board opens in free form on a wide screen (DIG-86).
+    await page.getByRole("button", { name: "Grid", exact: true }).click();
     await expect(boardCards(page)).toHaveCount(3);
   } finally {
     await deleteUser(user.id);

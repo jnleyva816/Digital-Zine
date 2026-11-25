@@ -56,7 +56,7 @@ export function AdminViewToggle({ viewingAsFree, reload = reloadPage }: { viewin
         aria-label="View as Free user"
         disabled={busy}
         onClick={() => void set(!viewingAsFree)}
-        className="inline-flex items-center gap-2 rounded-full border border-paper-300 bg-white px-2.5 py-1 text-xs font-medium text-ink-800 transition hover:border-ink-700 disabled:opacity-60"
+        className="inline-flex min-h-11 items-center gap-2 rounded-full border border-paper-300 bg-white px-2.5 py-1 lg:min-h-0 text-xs font-medium text-ink-800 transition hover:border-ink-700 disabled:opacity-60"
       >
         <Eye className="h-3.5 w-3.5" aria-hidden="true" />
         <span className="hidden lg:inline">View as Free</span>
