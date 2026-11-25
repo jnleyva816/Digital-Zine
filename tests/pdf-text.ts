@@ -44,7 +44,8 @@ export function readPdf(pdf: Buffer): PdfPageText[] {
     const cmap = objects.get(ref(objects.get(fontId)?.dict ?? "", "ToUnicode"))?.stream ?? "";
     for (const block of cmap.matchAll(/beginbfrange([\s\S]*?)endbfrange/g)) {
       for (const r of block[1].matchAll(/<([0-9a-fA-F]+)>\s*<([0-9a-fA-F]+)>\s*\[([^\]]*)\]/g)) {
-        [...r[3].matchAll(/<([0-9a-fA-F]+)>/g)].forEach((u, i) => map.set(parseInt(r[1], 16) + i, utf16(u[1])));
+        // A ligature lists several characters, with spaces between them.
+        [...r[3].matchAll(/<([0-9a-fA-F ]+)>/g)].forEach((u, i) => map.set(parseInt(r[1], 16) + i, utf16(u[1].replace(/ /g, ""))));
       }
     }
     return map;

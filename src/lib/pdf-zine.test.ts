@@ -2,7 +2,7 @@ import sharp from "sharp";
 import { beforeAll, describe, expect, it } from "vitest";
 import { readPdf } from "../../tests/pdf-text";
 import { defaultPdfSettings, type PdfSettings, type PdfTemplate } from "./pdf-settings";
-import { renderZinePdfBuffer, type PdfRenderedPageItem, type PdfZinePayload } from "./pdf-zine";
+import { renderMiniZinePdfBuffer, renderZinePdfBuffer, type PdfRenderedPageItem, type PdfZinePayload } from "./pdf-zine";
 
 // DIG-66: the PDF is drawn from the zine's chosen template, typeface, palette, and paper.
 let jpeg: Buffer;
@@ -211,5 +211,97 @@ describe("Riso (DIG-69)", () => {
   it("prints a large page number", async () => {
     const pages = await render(defaultPdfSettings("riso", "a4"));
     expect(pages[2].text).toContain("02");
+  });
+});
+
+// DIG-73: the one-sheet mini zine.
+describe("mini zine", () => {
+  const four = () => [1, 2, 3, 4].map((n) => item(n, { recipe: n < 3 ? recipe : null }));
+  const url = "https://folio-digital-zine.app/z/abcd1234/golden-hour-field-notes-issue-01";
+  const raw = (settings: PdfSettings, over?: Partial<PdfZinePayload>) => renderMiniZinePdfBuffer({ ...payload(settings, { pages: four(), ...over }), publicUrl: url });
+  const mini = async (settings: PdfSettings, over?: Partial<PdfZinePayload>) => {
+    const pages = readPdf(await raw(settings, over));
+    expect(pages).toHaveLength(1);
+    return pages[0];
+  };
+  const letter = defaultPdfSettings("darkroom", "letter");
+  const inOrder = (text: string, parts: string[]) => {
+    const at = parts.map((p) => text.indexOf(p));
+    expect(at, text).not.toContain(-1);
+    expect(at).toEqual([...at].sort((a, b) => a - b));
+  };
+
+  it.each([["letter", 792, 612], ["a4", 841.89, 595.28]] as const)("is one landscape %s sheet", async (paper, w, h) => {
+    const p = await mini({ ...letter, paper });
+    expect(p.width).toBeCloseTo(w, 0);
+    expect(p.height).toBeCloseTo(h, 0);
+  });
+
+  it("places pages 5 4 3 2 over 6 7 back front, with an intro first and recipes last", async () => {
+    const { text } = await mini(letter);
+    inOrder(text, ["Caption number 3", "Caption number 2", "Caption number 1", "Four frames from three evenings.", "Caption number 4", "RECIPES", "Read it online", "FOLIO · MINI ZINE"]);
+    expect(text).toContain("Kodachrome 64");
+    expect(text).toContain("Sam Ortega · October 2026");
+  });
+
+  it("turns the top row, and only the top row, upside down", async () => {
+    const { content } = await mini(letter);
+    expect(content.match(/-1 -?0 -?0 -1 [-\d.]+ [-\d.]+ cm/g)).toHaveLength(4);
+  });
+
+  it("gives six photos every page, and five leave a recipe page or else an intro", async () => {
+    const six = [1, 2, 3, 4, 5, 6].map((n) => item(n, { recipe }));
+    const full = (await mini(letter, { pages: six })).text;
+    inOrder(full, ["number 4", "number 3", "number 2", "number 1", "number 5", "number 6"]);
+    expect(full).not.toMatch(/RECIPES|Four frames/);
+    const five = (await mini(letter, { pages: six.slice(0, 5) })).text;
+    expect(five).toContain("RECIPES");
+    expect(five).not.toContain("Four frames");
+    const noRecipes = (await mini({ ...letter, recipePage: false }, { pages: six.slice(0, 5) })).text;
+    expect(noRecipes).not.toContain("RECIPES");
+    expect(noRecipes).toContain("Four frames");
+  });
+
+  it("lists a recipe shared by several photos once", async () => {
+    expect((await mini({ ...letter, recipeCards: false })).text.match(/Kodachrome 64/g)).toHaveLength(1);
+  });
+
+  it("prints the whole public address without hyphens that are not in it, and no email", async () => {
+    const { text } = await mini(letter);
+    expect(text.replace(/\s/g, "")).toContain("folio-digital-zine.app/z/abcd1234/golden-hour-field-notes-issue-01");
+  });
+
+  it("draws fold lines and one cut line, unless guides are off", async () => {
+    const on = (await mini(letter)).content;
+    const dashes = /\[\s*4 3\s*\] 0 d/g;
+    expect(on.match(dashes)).toHaveLength(5);
+    expect(on).toMatch(/198 306 m\s+594 306 l/);
+    const off = (await mini({ ...letter, guides: false })).content;
+    expect(off).not.toMatch(dashes);
+    expect(off).not.toMatch(/198 306 m\s+594 306 l/);
+  });
+
+  it("prints light pages with ink saver", async () => {
+    const dark = (await mini(letter)).content;
+    const light = (await mini({ ...letter, inkSaver: true })).content;
+    const ink = "0.086 0.078 0.071";
+    const background = (c: string) => /([\d. ]+) scn/.exec(c)![1].trim().split(" ").map((n) => Number(n).toFixed(3)).join(" ");
+    expect(background(dark)).toBe(ink);
+    expect(background(light)).not.toBe(ink);
+  });
+
+  it.each(templates)("%s never prints below 9 points and fits its longest content", async (template) => {
+    for (const paper of ["letter", "a4"] as const)
+      for (const typeface of ["editorial", "gallery", "technical", "typewriter", "poster"] as const) {
+        const p = await mini({ ...defaultPdfSettings(template, paper), typeface }, {
+          title: "An Extraordinarily Long Title About Golden Hours, Harbors, Ridgelines, and Everything Else Seen",
+          description: "word ".repeat(80).trim(),
+          pages: [1, 2, 3, 4, 5].map((n) => item(n, { caption: "A very long caption. ".repeat(20), recipe: { ...fullRecipe, name: `${n} Extremely long recipe name for one line` } })),
+        });
+        const sizes = [...p.content.matchAll(/\/F\d+ ([\d.]+) Tf/g)].map((m) => Number(m[1]));
+        expect(Math.min(...sizes)).toBeGreaterThanOrEqual(9);
+        for (const n of [1, 2, 3, 4, 5]) expect(p.text).toContain(`${n} Extremely`);
+        expect(p.text, `${paper} ${typeface}`).toContain("Sam Ortega");
+      }
   });
 });

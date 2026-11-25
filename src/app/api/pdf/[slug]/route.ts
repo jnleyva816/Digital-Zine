@@ -1,10 +1,13 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
+import { renderMiniZinePdfBuffer, renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
 import { duotone } from "@/lib/media/duotone";
+import { MINI_PHOTO_MINIMUM, miniPalette, pickMiniPages } from "@/lib/mini-zine";
 import { PALETTES, parsePdfSettings } from "@/lib/pdf-settings";
+import { publicZinePath } from "@/lib/public-zine-path";
+import { absoluteUrl } from "@/lib/site";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
 import { limitRequest } from "@/lib/rate-limit";
@@ -67,24 +70,30 @@ async function loadPageImage(storageKey: string, publicUrl: string, edit: PhotoE
   }
 }
 
-export async function GET(_req: Request, context: { params: Promise<{ slug: string }> }) {
+const proRequired = () =>
+  NextResponse.json(
+    {
+      error: "PDF export is a Pro feature ($15/month). Upgrade in Billing to download your published zines.",
+      code: "PRO_REQUIRED",
+    },
+    { status: 403 }
+  );
+
+/** `?format=` picks the booklet (Pro) or the one-sheet mini zine (free; DIG-73). Without it, the zine's saved format. */
+export async function GET(req: Request, context: { params: Promise<{ slug: string }> }) {
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json(
-      { error: "Sign in with a Pro account ($15/month) to export PDF editions.", code: "AUTH_REQUIRED" },
+      { error: "Sign in to export PDF editions.", code: "AUTH_REQUIRED" },
       { status: 401 }
     );
   }
 
-  if (user.tier !== "pro") {
-    return NextResponse.json(
-      {
-        error: "PDF export is a Pro feature ($15/month). Upgrade in Billing to download your published zines.",
-        code: "PRO_REQUIRED",
-      },
-      { status: 403 }
-    );
+  const asked = new URL(req.url).searchParams.get("format");
+  if (asked !== null && asked !== "booklet" && asked !== "mini") {
+    return NextResponse.json({ error: "Choose the booklet or the mini zine." }, { status: 400 });
   }
+  if (asked === "booklet" && user.tier !== "pro") return proRequired();
 
   // Each export is CPU-heavy (DIG-28).
   const limited = await limitRequest("pdf", user.id);
@@ -95,7 +104,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
   const zine = await prisma.zine.findFirst({
     where: { slug, published: true, ownerId: user.id },
     include: {
-      owner: { select: { name: true } },
+      owner: { select: { name: true, publicId: true } },
       pages: { orderBy: { pageNumber: "asc" } },
     },
   });
@@ -109,6 +118,8 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
 
   // No style is ever guessed (owner, 19 Nov; DIG-64).
   const settings = parsePdfSettings(zine.pdfSettings);
+  const mini = (asked ?? settings?.format) === "mini";
+  if (!mini && user.tier !== "pro") return proRequired();
   if (!settings) {
     return NextResponse.json(
       { error: "Choose a template and paper size for this zine's PDF first.", code: "STYLE_REQUIRED" },
@@ -116,14 +127,15 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     );
   }
 
-  const pageContents = zine.pages.map((page) => ({ page, content: parsePageContent(page.content) }));
+  const allPages = zine.pages.map((page) => ({ page, content: parsePageContent(page.content) }));
+  const pageContents = mini ? pickMiniPages(allPages, (p) => p.content.assetId, settings.miniPhotos) : allPages;
   const assets = await prisma.mediaAsset.findMany({
     where: { id: { in: pageContents.map((p) => p.content.assetId).filter(Boolean) }, ownerId: user.id },
   });
   const assetMap = new Map(assets.map((a) => [a.id, a]));
 
   // Riso prints every photo in the palette's two inks (DIG-69).
-  const { text: ink1, accent: ink2, page: paper } = PALETTES[settings.palette];
+  const { text: ink1, accent: ink2, page: paper } = mini ? miniPalette(settings) : PALETTES[settings.palette];
   const ink = (image: Buffer) => (settings.template === "riso" ? duotone(image, { ink1, ink2, paper }) : image);
 
   const loaded = await mapLimit(pageContents, PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
@@ -148,16 +160,26 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     .filter((p): p is NonNullable<typeof p> => p !== null)
     .map((p, i) => ({ ...p, pageNumber: i + 1 }));
 
+  if (mini && pages.length < MINI_PHOTO_MINIMUM) {
+    return NextResponse.json(
+      { error: `A mini zine needs at least ${MINI_PHOTO_MINIMUM} photos. Add more pages or choose more photos.`, code: "MINI_PHOTOS_REQUIRED" },
+      { status: 409 }
+    );
+  }
+
   let pdf: Buffer;
   try {
-    pdf = await renderZinePdfBuffer({
+    const payload = {
       title: zine.title,
       description: zine.description,
       authorName: zine.owner.name?.trim() || null,
       publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString(),
       pages,
       settings,
-    });
+    };
+    pdf = mini
+      ? await renderMiniZinePdfBuffer({ ...payload, publicUrl: absoluteUrl(publicZinePath(zine.owner.publicId, zine.slug)) })
+      : await renderZinePdfBuffer(payload);
   } catch (error) {
     console.error(`PDF export failed for zine ${zine.id}`, error);
     return NextResponse.json({ error: "The PDF could not be generated. Try again in a moment." }, { status: 500 });
@@ -167,7 +189,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${zine.slug}.pdf"`,
+      "Content-Disposition": `attachment; filename="${zine.slug}${mini ? "-mini" : ""}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });
