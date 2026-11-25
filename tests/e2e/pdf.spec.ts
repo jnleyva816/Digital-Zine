@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
+import { defaultPdfSettings } from "../../src/lib/pdf-settings";
 import { createUserWithPhotos, deleteUser, makePro, signIn, testDb, defaultBoardId } from "./helpers";
 
 test.afterAll(async () => {
@@ -24,6 +25,7 @@ async function creatorWithZine(page: Page, { pro, published }: { pro: boolean; p
       title: "Brine & Light",
       slug: `pdf-${randomUUID().slice(0, 8)}`,
       published,
+      pdfSettings: defaultPdfSettings("darkroom", "a4"),
       publishedAt: published ? new Date() : null,
       pages: {
         create: assets.map((a, i) => ({ pageNumber: i + 1, content: { assetId: a.id, caption: `Plate ${i + 1}` } })),

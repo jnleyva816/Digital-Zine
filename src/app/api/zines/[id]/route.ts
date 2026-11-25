@@ -3,6 +3,7 @@ import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePublicZines } from "@/lib/public-zine-cache";
+import { pdfSettingsSchema } from "@/lib/pdf-settings";
 import { parsePageContent, slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { limitRequest } from "@/lib/rate-limit";
@@ -22,6 +23,8 @@ const updateZineSchema = z.object({
   pages: z.array(pageInputSchema).max(60).optional(),
   /** Moves the zine to another board; only while it has no pages (DIG-25). */
   boardId: z.string().min(1).optional(),
+  /** How the zine's PDF looks (DIG-64). */
+  pdfSettings: pdfSettingsSchema.optional(),
 });
 
 export async function GET(
@@ -138,6 +141,16 @@ export async function PATCH(
     }
   }
 
+  if (parsed.data.pdfSettings?.miniPhotos.length) {
+    // The pages this save leaves the zine with. Those photos are the owner's own, checked below.
+    const onPages =
+      parsed.data.pages?.map((p) => p.assetId) ??
+      (await prisma.zinePage.findMany({ where: { zineId: existing.id }, select: { content: true } })).map((p) => parsePageContent(p.content).assetId);
+    if (parsed.data.pdfSettings.miniPhotos.some((assetId) => !onPages.includes(assetId))) {
+      return NextResponse.json({ error: "The mini zine can only use photos that are on this zine's pages." }, { status: 400 });
+    }
+  }
+
   if (parsed.data.pages) {
     const requestedAssetIds = [
       ...new Set(parsed.data.pages.map((p) => p.assetId)),
@@ -207,6 +220,7 @@ export async function PATCH(
             : {}),
           ...(nextSlug !== undefined ? { slug: nextSlug } : {}),
           ...(nextBoardId !== undefined ? { boardId: nextBoardId } : {}),
+          ...(parsed.data.pdfSettings !== undefined ? { pdfSettings: parsed.data.pdfSettings } : {}),
           ...(parsed.data.published !== undefined
             ? {
                 published: parsed.data.published,

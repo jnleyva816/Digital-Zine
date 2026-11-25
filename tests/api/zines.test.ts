@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import { defaultPdfSettings } from "@/lib/pdf-settings";
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { GET as LIST, POST as CREATE } from "@/app/api/zines/route";
@@ -111,6 +112,57 @@ describe("create and list", () => {
     mockedUser.mockResolvedValue(me);
     const { zines } = (await (await LIST()).json()) as { zines: { title: string }[] };
     expect(zines.map((z) => z.title)).toEqual(["Older, edited", "Newer"]);
+  });
+});
+
+describe("PATCH pdfSettings (DIG-64)", () => {
+  const style = defaultPdfSettings("gallery", "letter");
+
+  it("starts with no style at all", async () => {
+    const a = await createAsset(me.id, 0);
+    const { id } = await createZine("Issue", [a.id]);
+    expect((await prisma.zine.findUniqueOrThrow({ where: { id } })).pdfSettings).toBeNull();
+  });
+
+  it("stores what the creator chose, and leaves the rest of the zine alone", async () => {
+    const a = await createAsset(me.id, 0);
+    const zine = await createZine("Issue", [a.id]);
+    const res = await patch(zine.id, { pdfSettings: { ...style, typeface: "poster", miniPhotos: [a.id] } });
+    expect(res.status).toBe(200);
+    const saved = await prisma.zine.findUniqueOrThrow({ where: { id: zine.id }, include: { pages: true } });
+    expect(saved.pdfSettings).toEqual({ ...style, typeface: "poster", miniPhotos: [a.id] });
+    expect(saved.title).toBe("Issue");
+    expect(saved.pages).toHaveLength(1);
+  });
+
+  it.each([
+    ["an unknown template", { ...style, template: "neon" }],
+    ["a missing paper size", { ...style, paper: undefined }],
+    ["something that is not settings", "darkroom"],
+  ])("refuses %s with 400 and stores nothing", async (_label, pdfSettings) => {
+    const zine = await createZine("Issue", []);
+    expect((await patch(zine.id, { pdfSettings })).status).toBe(400);
+    expect((await prisma.zine.findUniqueOrThrow({ where: { id: zine.id } })).pdfSettings).toBeNull();
+  });
+
+  it("only takes mini zine photos that are on this zine's pages", async () => {
+    const onPage = await createAsset(me.id, 0);
+    const offPage = await createAsset(me.id, 1);
+    const zine = await createZine("Issue", [onPage.id]);
+    for (const id of [offPage.id, "no-such-photo"]) {
+      expect((await patch(zine.id, { pdfSettings: { ...style, miniPhotos: [id] } })).status, id).toBe(400);
+    }
+    // Checked against the pages being saved in the same request.
+    const both = await patch(zine.id, { pages: [{ assetId: offPage.id }], pdfSettings: { ...style, miniPhotos: [offPage.id] } });
+    expect(both.status).toBe(200);
+    expect((await patch(zine.id, { pages: [], pdfSettings: { ...style, miniPhotos: [offPage.id] } })).status).toBe(400);
+  });
+
+  it("is refused when signed out, and for someone else's zine", async () => {
+    const zine = await createZine("Issue", []);
+    mockedUser.mockResolvedValueOnce(null);
+    expect((await patch(zine.id, { pdfSettings: style })).status).toBe(401);
+    expect((await patch("not-mine", { pdfSettings: style })).status).toBe(404);
   });
 });
 

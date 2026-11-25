@@ -4,6 +4,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { publicZinePath } from "@/lib/public-zine-path";
 import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
+import { parsePdfSettings } from "@/lib/pdf-settings";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
 import { limitRequest } from "@/lib/rate-limit";
@@ -103,6 +104,15 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     return NextResponse.json(
       { error: "Published zine not found. Publish the zine before exporting a PDF." },
       { status: 404 }
+    );
+  }
+
+  // No style is ever guessed (owner, 19 Nov; DIG-64).
+  const settings = parsePdfSettings(zine.pdfSettings);
+  if (!settings) {
+    return NextResponse.json(
+      { error: "Choose a template and paper size for this zine's PDF first.", code: "STYLE_REQUIRED" },
+      { status: 409 }
     );
   }
 

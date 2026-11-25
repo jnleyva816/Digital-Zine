@@ -4,7 +4,9 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { prisma } from "@/lib/prisma";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { writeLocalObject } from "@/lib/storage/local";
+import { Prisma } from "@prisma/client";
 import { GET } from "@/app/api/pdf/[slug]/route";
+import { defaultPdfSettings, type PdfSettings } from "@/lib/pdf-settings";
 import { processAsset } from "@/lib/media/process";
 import { createTestUser, defaultBoardId, deleteTestUser, params, resetRateLimits } from "./helpers";
 
@@ -56,7 +58,11 @@ async function photo(ownerId: string, { writeFile = true } = {}) {
   });
 }
 
-async function zine(ownerId: string, assetIds: string[], { published = true } = {}) {
+async function zine(
+  ownerId: string,
+  assetIds: string[],
+  { published = true, settings = defaultPdfSettings("darkroom", "a4") }: { published?: boolean; settings?: PdfSettings | null } = {}
+) {
   return prisma.zine.create({
     data: {
       ownerId,
@@ -64,6 +70,7 @@ async function zine(ownerId: string, assetIds: string[], { published = true } = 
       title: "Brine & Light",
       slug: `pdf-${randomUUID().slice(0, 8)}`,
       published,
+      pdfSettings: settings ?? Prisma.DbNull,
       publishedAt: published ? new Date("2026-11-02T12:00:00Z") : null,
       pages: {
         create: assetIds.map((assetId, i) => ({ pageNumber: i + 1, content: { assetId, caption: `Plate ${i + 1}` } })),
@@ -109,6 +116,13 @@ describe("GET /api/pdf/[slug]", () => {
     const z = await zine(otherPro.id, [(await photo(otherPro.id)).id]);
     const res = await get(z.slug);
     expect(res.status).toBe(404);
+  });
+
+  it("asks the owner to choose a style first, rather than guessing one (DIG-64)", async () => {
+    const z = await zine(pro.id, [(await photo(pro.id)).id], { settings: null });
+    const res = await get(z.slug);
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ code: "STYLE_REQUIRED", error: expect.stringMatching(/template and paper size/i) });
   });
 
   it("streams a PDF to the Pro owner: a cover plus one page per zine page", async () => {
