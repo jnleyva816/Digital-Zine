@@ -26,11 +26,21 @@ Pick the lowest layer that proves the behavior:
 
 Rules:
 
-- Every user-visible flow in a ticket gets at least one end-to-end test. Every API route you add or change gets API tests for its auth, validation, and success paths.
+- End-to-end tests are required when a ticket adds or changes a critical path: sign-up and sign-in, upload, publishing, the public viewer, billing, or deletion. Elsewhere, use one only when no lower layer can prove the behavior. Every API route you add or change gets API tests for its auth, validation, and success paths.
 - A bug fix starts with a test that reproduces the bug and fails. Then fix it.
 - Tests never touch the dev database. They use `DATABASE_URL` from `.env.test` (`digital_zine_test`). Tests that write data create their own user and clean up after themselves, or rely on the reset before each run.
 - Query by role and accessible name (`getByRole`, `getByLabel`) before test ids. If a control cannot be found by role and name, fix its accessibility first.
 - No sleeps to wait for the app. Wait on a response, a URL, or a visible state.
 - Do not skip, `.only`, or weaken an assertion to get to green. If a test is wrong, fix it and say why in the Linear comment.
-- Before you set a ticket to Done, run `npm run build`, `npm test`, and `npm run test:e2e`, and all three must pass. CI must be green on the pushed commit.
 - A checkpoint commit may contain a failing test only if the commit message says so and names it. Do not push failing tests to a branch without that note.
+
+## Which tests to run
+
+| When | Run |
+| --- | --- |
+| While coding | The test files you are working on |
+| Before a commit | `npx vitest run --changed`, `npx tsc --noEmit`, and the e2e specs for the flow you touched (`npm run test:e2e -- tests/e2e/<spec>.spec.ts`) |
+| Pull request | CI runs the build and every suite. It is the full run; do not repeat it locally |
+| Docs or Markdown only | Nothing locally |
+
+Run everything locally (`npm run build`, `npm test`, `npm run test:e2e`) only at a milestone the owner names, or for a change to dependencies, framework or build config, route structure, the Prisma schema, auth, middleware, payments, or shared test helpers. Say in the Linear comment which tests you ran. Never report a suite as passing if you did not run it and CI has not.
