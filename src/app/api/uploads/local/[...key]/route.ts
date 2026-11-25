@@ -41,6 +41,10 @@ export async function PUT(
   if (arrayBuffer.byteLength === 0) {
     return NextResponse.json({ error: "Empty upload payload" }, { status: 400 });
   }
+  // Never store part of a photo (DIG-120): anything in front of the route may cut the body short.
+  if (declared > 0 && arrayBuffer.byteLength !== declared) {
+    return NextResponse.json({ error: "The upload was cut off. Try again." }, { status: 400 });
+  }
   // The local driver cannot sign a size like S3 does, so it checks the real body here (DIG-32).
   const check = checkUpload({ size: arrayBuffer.byteLength, usedBytes: await getAccountUsageBytes(user.id) });
   if (!check.ok) return uploadLimitResponse(check);

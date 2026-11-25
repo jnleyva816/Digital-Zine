@@ -270,3 +270,84 @@ for (const width of [750, 1104]) {
     await context.close();
   });
 }
+
+// DIG-50: reading modes.
+test("a zine reads as a book: toggle, keys, spreads on wide screens, and a link that opens it that way", async ({ page }) => {
+  const { path } = await arrangeZine();
+  await page.setViewportSize({ width: 1280, height: 900 });
+  await page.goto(path);
+  await expect(zinePages(page)).toHaveCount(3);
+  await page.getByRole("button", { name: "Book", exact: true }).click();
+  await expect(page).toHaveURL(/\?view=book$/);
+  await expect(page.getByRole("img", { name: "Persimmons over coals" })).toBeVisible();
+  await expect(page.getByRole("img", { name: "The cellar at dawn" })).toBeHidden();
+
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("status").filter({ hasText: "Pages 2 and 3 of 3" })).toBeAttached();
+  await expect(page.getByRole("img", { name: "The cellar at dawn" })).toBeVisible();
+  const left = await page.getByTestId("zine-flip-card-2").boundingBox();
+  const right = await page.getByTestId("zine-flip-card-3").boundingBox();
+  expect(left!.x + left!.width).toBeLessThanOrEqual(right!.x + 1);
+  // A whole page fits on the screen.
+  expect(left!.height).toBeLessThan(900);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+
+  await page.goto(`${path}?view=book`);
+  await expect(page.getByRole("button", { name: "Book", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Next page" })).toBeVisible();
+});
+
+test("book mode turns by swipe on a phone, one page at a time, and fits the screen", async ({ browser, baseURL }) => {
+  const { path } = await arrangeZine();
+  const context = await browser.newContext({ baseURL, viewport: { width: 390, height: 844 }, hasTouch: true });
+  const page = await context.newPage();
+  await page.goto(`${path}?view=book`);
+  await expect(page.getByRole("button", { name: "Next page" })).toBeVisible();
+  const box = (await page.getByTestId("zine-flip-card-1").boundingBox())!;
+  const y = box.y + box.height / 2;
+  const cdp = await context.newCDPSession(page);
+  const touch = (type: "touchStart" | "touchMove" | "touchEnd", x?: number) =>
+    cdp.send("Input.dispatchTouchEvent", { type, touchPoints: x === undefined ? [] : [{ x, y }] });
+  await touch("touchStart", 300);
+  for (const x of [250, 190, 130, 90]) await touch("touchMove", x);
+  await touch("touchEnd");
+  await expect(page.getByRole("status").filter({ hasText: "Page 2 of 3" })).toBeAttached();
+  await expect(page.getByTestId("zine-flip-card-2")).toBeVisible();
+  await expect(page.getByTestId("zine-flip-card-1")).toBeHidden();
+  expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+  await context.close();
+});
+
+test("without JavaScript a zine is the scroll it always was, even on a book link", async ({ browser, baseURL }) => {
+  const { path } = await arrangeZine();
+  const context = await browser.newContext({ baseURL, javaScriptEnabled: false });
+  const page = await context.newPage();
+  await page.goto(`${path}?view=book`);
+  await expect(zinePages(page)).toHaveCount(3);
+  await context.close();
+});
+
+test("a zine opens at its title, not snapped down to the first photo (DIG-50)", async ({ page }) => {
+  const { path } = await arrangeZine();
+  await page.setViewportSize({ width: 390, height: 844 });
+  for (const url of [path, `${path}?view=book`]) {
+    await page.goto(url);
+    await expect(page.getByRole("heading", { level: 1 })).toBeInViewport();
+    // Let the snap settle: two frames after the photo has loaded.
+    await expect.poll(() => page.getByRole("img").first().evaluate((i: HTMLImageElement) => i.complete)).toBe(true);
+    await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+    expect(await page.evaluate(() => window.scrollY), url).toBe(0);
+  }
+});
+
+test("a long caption stays clear of the full-screen button", async ({ page }) => {
+  const { zine, path } = await arrangeZine();
+  const first = await testDb.zinePage.findFirstOrThrow({ where: { zineId: zine.id, pageNumber: 1 } });
+  const caption = "Morning fog lifting off the ridge, shot from the trailhead before anyone else was awake";
+  await testDb.zinePage.update({ where: { id: first.id }, data: { content: { ...(first.content as object), caption } } });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(path);
+  const text = (await page.getByText(caption).boundingBox())!;
+  const button = (await page.getByRole("button", { name: "View page 1 full screen" }).boundingBox())!;
+  expect(text.x + text.width).toBeLessThanOrEqual(button.x);
+});

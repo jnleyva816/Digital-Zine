@@ -71,6 +71,7 @@ test.describe("signed in", () => {
 
   test("signing out returns to sign-in and protects the board", async ({ page }) => {
     await signIn(page);
+    await page.getByRole("button", { name: "Account menu" }).click();
     await page.getByRole("button", { name: "Sign out" }).click();
     await expect(page).toHaveURL(/\/signin/);
     await page.goto("/board");

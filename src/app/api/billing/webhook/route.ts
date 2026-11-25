@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { decidingSubscription, tierForStatus } from "@/lib/billing";
+import { handleDispute, handleFraudWarning, handleRefund } from "@/lib/billing-risk";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
 
@@ -72,6 +73,16 @@ async function handle(stripe: Stripe, event: Stripe.Event) {
       if (subscriptionId) await syncSubscription(stripe, subscriptionId);
       return;
     }
+    // Money at risk (DIG-15): a full refund of the latest payment cancels Pro; the other two only alert the owner.
+    case "charge.refunded":
+      await handleRefund(stripe, event.data.object, syncSubscription);
+      return;
+    case "charge.dispute.created":
+      await handleDispute(stripe, event.data.object);
+      return;
+    case "radar.early_fraud_warning.created":
+      await handleFraudWarning(stripe, event.data.object);
+      return;
     default:
       return;
   }

@@ -118,6 +118,7 @@ test("the studio's link to the published zine uses the new address", async ({ pa
   await publish(a.user.id, a.assets[0].id, slug, "Header Link");
   await signIn(page, a.user.email, a.user.password);
   await page.goto("/billing");
+  await page.getByRole("button", { name: "Account menu" }).click();
   const link = page.getByRole("link", { name: "Public Viewer" });
   await expect(link).toHaveAttribute("href", publicZinePath(a.user.publicId, slug));
 });

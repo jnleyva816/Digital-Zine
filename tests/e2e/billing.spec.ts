@@ -51,7 +51,7 @@ test("a Pro creator sees Pro and the manage button", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "Your plan: Pro" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Manage subscription" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Upgrade to Pro" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Pro Tier" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Pro plan" })).toBeVisible();
 });
 
 test("a Pro creator whose renewal failed is warned but keeps Pro", async ({ page }) => {

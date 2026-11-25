@@ -1,9 +1,13 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
 import { getAuthenticatedUser } from "@/lib/auth";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
+import { renderMiniZinePdfBuffer, renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
+import { duotone } from "@/lib/media/duotone";
+import { MINI_PHOTO_MINIMUM, miniPalette, pickMiniPages } from "@/lib/mini-zine";
+import { PALETTES, parsePdfSettings } from "@/lib/pdf-settings";
+import { publicZinePath } from "@/lib/public-zine-path";
+import { absoluteUrl } from "@/lib/site";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
 import { limitRequest } from "@/lib/rate-limit";
@@ -66,24 +70,30 @@ async function loadPageImage(storageKey: string, publicUrl: string, edit: PhotoE
   }
 }
 
-export async function GET(_req: Request, context: { params: Promise<{ slug: string }> }) {
+const proRequired = () =>
+  NextResponse.json(
+    {
+      error: "PDF export is a Pro feature ($15/month). Upgrade in Billing to download your published zines.",
+      code: "PRO_REQUIRED",
+    },
+    { status: 403 }
+  );
+
+/** `?format=` picks the booklet (Pro) or the one-sheet mini zine (free; DIG-73). Without it, the zine's saved format. */
+export async function GET(req: Request, context: { params: Promise<{ slug: string }> }) {
   const user = await getAuthenticatedUser();
   if (!user) {
     return NextResponse.json(
-      { error: "Sign in with a Pro account ($15/month) to export PDF editions.", code: "AUTH_REQUIRED" },
+      { error: "Sign in to export PDF editions.", code: "AUTH_REQUIRED" },
       { status: 401 }
     );
   }
 
-  if (user.tier !== "pro") {
-    return NextResponse.json(
-      {
-        error: "PDF export is a Pro feature ($15/month). Upgrade in Billing to download your published zines.",
-        code: "PRO_REQUIRED",
-      },
-      { status: 403 }
-    );
+  const asked = new URL(req.url).searchParams.get("format");
+  if (asked !== null && asked !== "booklet" && asked !== "mini") {
+    return NextResponse.json({ error: "Choose the booklet or the mini zine." }, { status: 400 });
   }
+  if (asked === "booklet" && user.tier !== "pro") return proRequired();
 
   // Each export is CPU-heavy (DIG-28).
   const limited = await limitRequest("pdf", user.id);
@@ -94,7 +104,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
   const zine = await prisma.zine.findFirst({
     where: { slug, published: true, ownerId: user.id },
     include: {
-      owner: { select: { name: true } },
+      owner: { select: { name: true, publicId: true } },
       pages: { orderBy: { pageNumber: "asc" } },
     },
   });
@@ -106,44 +116,80 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     );
   }
 
-  const pageContents = zine.pages.map((page) => ({ page, content: parsePageContent(page.content) }));
+  // No style is ever guessed (owner, 19 Nov; DIG-64).
+  const settings = parsePdfSettings(zine.pdfSettings);
+  const mini = (asked ?? settings?.format) === "mini";
+  if (!mini && user.tier !== "pro") return proRequired();
+  if (!settings) {
+    return NextResponse.json(
+      { error: "Choose a template and paper size for this zine's PDF first.", code: "STYLE_REQUIRED" },
+      { status: 409 }
+    );
+  }
+
+  const allPages = zine.pages.map((page) => ({ page, content: parsePageContent(page.content) }));
+  const pageContents = mini ? pickMiniPages(allPages, (p) => p.content.assetId, settings.miniPhotos) : allPages;
+  // The chosen cover photo, which a mini zine may not have inside (DIG-126). It must be on one of the zine's pages.
+  const { cover } = settings;
+  const usesPhoto = cover.photo !== null && (cover.style === "full" || cover.style === "template");
+  const coverContent = usesPhoto ? allPages.find((p) => p.content.assetId === cover.photo) : undefined;
+  const extra = coverContent && !pageContents.includes(coverContent) ? [coverContent] : [];
   const assets = await prisma.mediaAsset.findMany({
-    where: { id: { in: pageContents.map((p) => p.content.assetId).filter(Boolean) }, ownerId: user.id },
+    where: { id: { in: [...pageContents, ...extra].map((p) => p.content.assetId).filter(Boolean) }, ownerId: user.id },
   });
   const assetMap = new Map(assets.map((a) => [a.id, a]));
 
-  const loaded = await mapLimit(pageContents, PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
+  // Riso prints every photo in the palette's two inks (DIG-69).
+  const { text: ink1, accent: ink2, page: paper } = mini ? miniPalette(settings) : PALETTES[settings.palette];
+  const ink = (image: Buffer) => (settings.template === "riso" ? duotone(image, { ink1, ink2, paper }) : image);
+
+  const loaded = await mapLimit([...pageContents, ...extra], PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
       const asset = assetMap.get(content.assetId);
       if (!asset) return null;
       const edit = parsePhotoEdit(asset.edit);
       const image = await loadPageImage(asset.storageKey, asset.publicUrl, edit);
       if (!image) return null;
       return {
+        name: asset.name?.trim() || null,
         caption: content.caption?.trim() ?? "",
-        flipEnabled: page.flipEnabled,
-        assetKind: asset.kind,
-        imageSrc: { data: image, format: "jpg" as const },
+        imageSrc: { data: await ink(image), format: "jpg" as const },
         // An edited photo is already cropped and framed, so it is printed whole.
         imageFit: edit ? ("contain" as const) : ("cover" as const),
-        exif: parseExif(asset.exif),
-        recipe: parseRecipe(asset.recipe),
+        // A card that does not flip has no back, on screen or on paper.
+        exif: page.flipEnabled ? parseExif(asset.exif) : null,
+        recipe: page.flipEnabled ? parseRecipe(asset.recipe) : null,
       };
   });
   // Number the pages that made it, so the PDF never shows gaps.
-  const pages: PdfRenderedPageItem[] = loaded
+  const inside = loaded.slice(0, pageContents.length);
+  const pages: PdfRenderedPageItem[] = inside
     .filter((p): p is NonNullable<typeof p> => p !== null)
     .map((p, i) => ({ ...p, pageNumber: i + 1 }));
+  const found = coverContent && loaded[extra.length ? pageContents.length : pageContents.indexOf(coverContent)];
+  // As numbered inside, where it is there too; a cover photo that cannot be read gives way to the first.
+  const coverPhoto = found ? (pages.find((p) => p.imageSrc === found.imageSrc) ?? { ...found, pageNumber: 0 }) : null;
+
+  if (mini && pages.length < MINI_PHOTO_MINIMUM) {
+    return NextResponse.json(
+      { error: `A mini zine needs at least ${MINI_PHOTO_MINIMUM} photos. Add more pages or choose more photos.`, code: "MINI_PHOTOS_REQUIRED" },
+      { status: 409 }
+    );
+  }
 
   let pdf: Buffer;
   try {
-    pdf = await renderZinePdfBuffer({
+    const payload = {
       title: zine.title,
       description: zine.description,
       authorName: zine.owner.name?.trim() || null,
-      path: publicZinePath(user.publicId, zine.slug),
-      publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString().slice(0, 10),
+      publishedAt: (zine.publishedAt ?? zine.updatedAt).toISOString(),
       pages,
-    });
+      coverPhoto,
+      settings,
+    };
+    pdf = mini
+      ? await renderMiniZinePdfBuffer({ ...payload, publicUrl: absoluteUrl(publicZinePath(zine.owner.publicId, zine.slug)) })
+      : await renderZinePdfBuffer(payload);
   } catch (error) {
     console.error(`PDF export failed for zine ${zine.id}`, error);
     return NextResponse.json({ error: "The PDF could not be generated. Try again in a moment." }, { status: 500 });
@@ -153,7 +199,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
     status: 200,
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${zine.slug}.pdf"`,
+      "Content-Disposition": `attachment; filename="${zine.slug}${mini ? "-mini" : ""}.pdf"`,
       "Cache-Control": "private, no-store",
     },
   });

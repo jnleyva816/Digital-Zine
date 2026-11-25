@@ -147,8 +147,12 @@ test.describe("Content Security Policy", () => {
     await expectNoViolations(watch, "the editor");
 
     // The PDF download (Pro) makes a blob and saves it.
+    await page.getByRole("button", { name: "Style your PDF" }).click();
+    const panel = page.getByRole("dialog", { name: "Style your PDF" });
+    await panel.getByRole("button", { name: /^Riso Two-ink/ }).click();
+    await panel.getByRole("button", { name: /^A4/ }).click();
     const download = page.waitForEvent("download");
-    await page.getByRole("button", { name: /export|download|pdf/i }).first().click();
+    await panel.getByRole("button", { name: "Export PDF" }).click();
     expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
     await expectNoViolations(watch, "the PDF download");
 
