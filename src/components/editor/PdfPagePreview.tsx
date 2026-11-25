@@ -63,7 +63,7 @@ function DuotoneFilter({ id, inks }: { id: string; inks: Inks }) {
 }
 
 /** A photo filling its box, cropped and framed as it is everywhere else (DIG-33). On Riso it is in two inks. */
-export function WebPhoto({ photo, fit, inks, halftone = true, sizes }: { photo: WebPhotoSource; fit: "cover" | "contain"; inks?: Inks; halftone?: boolean; sizes: string }) {
+export function WebPhoto({ photo, alt = "", fit, inks, halftone = true, sizes }: { photo: WebPhotoSource; alt?: string; fit: "cover" | "contain"; inks?: Inks; halftone?: boolean; sizes: string }) {
   const id = `duotone-${useId().replace(/\W/g, "")}`;
   const aspect = photo.edit ? frameLayout(photo.edit, photo.dims).aspect : 1;
   return (
@@ -80,10 +80,10 @@ export function WebPhoto({ photo, fit, inks, halftone = true, sizes }: { photo: 
               width: `${fit === "cover" ? "max" : "min"}(100cqw, ${100 * aspect}cqh)`,
             }}
           >
-            <EditedPhoto as="span" src={photo.src} alt="" edit={photo.edit} dims={photo.dims} sizes={sizes} />
+            <EditedPhoto as="span" src={photo.src} alt={alt} edit={photo.edit} dims={photo.dims} sizes={sizes} />
           </span>
         ) : (
-          <Image src={withSourceWidth(photo.src, photo.dims?.width)} alt="" fill sizes={sizes} draggable={false} style={{ objectFit: fit }} />
+          <Image src={withSourceWidth(photo.src, photo.dims?.width)} alt={alt} fill sizes={sizes} draggable={false} style={{ objectFit: fit }} />
         )}
       </span>
       {inks && halftone ? (

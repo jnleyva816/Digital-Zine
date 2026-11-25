@@ -26,13 +26,17 @@ interface PdfExportProps {
 const quietButton =
   "inline-flex items-center gap-1.5 rounded-xl border border-paper-300 bg-paper-50 px-3.5 py-1.5 text-sm font-medium text-ink-900 shadow-sm transition hover:bg-paper-200 disabled:opacity-60";
 
-/** Every creator can style their published zine's PDF; Pro creators download it, and Free creators see the upgrade path. */
+/** Every creator can style their published zine's PDF; Pro creators download the booklet, Free creators see the upgrade path, and anyone can download the mini zine. */
 export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyled }: PdfExportProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [styling, setStyling] = useState(false);
   const style = usePdfStyle(zineId, settings, preview.pages.map((p) => p.assetId));
+
+  const mini = style.format === "mini";
+  // The mini zine is free; the booklet is Pro (owner, 19 Nov).
+  const allowed = mini || tier === "pro";
 
   async function download() {
     setBusy(true);
@@ -41,7 +45,7 @@ export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyl
     try {
       // The server prints the saved style. When saving fails, its own message says why.
       if (!(await style.flush())) return;
-      const res = await fetch(`/api/pdf/${encodeURIComponent(slug)}?format=booklet`, { cache: "no-store" });
+      const res = await fetch(`/api/pdf/${encodeURIComponent(slug)}?format=${style.format}`, { cache: "no-store" });
       if (!res.ok) {
         setError(await readApiError(res, "The PDF could not be generated. Try again in a moment."));
         return;
@@ -49,7 +53,7 @@ export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyl
       const url = URL.createObjectURL(await res.blob());
       const a = document.createElement("a");
       a.href = url;
-      a.download = `${slug}.pdf`;
+      a.download = mini ? `${slug}-mini.pdf` : `${slug}.pdf`;
       document.body.append(a);
       a.click();
       a.remove();
@@ -67,14 +71,14 @@ export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyl
     <>
       <div className="space-y-1.5">
         <div className="flex flex-wrap items-center gap-3">
-          {tier === "pro" && style.settings ? (
+          {allowed && style.settings ? (
             <button type="button" onClick={() => void download()} disabled={busy} aria-busy={busy} className={quietButton}>
               {busy ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
               ) : (
                 <FileDown className="h-3.5 w-3.5" aria-hidden="true" />
               )}
-              {busy ? "Preparing PDF…" : "Download PDF"}
+              {busy ? "Preparing PDF…" : mini ? "Download print sheet" : "Download PDF"}
             </button>
           ) : null}
           <button
@@ -89,13 +93,13 @@ export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyl
             <Palette className="h-3.5 w-3.5" aria-hidden="true" />
             Style your PDF
           </button>
-          {tier === "pro" && !style.settings ? <span className="text-xs text-ink-500">Choose a style before your first PDF.</span> : null}
+          {allowed && !style.settings ? <span className="text-xs text-ink-500">Choose a style before your first PDF.</span> : null}
           <span aria-live="polite" className="text-xs text-ink-500">
-            {done && !styling ? "PDF downloaded." : ""}
+            {done && !styling ? (mini ? "Print sheet downloaded." : "PDF downloaded.") : ""}
           </span>
         </div>
-        {tier === "pro" ? null : <UpgradePrompt />}
-        {dirty && tier === "pro" ? (
+        {allowed ? null : <UpgradePrompt />}
+        {dirty && allowed ? (
           <p className="text-xs text-ink-500">The PDF uses the last saved version. Save first to include your changes.</p>
         ) : null}
         {(error || style.error) && !styling ? (

@@ -6,8 +6,9 @@ import { FileDown, Loader2 } from "lucide-react";
 import { PALETTES, PAPERS, TEMPLATES, TYPEFACES, type PdfPaletteName, type PdfPaper, type PdfTemplate, type PdfTypeface } from "@/lib/pdf-settings";
 import { TYPEFACE_FACES } from "@/lib/pdf-typefaces";
 import { PREVIEW_WIDTH, PdfPagePreview, WebPhoto, type PreviewPage, type PreviewZine, type WebPhotoSource } from "./PdfPagePreview";
-import { Check, Choice, Group, PanelLayout, SaveError, UpgradePrompt, savedMessage } from "./pdf-panel-ui";
+import { Check, Choice, Group, PanelLayout, SaveError, Segment, UpgradePrompt, savedMessage, segments } from "./pdf-panel-ui";
 import { webFontFamily } from "./pdf-web-fonts";
+import { MiniZineGuide, MiniZineOptions, enoughMiniPhotos } from "./MiniZineOptions";
 import { RecipeCardOptions } from "./RecipeCardOptions";
 import type { PdfStyle } from "./usePdfStyle";
 
@@ -101,6 +102,7 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
   const cardButton = useRef<HTMLButtonElement>(null);
   const [cardOpen, setCardOpen] = useState(false);
   const { look, paper } = style;
+  const mini = style.format === "mini";
   const photo = zine.pages[0]?.photo;
   const count = zine.pages.length;
 
@@ -118,9 +120,9 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
 
   const missing = [look ? null : "a template", paper ? null : "a paper size"].filter(Boolean).join(" and ");
   const message = missing
-    ? `Choose ${missing}${tier === "pro" ? " to export" : ""}.`
+    ? `Choose ${missing}${mini ? " to download" : tier === "pro" ? " to export" : ""}.`
     : done
-      ? "PDF downloaded."
+      ? (mini ? "Print sheet downloaded." : "PDF downloaded.")
       : savedMessage(style);
 
   return (
@@ -145,6 +147,17 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
           }
           choices={
             <>
+              <Group title="Format" hint={mini ? "Prints on one Letter or A4 sheet. Fold it, make one cut, and it becomes an 8-page booklet." : undefined}>
+                <div className={segments}>
+                  <Segment pressed={!mini} onClick={() => style.pickFormat("booklet")}>
+                    Booklet PDF
+                  </Segment>
+                  <Segment pressed={mini} onClick={() => style.pickFormat("mini")}>
+                    Mini zine (1 sheet)
+                  </Segment>
+                </div>
+              </Group>
+
               <Group title="Template">
                 <div className="grid grid-cols-2 gap-2">
                   {keysOf<PdfTemplate>(TEMPLATES).map((key) => (
@@ -169,6 +182,8 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
                   ))}
                 </div>
               </Group>
+
+              {mini ? <MiniZineOptions style={style} zine={zine} /> : null}
 
               <Group title="Typeface" hint={look ? TYPEFACES[look.typeface].pair : "Pick a template first. It suggests a typeface and colours, and you can change both."}>
                 <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
@@ -207,22 +222,24 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
               <Group title="Pages">
                 {(
                   [
-                    ["recipeCards", "Recipe card on photos that have one"],
+                    ["recipeCards", mini ? "Recipe name under photos that have one" : "Recipe card on photos that have one"],
                     ["captions", "Captions"],
                     ["pageNumbers", "Page numbers"],
                   ] as const
                 ).map(([key, label]) => (
                   <Check key={key} label={label} checked={look?.[key] ?? false} disabled={!look} onChange={(on) => style.edit({ [key]: on })} />
                 ))}
-                <button
-                  ref={cardButton}
-                  type="button"
-                  disabled={!look}
-                  onClick={() => setCardOpen(true)}
-                  className="min-h-[44px] text-sm font-medium text-vermilion-600 underline underline-offset-2 disabled:text-ink-500 disabled:no-underline"
-                >
-                  Recipe card options
-                </button>
+                {mini ? null : (
+                  <button
+                    ref={cardButton}
+                    type="button"
+                    disabled={!look}
+                    onClick={() => setCardOpen(true)}
+                    className="min-h-[44px] text-sm font-medium text-vermilion-600 underline underline-offset-2 disabled:text-ink-500 disabled:no-underline"
+                  >
+                    Recipe card options
+                  </button>
+                )}
               </Group>
             </>
           }
@@ -235,16 +252,16 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
                 </p>
               ) : null}
               <div className="flex items-center gap-2.5">
-                {tier === "pro" ? (
+                {mini || tier === "pro" ? (
                   <button
                     type="button"
                     onClick={onExport}
-                    disabled={!style.settings || busy}
+                    disabled={!style.settings || busy || (mini && !enoughMiniPhotos(look, zine))}
                     aria-busy={busy}
                     className="inline-flex min-h-[46px] flex-1 items-center justify-center gap-2 rounded-xl bg-ink-900 text-[15px] font-semibold text-paper-50 transition hover:bg-ink-800 disabled:opacity-40"
                   >
                     {busy ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <FileDown className="h-4 w-4" aria-hidden="true" />}
-                    {busy ? "Preparing PDF…" : "Export PDF"}
+                    {busy ? "Preparing PDF…" : mini ? "Download print sheet" : "Export PDF"}
                   </button>
                 ) : (
                   <UpgradePrompt className="flex-1" />
@@ -265,8 +282,8 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
               {dirty ? <p className="text-xs text-ink-500">The preview and PDF use the last saved version. Save first to include your changes.</p> : null}
             </>
           }
-          asideLabel="Preview"
-          aside={<Preview style={style} zine={zine} />}
+          asideLabel={mini ? "Folding guide" : "Preview"}
+          aside={mini ? <MiniZineGuide style={style} zine={zine} /> : <Preview style={style} zine={zine} />}
         />
       )}
     </dialog>
