@@ -34,6 +34,18 @@ describe("Dependabot", () => {
     }
     expect(config.match(/interval: "?weekly"?/g)?.length).toBeGreaterThanOrEqual(2);
   });
+
+  // DIG-124: these majors are deferred, so a pull request for one can only fail. Limiting the rule to
+  // semver-major version updates keeps minor, patch, and security updates coming.
+  it.each(["@prisma/client", "@types/node", "eslint", "eslint-config-next", "next", "prisma", "typescript"])(
+    "ignores only major updates of %s",
+    (name) => {
+      const config = read(".github/dependabot.yml");
+      expect(config).toContain(
+        `      - dependency-name: "${name}"\n        update-types: ["version-update:semver-major"]\n`,
+      );
+    },
+  );
 });
 
 describe("CodeQL", () => {
