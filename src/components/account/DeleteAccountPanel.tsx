@@ -84,7 +84,7 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
         Delete account
       </h2>
       <p className="mt-2 text-sm text-ink-700">Deleting your account permanently removes:</p>
-      <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-ink-700">
+      <ul className="mt-2 list-disc stack-y-1 pl-5 text-sm text-ink-700">
         <li>Your Vision Boards and photos, and every stored copy of them.</li>
         <li>Your zines. Published zines stop working at once, and their links show a not-found page.</li>
         <li>Your saved recipes.</li>
@@ -109,7 +109,7 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
           Delete my account…
         </button>
       ) : needsSignIn ? (
-        <div className="mt-5 space-y-3 rounded-xl border border-paper-300 bg-paper-100 p-4">
+        <div className="mt-5 stack-y-3 rounded-xl border border-paper-300 bg-paper-100 p-4">
           <p className="text-sm text-ink-700">
             For your security, sign in with Google once more, then come back here within five minutes to finish.
           </p>
@@ -122,7 +122,7 @@ export function DeleteAccountPanel({ email, hasPassword, recentSignIn, subscribe
           </button>
         </div>
       ) : (
-        <form onSubmit={handleSubmit} noValidate aria-label="Confirm account deletion" className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} noValidate aria-label="Confirm account deletion" className="mt-5 stack-y-4">
           <div>
             <label htmlFor="confirm-email" className={labelClass}>
               Type your email address to confirm

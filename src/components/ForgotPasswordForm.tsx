@@ -55,7 +55,7 @@ export function ForgotPasswordForm() {
 
   if (sent) {
     return (
-      <div className="space-y-4 text-center">
+      <div className="stack-y-4 text-center">
         <MailCheck className="mx-auto h-8 w-8 text-vermilion-500" aria-hidden="true" />
         <p role="status" className="text-sm text-ink-700">
           If that address has an account, we sent a link.
@@ -67,7 +67,7 @@ export function ForgotPasswordForm() {
   }
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="space-y-5">
+    <form onSubmit={handleSubmit} noValidate className="stack-y-5">
       <div>
         <label htmlFor="email" className="block font-mono text-xs uppercase tracking-wider text-ink-700">
           Email

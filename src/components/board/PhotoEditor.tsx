@@ -231,7 +231,7 @@ export function PhotoEditor({ open, label, src, blurDataUrl, dims, initial, used
             </p>
           </div>
 
-          <div className="space-y-6 pb-5 pt-2 text-sm lg:py-4">
+          <div className="stack-y-6 pb-5 pt-2 text-sm lg:py-4">
             <fieldset>
               <legend className="font-mono text-xs uppercase tracking-wider text-ink-700">Ratio</legend>
               <div className={`${tiles} grid-cols-2 min-[420px]:grid-cols-3 lg:grid-cols-2`}>

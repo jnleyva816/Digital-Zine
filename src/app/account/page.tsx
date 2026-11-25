@@ -32,7 +32,7 @@ export default async function AccountPage() {
         activeZineId={latestZine?.id ?? null}
         publishedPath={latestZine?.published ? publicZinePath(user.publicId, latestZine.slug) : null}
       />
-      <main className="mx-auto max-w-2xl space-y-6 px-4 py-8 sm:px-6">
+      <main className="mx-auto max-w-2xl stack-y-6 px-4 py-8 sm:px-6">
         <div>
           <h1 className="font-serif text-3xl font-bold text-ink-900">Account</h1>
           <p className="mt-1 text-sm text-ink-500">

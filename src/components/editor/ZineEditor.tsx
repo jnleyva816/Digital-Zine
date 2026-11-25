@@ -261,7 +261,7 @@ export function ZineEditor({
   const publishable = canPublish(draft);
 
   return (
-    <div className="space-y-6">
+    <div className="stack-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
@@ -354,7 +354,7 @@ export function ZineEditor({
       ) : null}
 
       {/* Details */}
-      <section aria-labelledby={`${id}-details`} className="space-y-4 rounded-2xl border border-paper-300 bg-white p-5">
+      <section aria-labelledby={`${id}-details`} className="stack-y-4 rounded-2xl border border-paper-300 bg-white p-5">
         <h2 id={`${id}-details`} className="font-serif text-lg font-bold">
           Details
         </h2>
@@ -414,7 +414,7 @@ export function ZineEditor({
       />
 
       {/* Pages */}
-      <section aria-labelledby={`${id}-pages`} className="space-y-3">
+      <section aria-labelledby={`${id}-pages`} className="stack-y-3">
         <h2 id={`${id}-pages`} className="font-serif text-lg font-bold">
           Pages <span className="font-sans text-sm font-normal text-ink-500">({draft.pages.length})</span>
         </h2>
@@ -423,7 +423,7 @@ export function ZineEditor({
             No pages yet. Add photos from your board below.
           </p>
         ) : (
-          <ol aria-label="Pages" className="space-y-3">
+          <ol aria-label="Pages" className="stack-y-3">
             {draft.pages.map((page, index) => {
               const n = index + 1;
               const entry = assetsById.get(page.assetId);
@@ -442,7 +442,7 @@ export function ZineEditor({
                       <span className="flex aspect-4/5 items-center justify-center p-2 text-center text-xs text-paper-50">Photo unavailable</span>
                     )}
                   </div>
-                  <div className="min-w-0 flex-1 space-y-3">
+                  <div className="min-w-0 flex-1 stack-y-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <p className="min-w-0">
                         <span className="font-mono text-xs uppercase tracking-wider text-vermilion-600">Page {n}</span>
@@ -497,7 +497,7 @@ export function ZineEditor({
       </section>
 
       {/* Add pages */}
-      <section aria-labelledby={`${id}-add`} className="space-y-3">
+      <section aria-labelledby={`${id}-add`} className="stack-y-3">
         <h2 id={`${id}-add`} className="font-serif text-lg font-bold">
           Add pages from your board
         </h2>

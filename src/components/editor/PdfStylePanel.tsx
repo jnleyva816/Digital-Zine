@@ -42,7 +42,7 @@ function Thumb({ template, photo }: { template: PdfTemplate; photo?: WebPhotoSou
 
 function Figure({ caption, children }: { caption: string; children: ReactNode }) {
   return (
-    <figure className="space-y-2.5">
+    <figure className="stack-y-2.5">
       {children}
       <figcaption className="text-center text-xs text-ink-700">{caption}</figcaption>
     </figure>

@@ -68,7 +68,7 @@ export default async function PublicZinePage({ params }: Props) {
 
       <main className="mx-auto max-w-2xl px-4 pb-16 pt-8 sm:px-6 sm:pt-12">
         <div className="mb-8 sm:mb-10">
-          <h1 className="wrap-break-word font-serif text-3xl font-bold leading-tight text-ink-900 sm:text-4xl">
+          <h1 className="wrap-break-word font-serif text-3xl font-bold leading-tight text-ink-900 sm:text-4xl sm:leading-10">
             {zine.title}
           </h1>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-500">

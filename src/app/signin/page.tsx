@@ -50,7 +50,7 @@ export default async function SignInPage() {
 
 function SignInFormSkeleton() {
   return (
-    <div className="space-y-5" aria-hidden="true">
+    <div className="stack-y-5" aria-hidden="true">
       <div className="h-[66px] animate-pulse rounded-xl bg-paper-100" />
       <div className="h-[66px] animate-pulse rounded-xl bg-paper-100" />
       <div className="h-11 animate-pulse rounded-xl bg-paper-200" />

@@ -39,7 +39,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       <button
         type="button"
         onClick={verify}
@@ -63,7 +63,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
             e.preventDefault();
             resend(email);
           }}
-          className="space-y-3"
+          className="stack-y-3"
         >
           <div>
             <label htmlFor="email" className="block font-mono text-xs uppercase tracking-wider text-ink-700">

@@ -34,7 +34,7 @@ export function MovePhotoPanel({
   }
 
   return (
-    <div role="group" aria-label={`Move ${label}`} className="space-y-2 rounded-xl border border-paper-300 bg-paper-100 p-3 text-xs">
+    <div role="group" aria-label={`Move ${label}`} className="stack-y-2 rounded-xl border border-paper-300 bg-paper-100 p-3 text-xs">
       <div>
         <label htmlFor={`${id}-board`} className="block font-mono uppercase tracking-wider text-ink-700">
           Move to board

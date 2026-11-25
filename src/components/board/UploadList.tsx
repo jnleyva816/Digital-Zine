@@ -7,7 +7,7 @@ import { STAGE_LABEL, type UploadItem } from "./upload-photo";
 export function UploadList({ uploads, onDismiss }: { uploads: UploadItem[]; onDismiss: (id: string) => void }) {
   if (uploads.length === 0) return null;
   return (
-    <ul aria-label="Uploads" className="space-y-2">
+    <ul aria-label="Uploads" className="stack-y-2">
       {uploads.map((u) => (
         <li
           key={u.id}

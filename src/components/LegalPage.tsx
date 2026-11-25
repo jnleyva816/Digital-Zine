@@ -10,7 +10,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
       </Link>
       <h1 className="mt-8 font-serif text-3xl font-bold text-ink-900">{title}</h1>
       <p className="mt-1 font-mono text-xs uppercase tracking-wider text-ink-500">Last updated {updated}</p>
-      <div className="mt-8 space-y-4 text-sm leading-relaxed text-ink-700 [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-ink-900 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5">
+      <div className="mt-8 stack-y-4 text-sm leading-relaxed text-ink-700 [&_h2]:mt-8 [&_h2]:font-serif [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-ink-900 [&_ul]:list-disc [&_ul]:stack-y-1 [&_ul]:pl-5">
         {children}
       </div>
     </main>

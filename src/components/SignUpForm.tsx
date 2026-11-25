@@ -55,7 +55,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
 
   if (sentTo) {
     return (
-      <div className="space-y-4 text-center">
+      <div className="stack-y-4 text-center">
         <MailCheck className="mx-auto h-8 w-8 text-vermilion-500" aria-hidden="true" />
         <h2 className="font-serif text-xl font-bold text-ink-900">Check your email</h2>
         <p className="text-sm text-ink-700">
@@ -85,7 +85,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       {googleEnabled ? (
         <>
           <GoogleButton callbackUrl="/board" />
@@ -93,7 +93,7 @@ export function SignUpForm({ googleEnabled }: { googleEnabled: boolean }) {
         </>
       ) : null}
 
-      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+      <form onSubmit={handleSubmit} noValidate className="stack-y-5">
         <div>
           <label htmlFor="name" className={labelClass}>
             Name

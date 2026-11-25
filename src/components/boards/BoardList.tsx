@@ -127,7 +127,7 @@ export function BoardList({ boards: initial, limitReached }: { boards: BoardSumm
   }
 
   return (
-    <div className="space-y-6">
+    <div className="stack-y-6">
       <p aria-live="polite" className="sr-only">
         {announcement}
       </p>

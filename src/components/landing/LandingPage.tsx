@@ -66,7 +66,7 @@ export function LandingPage() {
             <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-vermilion-600">
               Photo zines you can flip
             </p>
-            <h1 className="mt-5 font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl lg:text-6xl">
+            <h1 className="mt-5 font-serif text-4xl font-bold leading-[1.08] tracking-tight sm:text-5xl sm:leading-none lg:text-6xl">
               Your best photographs, bound into a zine.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-ink-700">
@@ -175,7 +175,7 @@ function TierCard({ tier }: { tier: LandingTier }) {
         <span className="font-serif text-5xl font-bold tracking-tight">{tier.price}</span>
         <span className="text-sm text-ink-500">{tier.period}</span>
       </p>
-      <ul className="mt-7 space-y-3 text-sm text-ink-800">
+      <ul className="mt-7 stack-y-3 text-sm text-ink-800">
         {tier.features.map((feature) => (
           <li key={feature} className="flex gap-3">
             <Check className="mt-0.5 h-4 w-4 shrink-0 text-vermilion-600" aria-hidden="true" />
@@ -238,7 +238,7 @@ function SampleCard() {
         <div className="absolute inset-0 bg-linear-to-b from-[#f4c98f] via-[#d98259] to-[#34262f]" />
         <div className="absolute left-1/2 top-[34%] h-16 w-16 -translate-x-1/2 rounded-full bg-[#fde8bd]" />
         <div className="absolute inset-x-0 bottom-0 h-[38%] bg-[#2a1f27]" />
-        <p className="absolute inset-x-4 bottom-4 font-serif text-base leading-snug text-paper-50 sm:inset-x-5 sm:bottom-5 sm:text-lg">
+        <p className="absolute inset-x-4 bottom-4 font-serif text-base leading-snug text-paper-50 sm:inset-x-5 sm:bottom-5 sm:text-lg sm:leading-7">
           Last light on the harbor.
         </p>
       </div>

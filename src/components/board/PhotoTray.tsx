@@ -100,7 +100,7 @@ export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revisio
 
   return (
     <aside ref={trayRef} aria-label="Photos on this board" className="flex w-[280px] shrink-0 flex-col border-r border-paper-300 bg-paper-50">
-      <div className="space-y-3 p-4 pb-3">
+      <div className="stack-y-3 p-4 pb-3">
         <div className="flex items-center gap-2">
           <label className="flex h-14 flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl border-[1.5px] border-dashed border-paper-300 text-[13px] text-ink-700 focus-within:outline-solid focus-within:outline-2 focus-within:outline-vermilion-500 hover:bg-paper-100">
             <ImagePlus className="h-[18px] w-[18px] text-vermilion-600" aria-hidden="true" />

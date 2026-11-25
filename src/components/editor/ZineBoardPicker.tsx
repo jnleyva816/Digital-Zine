@@ -59,7 +59,7 @@ export function ZineBoardPicker({
   }
 
   return (
-    <div className="space-y-2">
+    <div className="stack-y-2">
       <div className="flex flex-wrap items-end gap-2">
         <div>
           <label htmlFor={`${id}-board`} className="block font-mono text-xs uppercase tracking-wider text-ink-700">

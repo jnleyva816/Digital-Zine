@@ -69,7 +69,7 @@ function CardShell({ kicker, title, subtitle, settings, footer }: CardShellProps
   return (
     <div className="mt-4 border-t-4 border-ink-900 pt-4">
       <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-vermilion-600">{kicker}</p>
-      <h3 className="mt-1 wrap-break-word font-serif text-2xl font-bold leading-tight text-ink-900 sm:text-3xl">{title}</h3>
+      <h3 className="mt-1 wrap-break-word font-serif text-2xl font-bold leading-tight text-ink-900 sm:text-3xl sm:leading-9">{title}</h3>
       {subtitle ? <p className="mt-1 wrap-break-word text-sm text-ink-700">{subtitle}</p> : null}
       <Settings settings={settings} />
       {footer ? <p className="mt-4 border-t border-paper-300 pt-3 font-mono text-[11px] text-ink-700">{footer}</p> : null}

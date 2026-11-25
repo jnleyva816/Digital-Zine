@@ -10,7 +10,7 @@ export default function BoardsLoading() {
           {Array.from({ length: 4 }, (_, i) => (
             <div key={i} className="overflow-hidden rounded-2xl border border-paper-300 bg-white">
               <div className="aspect-4/5 animate-pulse bg-paper-200" />
-              <div className="space-y-2 p-4">
+              <div className="stack-y-2 p-4">
                 <div className="h-4 w-2/3 animate-pulse rounded-sm bg-paper-100" />
                 <div className="h-4 w-1/2 animate-pulse rounded-sm bg-paper-100" />
               </div>

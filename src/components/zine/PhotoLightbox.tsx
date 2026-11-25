@@ -284,7 +284,7 @@ export function PhotoLightbox({ pages, current, onNavigate, onClose }: PhotoLigh
           </button>
 
           {page.caption ? (
-            <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent px-16 pb-4 pt-10 text-center font-serif text-sm leading-relaxed text-paper-50 sm:text-base">
+            <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent px-16 pb-4 pt-10 text-center font-serif text-sm leading-relaxed text-paper-50 sm:text-base sm:leading-6">
               {page.caption}
             </p>
           ) : null}

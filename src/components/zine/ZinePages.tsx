@@ -164,7 +164,7 @@ export function ZinePages({ pages }: { pages: ZinePageData[] }) {
           renderPage={(page, isCurrent) => card(page, isCurrent)}
         />
       ) : (
-        <ol aria-label="Pages" data-zine-scroll className="space-y-8 sm:space-y-12">
+        <ol aria-label="Pages" data-zine-scroll className="stack-y-8 sm:stack-y-12">
           {pages.map((page, i) => (
             <li key={page.pageNumber} className="snap-center">
               {card(page, i === 0)}

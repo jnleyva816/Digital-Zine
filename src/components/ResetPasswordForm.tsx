@@ -68,7 +68,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
 
   if (expired || signInFailed) {
     return (
-      <div className="space-y-4">
+      <div className="stack-y-4">
         {error ? (
           <p role="alert" className={alertClass}>
             {error}
@@ -90,7 +90,7 @@ export function ResetPasswordForm({ token }: { token: string }) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="stack-y-5">
       <div>
         <label htmlFor="password" className={labelClass}>
           New password

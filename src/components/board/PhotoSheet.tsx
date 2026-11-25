@@ -56,7 +56,7 @@ export function PhotoSheet(props: PhotoSheetProps) {
     content = <MovePhotoPanel label={label} boards={props.otherBoards} usedIn={props.usedIn} onMove={(id) => unlessFailed(props.onMoveToBoard(id))} onCancel={onClose} />;
   } else if (panel === "delete") {
     content = (
-      <div className="space-y-3">
+      <div className="stack-y-3">
         <p className="text-sm text-ink-700">Delete this photo? This cannot be undone.</p>
         <div className="flex gap-2">
           <button

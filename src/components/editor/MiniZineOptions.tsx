@@ -96,7 +96,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
           ))}
         </ul>
         {picking && !full && others.length > 0 ? (
-          <div role="group" aria-labelledby={`${id}-add`} className="space-y-2 rounded-xl bg-paper-100 p-3">
+          <div role="group" aria-labelledby={`${id}-add`} className="stack-y-2 rounded-xl bg-paper-100 p-3">
             <p id={`${id}-add`} className="text-[13px] font-medium">
               Add a photo
             </p>
@@ -153,8 +153,8 @@ export function MiniZineGuide({ style, zine }: { style: PdfStyle; zine: PreviewZ
     { label: "Back", note: "Link to the online zine" },
   ];
   return (
-    <div className="max-w-[960px] space-y-7">
-      <div className="space-y-4">
+    <div className="max-w-[960px] stack-y-7">
+      <div className="stack-y-4">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h3 id={`${id}-fold`} className="font-serif text-2xl font-bold">
             How to fold it
@@ -165,7 +165,7 @@ export function MiniZineGuide({ style, zine }: { style: PdfStyle; zine: PreviewZ
         </div>
         <FoldingSteps labelledBy={`${id}-fold`} />
       </div>
-      <div className="space-y-2.5">
+      <div className="stack-y-2.5">
         <h3 id={`${id}-order`} className="font-mono text-[11px] font-medium uppercase tracking-[0.16em] text-ink-700">
           Reading order once folded
         </h3>

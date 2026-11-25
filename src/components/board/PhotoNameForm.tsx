@@ -32,7 +32,7 @@ export function PhotoNameForm({
   }
 
   return (
-    <form onSubmit={(e) => void submit(e)} noValidate className="space-y-2 rounded-xl border border-paper-300 bg-paper-100 p-3 text-xs">
+    <form onSubmit={(e) => void submit(e)} noValidate className="stack-y-2 rounded-xl border border-paper-300 bg-paper-100 p-3 text-xs">
       <div>
         <label htmlFor={`${id}-name`} className="block font-mono uppercase tracking-wider text-ink-700">
           Photo name

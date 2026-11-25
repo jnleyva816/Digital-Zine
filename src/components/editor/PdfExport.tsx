@@ -69,7 +69,7 @@ export function PdfExport({ zineId, slug, tier, dirty, settings, preview, onStyl
 
   return (
     <>
-      <div className="space-y-1.5">
+      <div className="stack-y-1.5">
         <div className="flex flex-wrap items-center gap-3">
           {allowed && style.settings ? (
             <button type="button" onClick={() => void download()} disabled={busy} aria-busy={busy} className={quietButton}>

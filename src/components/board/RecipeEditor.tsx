@@ -288,7 +288,7 @@ export function RecipeEditor({
           </button>
         </div>
 
-        <div className="space-y-5 overflow-y-auto px-5 py-5 sm:px-6">
+        <div className="stack-y-5 overflow-y-auto px-5 py-5 sm:px-6">
           <p className="text-xs text-ink-500">
             The in-camera settings behind this photo. They&apos;re shown on the back of its card when the zine is
             published. Leave anything you didn&apos;t set as &ldquo;Not set&rdquo;.

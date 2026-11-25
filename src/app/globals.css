@@ -14,6 +14,23 @@
   --color-vermilion-500: #d94e28;
   --color-vermilion-600: #b83d1b;
 
+  /* Tailwind 3's default colours: v4's are oklch and slightly different (DIG-140). */
+  --color-amber-50: #fffbeb;
+  --color-amber-300: #fcd34d;
+  --color-amber-500: #f59e0b;
+  --color-amber-800: #92400e;
+  --color-amber-900: #78350f;
+  --color-blue-700: #1d4ed8;
+  --color-gray-200: #e5e7eb;
+  --color-gray-400: #9ca3af;
+  --color-red-50: #fef2f2;
+  --color-red-200: #fecaca;
+  --color-red-300: #fca5a5;
+  --color-red-500: #ef4444;
+  --color-red-600: #dc2626;
+  --color-red-700: #b91c1c;
+  --color-red-800: #991b1b;
+
   --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
   --font-sans:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
@@ -48,7 +65,31 @@
 
 @layer base {
   body {
-    @apply bg-paper-50 text-ink-900 antialiased selection:bg-vermilion-500/20 selection:text-ink-900;
+    @apply antialiased selection:bg-vermilion-500/20 selection:text-ink-900;
+  }
+}
+
+/* Unlayered, so Next's built-in pages (the default 404) cannot paint the body white: their inline
+   style is unlayered too, and in Tailwind 4 that beats every utility (DIG-140). */
+html body {
+  background-color: var(--color-paper-50);
+  color: var(--color-ink-900);
+}
+
+/* Tailwind 3's space-y: a top margin on every visible child after the first, which wins over the
+   child's own margin. Tailwind 4's space-y puts the gap below instead, which moves things wherever
+   a child has its own margin or the first child is hidden (DIG-140). */
+@utility stack-y-* {
+  & > :not([hidden]) ~ :not([hidden]) {
+    margin-top: --spacing(--value(number));
+    margin-bottom: 0;
+  }
+}
+
+@utility stack-y-px {
+  & > :not([hidden]) ~ :not([hidden]) {
+    margin-top: 1px;
+    margin-bottom: 0;
   }
 }
 

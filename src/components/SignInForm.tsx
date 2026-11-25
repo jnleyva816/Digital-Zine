@@ -81,14 +81,14 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
   }
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
     {googleEnabled ? (
       <>
         <GoogleButton callbackUrl={callbackUrl} />
         <OrDivider />
       </>
     ) : null}
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit} className="stack-y-5">
       <div>
         <label
           htmlFor="email"
@@ -142,7 +142,7 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
       ) : null}
 
       {unverified ? (
-        <div className="space-y-2">
+        <div className="stack-y-2">
           <button
             type="button"
             onClick={() => resend(email)}

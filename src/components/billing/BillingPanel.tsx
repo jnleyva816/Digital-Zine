@@ -98,7 +98,7 @@ export function BillingPanel({
     notice = "Payment received. Activating Pro — this usually takes a few seconds. This page updates on its own.";
 
   return (
-    <div className="space-y-5">
+    <div className="stack-y-5">
       {notice ? (
         <p role="status" className="rounded-xl border border-paper-300 bg-paper-100 px-4 py-3 text-sm text-ink-800">
           {notice}
@@ -174,7 +174,7 @@ export function BillingPanel({
             </h2>
             <p className="font-mono text-sm text-ink-800">{taxExclusive ? "$15/month plus applicable tax" : "$15/month"}</p>
           </div>
-          <ul className="mt-3 space-y-1.5 text-sm text-ink-700">
+          <ul className="mt-3 stack-y-1.5 text-sm text-ink-700">
             <li className="flex gap-2">
               <Check className="mt-0.5 h-4 w-4 shrink-0 text-vermilion-600" aria-hidden="true" />
               <span>Export your published zines as PDFs</span>

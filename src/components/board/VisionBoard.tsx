@@ -630,7 +630,7 @@ export function VisionBoard({
   // Above the navigation, where it is seen however far the page has scrolled.
   const floating =
     compact && (view === "grid" || problem) ? (
-      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 space-y-2 px-4 pb-3 *:pointer-events-auto">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[calc(4rem+env(safe-area-inset-bottom))] z-20 stack-y-2 px-4 pb-3 *:pointer-events-auto">
         {problem}
         {view === "grid" ? (
           <div role="group" aria-label="Board actions" className="mx-auto flex max-w-xl gap-2">
@@ -682,7 +682,7 @@ export function VisionBoard({
       {view === "free" ? (
         <>
           {uploads.length > 0 || problem ? (
-            <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
+            <div className="stack-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
               <UploadList uploads={uploads} onDismiss={dismiss} />
               {problem}
             </div>
@@ -708,7 +708,7 @@ export function VisionBoard({
         <>
           {picker}
           {uploads.length > 0 || (problem && !compact) ? (
-            <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
+            <div className="stack-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
               <UploadList uploads={uploads} onDismiss={dismiss} />
               {problem}
             </div>
@@ -744,7 +744,7 @@ export function VisionBoard({
       ) : null}
 
       {view === "grid" && compact ? (
-        <div className="space-y-4 px-4 pb-24 pt-3">
+        <div className="stack-y-4 px-4 pb-24 pt-3">
           {picker}
           {uploads.length > 0 ? (
             <div className="[&_button]:min-h-11 [&_button]:min-w-11">
@@ -780,7 +780,7 @@ export function VisionBoard({
       ) : null}
 
       {view === "grid" && !compact ? (
-      <div className="space-y-5 px-4 py-5 sm:px-7">
+      <div className="stack-y-5 px-4 py-5 sm:px-7">
 
       <div className="grid items-center gap-4 lg:grid-cols-[1fr_18rem]">
         <UploadDropzone inputId={inputId} fileInputRef={fileInputRef} onFiles={enqueue} isReordering={reorder.isDragging} />
