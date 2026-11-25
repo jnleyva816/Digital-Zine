@@ -25,6 +25,22 @@ describe("dependency audit in CI", () => {
   });
 });
 
+describe("type check in CI", () => {
+  // DIG-145: `next build` type-checks the app but not test files, so a broken test type went unnoticed.
+  it("runs tsc over the whole project, test files included, before the build", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const typeCheck = ci.indexOf("run: npx tsc --noEmit");
+    expect(typeCheck).toBeGreaterThan(-1);
+    expect(typeCheck).toBeLessThan(ci.indexOf("run: npm run build"));
+  });
+
+  it("covers test files", () => {
+    const tsconfig = JSON.parse(read("tsconfig.json")) as { include: string[]; exclude?: string[] };
+    expect(tsconfig.include).toEqual(expect.arrayContaining(["**/*.ts", "**/*.tsx"]));
+    expect(tsconfig.exclude ?? []).not.toEqual(expect.arrayContaining([expect.stringMatching(/test|spec/)]));
+  });
+});
+
 describe("Dependabot", () => {
   it("updates npm and GitHub Actions weekly", () => {
     expect(existsSync(".github/dependabot.yml")).toBe(true);
