@@ -23,6 +23,7 @@ const person = (id: string, extra: Partial<AdminUser> = {}): AdminUser => ({
   role: "user",
   tier: "free",
   verified: true,
+  deactivated: false,
   zineCount: 2,
   createdAt: "2026-11-01T12:00:00.000Z",
   ...extra,
@@ -39,7 +40,8 @@ describe("UserList", () => {
     expect(within(row("sam@test.local")).getByText("Pro")).toBeInTheDocument();
     expect(within(row("sam@test.local")).getByText(/2 zines/)).toBeInTheDocument();
     expect(within(row("new@test.local")).getByText("Email not verified")).toBeInTheDocument();
-    expect(within(row("new@test.local")).queryByRole("button")).not.toBeInTheDocument();
+    // DIG-137 adds deactivate and delete to every other person; only the role change is withheld.
+    expect(within(row("new@test.local")).queryByRole("button", { name: /an admin$/ })).not.toBeInTheDocument();
   });
 
   it("searches, and says when nobody matches", async () => {
@@ -122,5 +124,65 @@ describe("UserList", () => {
     await userEvent.click(screen.getByRole("button", { name: "Make sam@test.local an admin" }));
     await userEvent.click(screen.getByRole("button", { name: "Make admin" }));
     expect(await screen.findByRole("button", { name: "Sign in again" })).toBeInTheDocument();
+  });
+
+  it("offers deactivate and delete on people, nothing but the role on admins, and reactivate when deactivated (DIG-137)", () => {
+    show([person("sam"), person("ada", { role: "admin" }), person("off", { deactivated: true })]);
+    const names = (email: string) => within(row(email)).getAllByRole("button").map((b) => b.getAttribute("aria-label"));
+    expect(names("sam@test.local")).toEqual(["Make sam@test.local an admin", "Deactivate sam@test.local", "Delete sam@test.local"]);
+    expect(names("ada@test.local")).toEqual(["Remove admin role from ada@test.local"]);
+    expect(names("off@test.local")).toEqual(["Reactivate off@test.local", "Delete off@test.local"]);
+    expect(within(row("off@test.local")).getByText("Deactivated")).toBeInTheDocument();
+  });
+
+  it("deactivates, and says the subscription ends with the paid period", async () => {
+    fetchMock.mockResolvedValue(Response.json({ id: "sam", deactivated: true, billing: "cancelling" }));
+    show([person("sam")]);
+    await userEvent.click(screen.getByRole("button", { name: "Deactivate sam@test.local" }));
+    expect(screen.getByRole("form", { name: "Deactivate sam@test.local" })).toHaveTextContent("signed out everywhere");
+    await userEvent.type(screen.getByLabelText("Your password"), "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Deactivate" }));
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/users/sam/status", expect.objectContaining({ body: JSON.stringify({ action: "deactivate", password: "secret" }) }));
+    expect(await screen.findByRole("status")).toHaveTextContent("sam@test.local is deactivated. Their subscription ends with the paid period.");
+    expect(within(row("sam@test.local")).getByText("Deactivated")).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole("button", { name: "Reactivate sam@test.local" })).toHaveFocus());
+  });
+
+  it("warns when the subscription could not be stopped", async () => {
+    fetchMock.mockResolvedValue(Response.json({ id: "sam", deactivated: true, billing: "failed" }));
+    show([person("sam")]);
+    await userEvent.click(screen.getByRole("button", { name: "Deactivate sam@test.local" }));
+    await userEvent.type(screen.getByLabelText("Your password"), "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Deactivate" }));
+    expect(await screen.findByRole("status")).toHaveTextContent("their subscription could not be stopped");
+  });
+
+  it("reactivates", async () => {
+    fetchMock.mockResolvedValue(Response.json({ id: "off", deactivated: false }));
+    show([person("off", { deactivated: true })]);
+    await userEvent.click(screen.getByRole("button", { name: "Reactivate off@test.local" }));
+    await userEvent.type(screen.getByLabelText("Your password"), "secret");
+    await userEvent.click(screen.getByRole("button", { name: "Reactivate" }));
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/users/off/status", expect.objectContaining({ body: JSON.stringify({ action: "reactivate", password: "secret" }) }));
+    expect(await screen.findByRole("status")).toHaveTextContent("off@test.local can sign in again.");
+    expect(within(row("off@test.local")).queryByText("Deactivated")).not.toBeInTheDocument();
+  });
+
+  it("deletes only once their email is typed, then drops them from the list", async () => {
+    fetchMock.mockResolvedValue(Response.json({ id: "sam", deleted: true }));
+    show([person("sam"), person("kim")]);
+    await userEvent.click(screen.getByRole("button", { name: "Delete sam@test.local" }));
+    expect(screen.getByRole("form", { name: "Delete sam@test.local" })).toHaveTextContent("cannot be undone");
+    await userEvent.type(screen.getByLabelText("Your password"), "secret");
+    const submit = screen.getByRole("button", { name: "Delete permanently" });
+    await userEvent.type(screen.getByLabelText("Type their email address to confirm"), "kim@test.local");
+    expect(submit).toBeDisabled();
+    await userEvent.clear(screen.getByLabelText("Type their email address to confirm"));
+    await userEvent.type(screen.getByLabelText("Type their email address to confirm"), "SAM@test.local");
+    await userEvent.click(submit);
+    expect(fetchMock).toHaveBeenCalledWith("/api/admin/users/sam/delete", expect.objectContaining({ body: JSON.stringify({ email: "SAM@test.local", password: "secret" }) }));
+    expect(await screen.findByRole("status")).toHaveTextContent("sam@test.local was deleted.");
+    expect(screen.queryByText("sam@test.local", { selector: "li *" })).not.toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveFocus();
   });
 });

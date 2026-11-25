@@ -32,7 +32,12 @@ export function UserList({ initial, adminId, hasPassword, recentSignIn }: UserLi
   const [busy, setBusy] = useState<"search" | "more" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState("");
-  const [openId, setOpenId] = useState<string | null>(null);
+  const [open, setOpen] = useState<{ id: string; kind: ActionKind } | null>(null);
+  const statusRef = useRef<HTMLParagraphElement>(null);
+  const [focusNotice, setFocusNotice] = useState(0);
+  useEffect(() => {
+    if (focusNotice > 0) statusRef.current?.focus();
+  }, [focusNotice]);
 
   async function load(kind: "search" | "more", q: string, after: string | null) {
     if (busy) return;
@@ -55,7 +60,7 @@ export function UserList({ initial, adminId, hasPassword, recentSignIn }: UserLi
       });
       setCursor(body.nextCursor);
       setQuery(q);
-      if (kind === "search") setOpenId(null);
+      if (kind === "search") setOpen(null);
     } catch {
       setError(OFFLINE);
     } finally {
@@ -63,10 +68,28 @@ export function UserList({ initial, adminId, hasPassword, recentSignIn }: UserLi
     }
   }
 
-  function changed(user: AdminUser, role: AdminUser["role"]) {
-    setUsers((current) => current.map((u) => (u.id === user.id ? { ...u, role } : u)));
-    setNotice(role === "admin" ? `${user.email} is now an admin.` : `${user.email} is no longer an admin.`);
-    setOpenId(null);
+  function done(user: AdminUser, { kind, billing }: ActionResult) {
+    const update = (patch: Partial<AdminUser>) => setUsers((current) => current.map((u) => (u.id === user.id ? { ...u, ...patch } : u)));
+    setOpen(null);
+    if (kind === "grant" || kind === "revoke") {
+      update({ role: kind === "grant" ? "admin" : "user" });
+      setNotice(kind === "grant" ? `${user.email} is now an admin.` : `${user.email} is no longer an admin.`);
+    } else if (kind === "deactivate") {
+      update({ deactivated: true });
+      setNotice(
+        billing === "unavailable" || billing === "failed"
+          ? `${user.email} is deactivated, but their subscription could not be stopped. Cancel it in the Stripe Dashboard.`
+          : `${user.email} is deactivated.${billing === "cancelling" ? " Their subscription ends with the paid period." : ""}`
+      );
+    } else if (kind === "reactivate") {
+      update({ deactivated: false });
+      setNotice(`${user.email} can sign in again.`);
+    } else {
+      setUsers((current) => current.filter((u) => u.id !== user.id));
+      setNotice(`${user.email} was deleted.`);
+      // Their row and its buttons are gone; the message takes focus instead.
+      setFocusNotice((n) => n + 1);
+    }
   }
 
   return (
@@ -93,7 +116,7 @@ export function UserList({ initial, adminId, hasPassword, recentSignIn }: UserLi
         </button>
       </form>
 
-      <p role="status" className={notice ? "mt-3 break-words text-sm text-ink-700" : "sr-only"}>
+      <p ref={statusRef} tabIndex={-1} role="status" className={notice ? `mt-3 break-words rounded text-sm text-ink-700 ${focusRing}` : "sr-only"}>
         {notice}
       </p>
       {error ? (
@@ -113,13 +136,13 @@ export function UserList({ initial, adminId, hasPassword, recentSignIn }: UserLi
               key={user.id}
               user={user}
               self={user.id === adminId}
-              open={openId === user.id}
-              onOpen={() => {
+              open={open?.id === user.id ? open.kind : null}
+              onOpen={(kind) => {
                 setNotice("");
-                setOpenId(user.id);
+                setOpen({ id: user.id, kind });
               }}
-              onClose={() => setOpenId(null)}
-              onChanged={(role) => changed(user, role)}
+              onClose={() => setOpen(null)}
+              onDone={(result) => done(user, result)}
               hasPassword={hasPassword}
               recentSignIn={recentSignIn}
             />
@@ -138,28 +161,83 @@ export function UserList({ initial, adminId, hasPassword, recentSignIn }: UserLi
   );
 }
 
+type ActionKind = "grant" | "revoke" | "deactivate" | "reactivate" | "delete";
+
+const ACTIONS: Record<ActionKind, { label: (email: string) => string; open: string; submit: string; busy: string; explain: string }> = {
+  grant: {
+    label: (e) => `Make ${e} an admin`,
+    open: "Make admin…",
+    submit: "Make admin",
+    busy: "Saving…",
+    explain: "Admins can see every user, change who is an admin, and deactivate or delete accounts. They get Pro features without paying.",
+  },
+  revoke: {
+    label: (e) => `Remove admin role from ${e}`,
+    open: "Remove admin role…",
+    submit: "Remove admin role",
+    busy: "Saving…",
+    explain: "They keep their account and zines, and lose the admin panel and free Pro features at once.",
+  },
+  deactivate: {
+    label: (e) => `Deactivate ${e}`,
+    open: "Deactivate…",
+    submit: "Deactivate",
+    busy: "Deactivating…",
+    explain:
+      "They are signed out everywhere and cannot sign in. Their public zines are hidden. A paid subscription ends with the paid period, with no refund. You can reactivate them later.",
+  },
+  reactivate: {
+    label: (e) => `Reactivate ${e}`,
+    open: "Reactivate…",
+    submit: "Reactivate",
+    busy: "Reactivating…",
+    explain: "They can sign in again and their public zines return. A subscription that was ended is not resumed.",
+  },
+  delete: {
+    label: (e) => `Delete ${e}`,
+    open: "Delete…",
+    submit: "Delete permanently",
+    busy: "Deleting…",
+    explain:
+      "Removes their account, boards, photos, zines, and recipes, and cancels any subscription at once with no refund. This cannot be undone.",
+  },
+};
+
+/** The actions an admin may take on someone (owner, 25 Nov): an admin's role must go before anything else. */
+function actionsFor(user: AdminUser, self: boolean): ActionKind[] {
+  if (self) return [];
+  if (user.role === "admin") return ["revoke"];
+  if (user.deactivated) return ["reactivate", "delete"];
+  return [...(user.verified ? (["grant"] as const) : []), "deactivate", "delete"];
+}
+
+/** What the server said a finished action did. */
+export interface ActionResult {
+  kind: ActionKind;
+  billing?: "none" | "cancelling" | "unavailable" | "failed";
+}
+
 interface UserRowProps {
   user: AdminUser;
   self: boolean;
-  open: boolean;
-  onOpen: () => void;
+  open: ActionKind | null;
+  onOpen: (kind: ActionKind) => void;
   onClose: () => void;
-  onChanged: (role: AdminUser["role"]) => void;
+  onDone: (result: ActionResult) => void;
   hasPassword: boolean;
   recentSignIn: boolean;
 }
 
-function UserRow({ user, self, open, onOpen, onClose, onChanged, hasPassword, recentSignIn }: UserRowProps) {
-  const buttonRef = useRef<HTMLButtonElement>(null);
+function UserRow({ user, self, open, onOpen, onClose, onDone, hasPassword, recentSignIn }: UserRowProps) {
+  const actionsRef = useRef<HTMLDivElement>(null);
   const wasOpen = useRef(false);
-  // The button comes back when the form closes; so does focus.
+  // The buttons come back when the form closes; so does focus.
   useEffect(() => {
-    if (wasOpen.current && !open) buttonRef.current?.focus();
-    wasOpen.current = open;
+    if (wasOpen.current && !open) actionsRef.current?.querySelector("button")?.focus();
+    wasOpen.current = open !== null;
   }, [open]);
 
-  const isAdmin = user.role === "admin";
-  const canChange = !self && (isAdmin || user.verified);
+  const actions = actionsFor(user, self);
 
   return (
     <li className="px-4 py-4 sm:px-5">
@@ -172,55 +250,76 @@ function UserRow({ user, self, open, onOpen, onClose, onChanged, hasPassword, re
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {self ? <span className={badge}>You</span> : null}
-            {isAdmin ? <span className={badge}>Admin</span> : null}
+            {user.role === "admin" ? <span className={badge}>Admin</span> : null}
             <span className={badge}>{user.tier === "pro" ? "Pro" : "Free"}</span>
             {user.verified ? null : <span className={badge}>Email not verified</span>}
+            {user.deactivated ? <span className="rounded-full bg-red-50 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-red-800">Deactivated</span> : null}
           </div>
         </div>
-        {canChange && !open ? (
-          <button
-            ref={buttonRef}
-            type="button"
-            onClick={onOpen}
-            aria-label={isAdmin ? `Remove admin role from ${user.email}` : `Make ${user.email} an admin`}
-            className={secondary}
-          >
-            {isAdmin ? "Remove admin role…" : "Make admin…"}
-          </button>
+        {actions.length > 0 && !open ? (
+          <div ref={actionsRef} className="flex flex-wrap gap-2">
+            {actions.map((kind) => (
+              <button
+                key={kind}
+                type="button"
+                onClick={() => onOpen(kind)}
+                aria-label={ACTIONS[kind].label(user.email)}
+                className={kind === "delete" ? `${secondary} text-red-700` : secondary}
+              >
+                {ACTIONS[kind].open}
+              </button>
+            ))}
+          </div>
         ) : null}
       </div>
-      {open ? <RoleForm user={user} onClose={onClose} onChanged={onChanged} hasPassword={hasPassword} recentSignIn={recentSignIn} /> : null}
+      {open ? <ActionForm kind={open} user={user} onClose={onClose} onDone={onDone} hasPassword={hasPassword} recentSignIn={recentSignIn} /> : null}
     </li>
   );
 }
 
-function RoleForm({ user, onClose, onChanged, hasPassword, recentSignIn }: Pick<UserRowProps, "user" | "onClose" | "onChanged" | "hasPassword" | "recentSignIn">) {
+const fieldClass =
+  "mt-1.5 min-h-11 w-full rounded-xl border border-paper-300 bg-white px-4 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20 sm:max-w-sm";
+const fieldLabel = "block font-mono text-xs uppercase tracking-wider text-ink-700";
+
+function request(kind: ActionKind, user: AdminUser, extra: Record<string, string>): [string, Record<string, string>] {
+  const base = `/api/admin/users/${user.id}`;
+  if (kind === "grant" || kind === "revoke") return [`${base}/role`, { role: kind === "grant" ? "admin" : "user", ...extra }];
+  if (kind === "delete") return [`${base}/delete`, extra];
+  return [`${base}/status`, { action: kind, ...extra }];
+}
+
+interface ActionFormProps extends Pick<UserRowProps, "user" | "onClose" | "onDone" | "hasPassword" | "recentSignIn"> {
+  kind: ActionKind;
+}
+
+function ActionForm({ kind, user, onClose, onDone, hasPassword, recentSignIn }: ActionFormProps) {
   const [password, setPassword] = useState("");
+  const [typed, setTyped] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [needsSignIn, setNeedsSignIn] = useState(!hasPassword && !recentSignIn);
   const firstRef = useRef<HTMLInputElement & HTMLButtonElement>(null);
   useEffect(() => firstRef.current?.focus(), [needsSignIn]);
 
-  const grant = user.role !== "admin";
-  const role = grant ? "admin" : "user";
-  const passwordId = `confirm-${user.id}`;
+  const action = ACTIONS[kind];
+  const confirmed = kind !== "delete" || typed.trim().toLowerCase() === user.email.toLowerCase();
+  const ready = confirmed && (!hasPassword || password.length > 0);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (saving) return;
+    if (saving || !ready) return;
     setSaving(true);
     setError(null);
     try {
-      const res = await fetch(`/api/admin/users/${user.id}/role`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(hasPassword ? { role, password } : { role }),
-      });
-      if (res.ok) return onChanged(role);
-      const body = (await res.json().catch(() => null)) as { error?: string; code?: string } | null;
-      if (body?.code === "reauth_required" && !hasPassword) setNeedsSignIn(true);
-      else setError(body?.error ?? "The role could not be changed. Try again in a moment.");
+      const extra: Record<string, string> = {};
+      if (kind === "delete") extra.email = typed;
+      if (hasPassword) extra.password = password;
+      const [url, body] = request(kind, user, extra);
+      const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      const answer = (await res.json().catch(() => null)) as { error?: string; code?: string; billing?: ActionResult["billing"] } | null;
+      if (res.ok) return onDone({ kind, billing: answer?.billing });
+      if (answer?.code === "reauth_required" && !hasPassword) setNeedsSignIn(true);
+      else setError(answer?.error ?? "That did not work. Try again in a moment.");
     } catch {
       setError(OFFLINE);
     } finally {
@@ -229,31 +328,49 @@ function RoleForm({ user, onClose, onChanged, hasPassword, recentSignIn }: Pick<
   }
 
   return (
-    <form onSubmit={submit} aria-label={`Change the role of ${user.email}`} className="mt-4 space-y-3 rounded-xl border border-paper-300 bg-paper-100 p-4">
-      <p className="text-sm text-ink-700">
-        {grant
-          ? "Admins can see every user and change who is an admin, and get Pro features without paying."
-          : "They keep their account and zines, and lose the admin panel and free Pro features at once."}
-      </p>
+    <form onSubmit={submit} aria-label={action.label(user.email)} className="mt-4 space-y-3 rounded-xl border border-paper-300 bg-paper-100 p-4">
+      <p className="text-sm text-ink-700">{action.explain}</p>
       {needsSignIn ? (
         <p className="text-sm text-ink-700">For security, sign in once more, then come back here within five minutes.</p>
-      ) : hasPassword ? (
-        <div>
-          <label htmlFor={passwordId} className="block font-mono text-xs uppercase tracking-wider text-ink-700">
-            Your password
-          </label>
-          <input
-            ref={firstRef}
-            id={passwordId}
-            type="password"
-            autoComplete="current-password"
-            maxLength={200}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="mt-1.5 min-h-11 w-full rounded-xl border border-paper-300 bg-white px-4 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20 sm:max-w-sm"
-          />
-        </div>
-      ) : null}
+      ) : (
+        <>
+          {kind === "delete" ? (
+            <div>
+              <label htmlFor={`confirm-email-${user.id}`} className={fieldLabel}>
+                Type their email address to confirm
+              </label>
+              <input
+                ref={hasPassword ? undefined : firstRef}
+                id={`confirm-email-${user.id}`}
+                type="email"
+                autoComplete="off"
+                maxLength={254}
+                placeholder={user.email}
+                value={typed}
+                onChange={(e) => setTyped(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          ) : null}
+          {hasPassword ? (
+            <div>
+              <label htmlFor={`confirm-${user.id}`} className={fieldLabel}>
+                Your password
+              </label>
+              <input
+                ref={firstRef}
+                id={`confirm-${user.id}`}
+                type="password"
+                autoComplete="current-password"
+                maxLength={200}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className={fieldClass}
+              />
+            </div>
+          ) : null}
+        </>
+      )}
       {error ? (
         <p role="alert" className="rounded-xl border border-red-300 bg-red-50 px-3.5 py-2.5 text-sm text-red-800">
           {error}
@@ -265,8 +382,14 @@ function RoleForm({ user, onClose, onChanged, hasPassword, recentSignIn }: Pick<
             Sign in again
           </button>
         ) : (
-          <button ref={hasPassword ? undefined : firstRef} type="submit" disabled={saving || (hasPassword && !password)} aria-busy={saving} className={primary}>
-            {saving ? "Saving…" : grant ? "Make admin" : "Remove admin role"}
+          <button
+            ref={hasPassword || kind === "delete" ? undefined : firstRef}
+            type="submit"
+            disabled={saving || !ready}
+            aria-busy={saving}
+            className={kind === "delete" || kind === "deactivate" ? primary.replace("bg-ink-900", "bg-red-700").replace("hover:bg-ink-800", "hover:bg-red-800") : primary}
+          >
+            {saving ? action.busy : action.submit}
           </button>
         )}
         <button type="button" onClick={onClose} disabled={saving} className={secondary}>

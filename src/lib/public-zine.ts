@@ -80,7 +80,7 @@ export const getPublicZine = cache((owner: string, slug: string): Promise<Public
 
 async function loadPublicZine(owner: string, slug: string): Promise<PublicZine | null> {
   const zine = await prisma.zine.findFirst({
-    where: { slug, published: true, owner: { publicId: owner } },
+    where: { slug, published: true, owner: { publicId: owner, deactivatedAt: null } },
     select: {
       slug: true,
       ownerId: true,

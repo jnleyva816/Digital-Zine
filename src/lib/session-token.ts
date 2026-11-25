@@ -24,13 +24,14 @@ export function markSignedIn<T extends object>(token: T): T & { authAt: number }
 }
 
 /**
- * The token if its session is still good, or null to end it: the account is gone, or a password
- * reset happened after the session began. A token with no account is returned for the caller to
+ * The token if its session is still good, or null to end it: the account is gone or deactivated,
+ * or a password reset happened after the session began. A token with no account is returned for the caller to
  * deal with.
  */
 export async function checkSessionToken<T extends { sub?: string; authAt?: unknown }>(token: T): Promise<T | null> {
   if (!token.sub) return token;
-  const account = await prisma.user.findUnique({ where: { id: token.sub }, select: { sessionsValidAfter: true } });
-  if (!account) return null;
+  const account = await prisma.user.findUnique({ where: { id: token.sub }, select: { sessionsValidAfter: true, deactivatedAt: true } });
+  // A deactivated account has no sessions (DIG-137).
+  if (!account || account.deactivatedAt) return null;
   return isSessionRevoked(token.authAt, account.sessionsValidAfter) ? null : token;
 }

@@ -12,6 +12,7 @@ const REFUSALS: Record<Exclude<RoleChange, "ok">, { status: number; error: strin
   forbidden: { status: 403, error: "Only admins can do this." },
   not_found: { status: 404, error: "That account no longer exists." },
   unverified: { status: 409, error: "That person has not verified their email yet, so they cannot be made an admin." },
+  deactivated: { status: 409, error: "That account is deactivated. Reactivate it first." },
 };
 
 /** Admin-only: give someone the admin role, or remove it (DIG-136). */

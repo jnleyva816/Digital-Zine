@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
-import { createUser, deleteUser, signIn, testDb } from "./helpers";
+import { randomUUID } from "node:crypto";
+import type { Page } from "@playwright/test";
+import { createUser, createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
 
 // DIG-136: the admin panel's user list and roles.
 let cleanup: string[] = [];
@@ -68,4 +70,85 @@ test("the list fits a phone", async ({ page }) => {
   await page.goto("/admin");
   await expect(page.getByRole("list", { name: "Users" })).toBeVisible();
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+});
+
+/** A person with a published zine, and its public address (DIG-137). */
+async function creatorWithZine() {
+  const { user, assets } = await createUserWithPhotos();
+  cleanup.push(user.id);
+  await testDb.mediaAsset.updateMany({ where: { ownerId: user.id }, data: { status: "ready" } });
+  const zine = await testDb.zine.create({
+    data: {
+      ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
+      title: "Soon Hidden",
+      slug: `hidden-${randomUUID().slice(0, 8)}`,
+      published: true,
+      publishedAt: new Date(),
+      pages: { create: assets.map((a, i) => ({ pageNumber: i + 1, content: { assetId: a.id, caption: "" } })) },
+    },
+  });
+  const { publicId } = await testDb.user.findUniqueOrThrow({ where: { id: user.id }, select: { publicId: true } });
+  return { user, address: `/z/${publicId}/${zine.slug}` };
+}
+
+async function openPanelFor(page: Page, email: string) {
+  await page.goto("/admin");
+  await page.getByRole("searchbox", { name: "Search by name or email" }).fill(email);
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("list", { name: "Users" }).getByRole("listitem")).toHaveCount(1);
+}
+
+test("deactivating signs the person out, blocks sign-in with a reason, and hides their zine, until reactivated", async ({ page, browser }) => {
+  const admin = await make("admin");
+  const { user, address } = await creatorWithZine();
+  const theirs = await (await browser.newContext()).newPage();
+  await signIn(theirs, user.email, user.password);
+  expect((await theirs.goto(address))?.status()).toBe(200);
+
+  await signIn(page, admin.email, admin.password);
+  await openPanelFor(page, user.email);
+  await page.getByRole("button", { name: `Deactivate ${user.email}` }).click();
+  await page.getByLabel("Your password").fill(admin.password);
+  await page.getByRole("button", { name: "Deactivate", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: `${user.email} is deactivated.` })).toBeVisible();
+
+  // Their open session is over, their zine is gone, and signing in says why.
+  await theirs.goto("/boards");
+  await expect(theirs).toHaveURL(/\/signin/);
+  expect((await theirs.goto(address))?.status()).toBe(404);
+  await theirs.goto("/signin");
+  await theirs.getByLabel("Studio Email").fill(user.email);
+  await theirs.getByLabel("Password").fill("not-their-password");
+  await theirs.getByRole("button", { name: /sign in to studio/i }).click();
+  await expect(theirs.getByRole("alert").filter({ hasText: "did not match" })).toBeVisible();
+  await theirs.getByLabel("Password").fill(user.password);
+  await theirs.getByRole("button", { name: /sign in to studio/i }).click();
+  await expect(theirs.getByRole("alert").filter({ hasText: "This account has been deactivated by an admin" })).toBeVisible();
+
+  await page.getByRole("button", { name: `Reactivate ${user.email}` }).click();
+  await page.getByLabel("Your password").fill(admin.password);
+  await page.getByRole("button", { name: "Reactivate", exact: true }).click();
+  await expect(page.getByRole("status").filter({ hasText: `${user.email} can sign in again.` })).toBeVisible();
+  expect((await theirs.goto(address))?.status()).toBe(200);
+  await signIn(theirs, user.email, user.password);
+  await theirs.context().close();
+});
+
+test("deleting someone needs their email typed, and removes them and their zine", async ({ page }) => {
+  const admin = await make("admin");
+  const { user, address } = await creatorWithZine();
+  await signIn(page, admin.email, admin.password);
+  await openPanelFor(page, user.email);
+  await page.getByRole("button", { name: `Delete ${user.email}` }).click();
+  await page.getByLabel("Your password").fill(admin.password);
+  const submit = page.getByRole("button", { name: "Delete permanently" });
+  await expect(submit).toBeDisabled();
+  await page.getByLabel("Type their email address to confirm").fill(user.email);
+  await submit.click();
+  await expect(page.getByRole("status").filter({ hasText: `${user.email} was deleted.` })).toBeVisible();
+  await expect(page.getByText("No one matches")).toBeVisible();
+  expect(await testDb.user.findUnique({ where: { id: user.id } })).toBeNull();
+  expect((await page.goto(address))?.status()).toBe(404);
+  expect((await testDb.adminAction.findMany({ where: { targetId: user.id }, orderBy: { createdAt: "asc" } })).map((a) => a.action)).toEqual(["deactivate", "delete_user"]);
 });

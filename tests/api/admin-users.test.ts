@@ -68,7 +68,7 @@ describe("GET /api/admin/users", () => {
     expect(res.headers.get("cache-control")).toBe("private, no-store");
     expect(await res.json()).toEqual({
       users: [
-        { id: target.id, name: "Panel Test", email: target.email, role: "user", tier: "free", verified: true, zineCount: 0, createdAt: target.createdAt.toISOString() },
+        { id: target.id, name: "Panel Test", email: target.email, role: "user", tier: "free", verified: true, deactivated: false, zineCount: 0, createdAt: target.createdAt.toISOString() },
       ],
       nextCursor: null,
     });
