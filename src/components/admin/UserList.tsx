@@ -1,17 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { signOut } from "next-auth/react";
 import type { AdminUser, AdminUserPage } from "@/lib/admin-users";
-
-const focusRing = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
-const primary = `min-h-11 rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-sm hover:bg-ink-800 disabled:opacity-50 ${focusRing}`;
-const secondary = `min-h-11 rounded-xl border border-paper-300 bg-white px-4 py-2 text-sm font-semibold text-ink-800 shadow-sm hover:bg-paper-100 disabled:opacity-50 ${focusRing}`;
-const badge = "rounded-full border border-paper-300 px-2 py-0.5 font-mono text-[11px] uppercase tracking-wider text-ink-700";
-
-const OFFLINE = "Could not reach the server. Check your connection and try again.";
-// A fixed time zone, so the server and the browser write the same day.
-const joined = new Intl.DateTimeFormat("en-US", { dateStyle: "medium", timeZone: "UTC" });
+import { OFFLINE, badge, day, focusRing, plural, primary, secondary } from "./styles";
 
 interface UserListProps {
   initial: AdminUserPage;
@@ -246,7 +239,14 @@ function UserRow({ user, self, open, onOpen, onClose, onDone, hasPassword, recen
           {user.name ? <p className="break-words text-sm font-semibold text-ink-900">{user.name}</p> : null}
           <p className="break-all text-sm text-ink-700">{user.email}</p>
           <p className="mt-1 text-xs text-ink-500">
-            Joined {joined.format(new Date(user.createdAt))} · {user.zineCount} {user.zineCount === 1 ? "zine" : "zines"}
+            Joined {day.format(new Date(user.createdAt))} ·{" "}
+            {user.zineCount > 0 ? (
+              <Link href={`/admin/zines?owner=${encodeURIComponent(user.id)}`} className={`underline hover:text-ink-900 ${focusRing}`}>
+                {plural(user.zineCount, "zine")}
+              </Link>
+            ) : (
+              plural(user.zineCount, "zine")
+            )}
           </p>
           <div className="mt-2 flex flex-wrap gap-1.5">
             {self ? <span className={badge}>You</span> : null}

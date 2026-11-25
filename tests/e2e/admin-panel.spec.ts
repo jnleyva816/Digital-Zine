@@ -152,3 +152,37 @@ test("deleting someone needs their email typed, and removes them and their zine"
   expect((await page.goto(address))?.status()).toBe(404);
   expect((await testDb.adminAction.findMany({ where: { targetId: user.id }, orderBy: { createdAt: "asc" } })).map((a) => a.action)).toEqual(["deactivate", "delete_user"]);
 });
+
+test("an admin sees public zines with their links, and private ones only as existing (DIG-138)", async ({ page }) => {
+  const admin = await make("admin");
+  const { user, address } = await creatorWithZine();
+  const secret = `Diary ${randomUUID()}`;
+  const board = await defaultBoardId(user.id);
+  const photo = await testDb.mediaAsset.findFirstOrThrow({ where: { ownerId: user.id } });
+  await testDb.zine.create({
+    data: { ownerId: user.id, boardId: board, title: secret, slug: `private-${randomUUID().slice(0, 8)}`, pages: { create: [{ pageNumber: 1, content: { assetId: photo.id, caption: "secret caption" } }] } },
+  });
+
+  await signIn(page, admin.email, admin.password);
+  await openPanelFor(page, user.email);
+  await page.getByRole("link", { name: "2 zines" }).click();
+  await expect(page.getByText(`Zines by ${user.email}`)).toBeVisible();
+  const zines = page.getByRole("list", { name: "Zines" }).getByRole("listitem");
+  await expect(zines).toHaveCount(2);
+  await expect(zines.filter({ hasText: "Private zine" })).toHaveCount(1);
+  for (const hidden of [secret, "secret caption"]) expect(await page.content()).not.toContain(hidden);
+
+  await page.getByRole("button", { name: "Private" }).click();
+  await expect(zines).toHaveCount(1);
+  await page.getByRole("button", { name: "Public" }).click();
+  await expect(zines).toHaveCount(1);
+  await zines.getByRole("link", { name: "Soon Hidden" }).click();
+  await expect(page).toHaveURL(new RegExp(`${address}$`));
+});
+
+test("the zines page is a real 404 for anyone but an admin", async ({ page }) => {
+  const user = await make("user");
+  await signIn(page, user.email, user.password);
+  expect((await page.goto("/admin/zines"))?.status()).toBe(404);
+  expect((await page.request.get("/api/admin/zines")).status()).toBe(403);
+});

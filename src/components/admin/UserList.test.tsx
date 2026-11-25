@@ -185,4 +185,10 @@ describe("UserList", () => {
     expect(screen.queryByText("sam@test.local", { selector: "li *" })).not.toBeInTheDocument();
     expect(screen.getByRole("status")).toHaveFocus();
   });
+
+  it("links to a person's zines when they have any (DIG-138)", () => {
+    show([person("sam"), person("kim", { zineCount: 0 })]);
+    expect(within(row("sam@test.local")).getByRole("link", { name: "2 zines" })).toHaveAttribute("href", "/admin/zines?owner=sam");
+    expect(within(row("kim@test.local")).queryByRole("link")).not.toBeInTheDocument();
+  });
 });

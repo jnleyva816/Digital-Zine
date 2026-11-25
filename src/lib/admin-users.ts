@@ -29,16 +29,17 @@ export interface AdminUserPage {
   nextCursor: string | null;
 }
 
-type Cursor = { createdAt: Date; id: string };
+/** A keyset position: the sort time and the id of the last row on a page. */
+export type Cursor = { at: Date; id: string };
 
 /** The position after one account. It holds the values, so it works after that account is deleted. */
-const writeCursor = (c: Cursor) => `${c.createdAt.toISOString()}_${c.id}`;
+export const writeCursor = (c: Cursor) => `${c.at.toISOString()}_${c.id}`;
 
 export function readCursor(text: string): Cursor | null {
   const match = /^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z)_([A-Za-z0-9-]{1,64})$/.exec(text);
   if (!match) return null;
-  const createdAt = new Date(match[1]);
-  return Number.isNaN(createdAt.getTime()) ? null : { createdAt, id: match[2] };
+  const at = new Date(match[1]);
+  return Number.isNaN(at.getTime()) ? null : { at, id: match[2] };
 }
 
 /** Prisma passes `contains` to ILIKE as it is, so a typed % or _ would match anything. */
@@ -53,7 +54,7 @@ export async function listAdminUsers({ query = "", cursor = null }: { query?: st
     filters.push({ OR: [{ email: contains }, { name: contains }] });
   }
   if (cursor) {
-    filters.push({ OR: [{ createdAt: { lt: cursor.createdAt } }, { createdAt: cursor.createdAt, id: { lt: cursor.id } }] });
+    filters.push({ OR: [{ createdAt: { lt: cursor.at } }, { createdAt: cursor.at, id: { lt: cursor.id } }] });
   }
   const rows = await prisma.user.findMany({
     where: { AND: filters },
@@ -74,7 +75,7 @@ export async function listAdminUsers({ query = "", cursor = null }: { query?: st
       zineCount: u._count.zines,
       createdAt: u.createdAt.toISOString(),
     })),
-    nextCursor: rows.length > ADMIN_PAGE_SIZE ? writeCursor(page[page.length - 1]) : null,
+    nextCursor: rows.length > ADMIN_PAGE_SIZE ? writeCursor({ at: page[page.length - 1].createdAt, id: page[page.length - 1].id }) : null,
   };
 }
 
