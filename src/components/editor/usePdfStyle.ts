@@ -11,13 +11,15 @@ interface Draft {
   /** Its `paper` is only a stand-in until `paper` is chosen. */
   look: PdfSettings | null;
   paper: PdfPaper | null;
+  /** Booklet until switched: which export the panel is about, not a style. */
+  format: PdfSettings["format"];
 }
 
-const complete = ({ look, paper }: Draft): PdfSettings | null => (look && paper ? { ...look, paper } : null);
+const complete = ({ look, paper, format }: Draft): PdfSettings | null => (look && paper ? { ...look, paper, format } : null);
 
 /** The zine's PDF style (DIG-71): what is chosen, and saving it as it changes. */
 export function usePdfStyle(zineId: string, initial: PdfSettings | null, pageAssetIds: string[]) {
-  const [draft, setDraft] = useState<Draft>({ look: initial, paper: initial?.paper ?? null });
+  const [draft, setDraft] = useState<Draft>({ look: initial, paper: initial?.paper ?? null, format: initial?.format ?? "booklet" });
   const [status, setStatus] = useState<"idle" | "saving" | "saved">("idle");
   const [error, setError] = useState<string | null>(null);
 
@@ -94,6 +96,7 @@ export function usePdfStyle(zineId: string, initial: PdfSettings | null, pageAss
   return {
     look: draft.look,
     paper: draft.paper,
+    format: draft.format,
     /** The style, once there is enough of it to export. */
     settings: complete(draft),
     status,
@@ -102,14 +105,15 @@ export function usePdfStyle(zineId: string, initial: PdfSettings | null, pageAss
     pickTemplate: (template: PdfTemplate) =>
       change({ ...draft, look: draft.look ? withTemplate(draft.look, template) : defaultPdfSettings(template, draft.paper ?? "a4") }),
     pickPaper: (paper: PdfPaper) => change({ ...draft, paper }),
+    pickFormat: (format: PdfSettings["format"]) => change({ ...draft, format }),
     edit: (part: Partial<PdfSettings>) => {
       if (draft.look) change({ ...draft, look: { ...draft.look, ...part } });
     },
     /** Back to the template's defaults. The paper and everything about the mini zine stay. */
     reset: () => {
       if (!draft.look) return;
-      const { template, paper, format, guides, inkSaver, recipePage, miniPhotos } = draft.look;
-      change({ ...draft, look: { ...defaultPdfSettings(template, paper), format, guides, inkSaver, recipePage, miniPhotos } });
+      const { template, paper, guides, inkSaver, recipePage, miniPhotos } = draft.look;
+      change({ ...draft, look: { ...defaultPdfSettings(template, paper), guides, inkSaver, recipePage, miniPhotos } });
     },
   };
 }

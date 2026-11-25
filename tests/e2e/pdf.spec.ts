@@ -107,7 +107,7 @@ test("a first PDF: pick a template and paper size, then export in that style", a
 
   const panel = page.getByRole("dialog", { name: "Style your PDF" });
   const exportPdf = panel.getByRole("button", { name: "Export PDF" });
-  await expect(panel.getByRole("button", { pressed: true })).toHaveCount(0);
+  await expect(panel.getByRole("button", { pressed: true })).toHaveText(["Booklet PDF"]);
   await expect(exportPdf).toBeDisabled();
   await panel.getByRole("button", { name: /^Gallery Light pages/ }).click();
   await expect(exportPdf).toBeDisabled();
@@ -206,4 +206,56 @@ test("the recipe card preview fits a phone", async ({ page }) => {
   const box = await panel.getByRole("img", { name: "Photo page with its recipe card" }).boundingBox();
   expect(box!.x).toBeGreaterThanOrEqual(0);
   expect(box!.x + box!.width).toBeLessThanOrEqual(360);
+});
+
+test("a Free creator makes a mini zine: picks photos, and downloads the print sheet", async ({ page }) => {
+  const { user, assets } = await createUserWithPhotos(["a.jpg", "b.jpg", "c.jpg", "d.jpg", "e.jpg", "f.jpg", "g.jpg"]);
+  cleanup.push(user.id);
+  const zine = await testDb.zine.create({
+    data: {
+      ownerId: user.id,
+      boardId: await defaultBoardId(user.id),
+      title: "Pocket Harbor",
+      slug: `mini-${randomUUID().slice(0, 8)}`,
+      published: true,
+      publishedAt: new Date(),
+      pages: { create: assets.map((a, i) => ({ pageNumber: i + 1, content: { assetId: a.id, caption: `Plate ${i + 1}` } })) },
+    },
+  });
+  await signIn(page, user.email, user.password);
+  await page.goto(`/editor/${zine.id}`);
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  await panel.getByRole("button", { name: "Mini zine (1 sheet)" }).click();
+  await panel.getByRole("button", { name: /^Gallery Light pages/ }).click();
+  await panel.getByRole("button", { name: /^Letter/ }).click();
+  await expect(panel.getByText("The mini zine holds 6 photos. Remove one to add another.")).toBeVisible();
+  await panel.getByRole("button", { name: "Remove Plate 2" }).click();
+  await panel.getByRole("button", { name: "Add photo" }).click();
+  await panel.getByRole("button", { name: "Add Plate 7" }).click();
+  await panel.getByRole("button", { name: "Move Plate 7 earlier" }).click();
+  await panel.getByRole("checkbox", { name: "Fold and cut guides" }).uncheck();
+
+  const downloading = page.waitForEvent("download");
+  await panel.getByRole("button", { name: "Download print sheet" }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe(`${zine.slug}-mini.pdf`);
+  const pages = readPdf(await fs.readFile(await download.path()));
+  expect(pages).toHaveLength(1);
+  expect(pages[0].width).toBeCloseTo(792, 0);
+  expect(pages[0].text).toContain("Plate 7");
+  expect(pages[0].text).not.toContain("Plate 2");
+  const ids = [0, 2, 3, 4, 6, 5].map((i) => assets[i].id);
+  expect(await savedStyle(zine.id)).toEqual({ ...defaultPdfSettings("gallery", "letter"), format: "mini", guides: false, miniPhotos: ids });
+
+  // The folding steps have a page of their own.
+  const opened = page.waitForEvent("popup");
+  await panel.getByRole("link", { name: /Folding steps/ }).click();
+  const help = await opened;
+  await expect(help.getByRole("heading", { level: 1, name: "How to fold a mini zine" })).toBeVisible();
+  await expect(help.getByRole("list", { name: "How to fold a mini zine" }).getByRole("listitem")).toHaveCount(6);
+
+  // On a phone, nothing scrolls sideways.
+  await page.setViewportSize({ width: 360, height: 800 });
+  expect(await panel.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true);
 });

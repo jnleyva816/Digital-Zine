@@ -57,7 +57,8 @@ const option = (panel: ReturnType<typeof within>, group: string, name: RegExp) =
 describe("the first time", () => {
   it("preselects nothing and keeps Export disabled until a template and a paper size are chosen", async () => {
     const { user, panel } = await open(null);
-    expect(panel.queryAllByRole("button", { pressed: true })).toEqual([]);
+    // The format says which export the panel is about; no style is picked.
+    expect(panel.getAllByRole("button", { pressed: true }).map((b) => b.textContent)).toEqual(["Booklet PDF"]);
     expect(panel.getByText("US and Canada")).toBeInTheDocument();
     expect(panel.getByText("Most other countries")).toBeInTheDocument();
     const exportPdf = panel.getByRole("button", { name: "Export PDF" });
