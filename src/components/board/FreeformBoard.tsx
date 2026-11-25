@@ -7,7 +7,7 @@ import { NUDGE, SIZE_STEP, bounds, clampWidth, fitView, nextTilt, resizeFrom, sc
 import { assetLabel } from "./board-utils";
 import { PhotoTray } from "./PhotoTray";
 import { PlacedPhoto, placedHeight, placedTransform } from "./PlacedPhoto";
-import type { BoardAsset } from "./types";
+import { ACCEPTED_IMAGE_TYPES, type BoardAsset } from "./types";
 
 /** A pointer that moves less than this has clicked, not dragged. */
 const DRAG_SLOP = 4;
@@ -369,11 +369,22 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
         if (e.dataTransfer.files.length > 0) onFiles(e.dataTransfer.files);
       }}
     >
+      {/* What the bar's Upload opens, with the tray open or hidden. */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        multiple
+        hidden
+        accept={ACCEPTED_IMAGE_TYPES.join(",")}
+        onChange={(e) => {
+          if (e.target.files) onFiles(e.target.files);
+          e.target.value = "";
+        }}
+      />
       {trayOpen ? (
         <PhotoTray
           boardId={boardId}
           trayRef={trayRef}
-          fileInputRef={fileInputRef}
           initial={assets}
           latest={(asset) => findAsset(asset.id) ?? asset}
           isPlaced={(id) => placedIds.has(id)}

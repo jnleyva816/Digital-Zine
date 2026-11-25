@@ -270,3 +270,29 @@ describe("loading more in the grid", () => {
     expect(watched.slice(before).some((el) => !list.contains(el) && Boolean(list.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
   });
 });
+
+describe("when the tray is hidden or the layout is stale", () => {
+  it("opens the file picker from Upload, with the tray hidden", async () => {
+    const picked = vi.spyOn(HTMLInputElement.prototype, "click").mockImplementation(() => undefined);
+    board();
+    await userEvent.click(screen.getByRole("button", { name: "Hide photo tray" }));
+    await userEvent.click(screen.getByRole("button", { name: "Upload" }));
+    expect(picked).toHaveBeenCalledTimes(1);
+    picked.mockRestore();
+  });
+
+  it("takes the server's layout when a placed photo is gone, instead of failing forever", async () => {
+    fetchMock.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (init?.method === "PUT") return json({ error: "Not found" }, 404);
+      if (String(url).endsWith("/layout")) return json({ placements: [spot("dune")], notes: [] });
+      return json({ assets: [fog, dune], nextCursor: null, total: 2, counts: { all: 2, unplaced: 1, recipes: 0 } });
+    });
+    board();
+    placed().focus();
+    await userEvent.keyboard("{ArrowUp}");
+    expect(await screen.findByRole("button", { name: /^dune.jpg, on the board, / })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^fog.jpg, on the board, / })).not.toBeInTheDocument();
+    expect(screen.queryByText(/Couldn't save layout/)).not.toBeInTheDocument();
+    expect(calls("PUT", "/layout")).toHaveLength(1);
+  });
+});

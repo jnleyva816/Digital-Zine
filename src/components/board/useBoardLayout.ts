@@ -6,9 +6,10 @@ import type { Placement } from "@/lib/board-layout";
 /**
  * A board's free-form layout (DIG-87): what is placed where, and saving it. Changes show at once and
  * are saved in the background, one request at a time, so an older position can never land after a
- * newer one. A failed save keeps the local layout and can be retried.
+ * newer one. A failed save keeps the local layout and can be retried, unless it can never succeed
+ * because something in it is gone: then the saved layout is loaded again.
  */
-export function useBoardLayout(boardId: string, initial: Placement[]) {
+export function useBoardLayout(boardId: string, initial: Placement[], onReload: () => void) {
   const [placements, setPlacements] = useState<Placement[]>(initial);
   const [saveFailed, setSaveFailed] = useState(false);
   /** Goes up after each save, for anything that reads the server's copy. */
@@ -16,6 +17,8 @@ export function useBoardLayout(boardId: string, initial: Placement[]) {
   const current = useRef(placements);
   const pending = useRef(new Map<string, Placement | null>());
   const saving = useRef(false);
+  const reloaded = useRef(onReload);
+  reloaded.current = onReload;
 
   const show = useCallback((next: Placement[]) => {
     current.current = next;
@@ -27,15 +30,26 @@ export function useBoardLayout(boardId: string, initial: Placement[]) {
     saving.current = true;
     const batch = new Map(pending.current);
     let ok = false;
+    let reload = false;
+    const url = `/api/boards/${encodeURIComponent(boardId)}/layout`;
     try {
       const changed = [...batch].filter((e): e is [string, Placement] => e[1] !== null).map(([, p]) => p);
       const removed = [...batch].filter(([, p]) => p === null).map(([id]) => id);
-      const res = await fetch(`/api/boards/${encodeURIComponent(boardId)}/layout`, {
+      const res = await fetch(url, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ placements: changed, removed }),
       });
       ok = res.ok;
+      if (res.status === 404) {
+        const fresh = await fetch(url, { cache: "no-store" });
+        if (fresh.ok) {
+          const layout = (await fresh.json()) as { placements: Placement[] };
+          pending.current.clear();
+          show(layout.placements);
+          ok = reload = true;
+        }
+      }
     } catch {
       // Offline: kept, and retried.
     }
@@ -44,8 +58,9 @@ export function useBoardLayout(boardId: string, initial: Placement[]) {
     if (!ok) return;
     for (const [id, p] of batch) if (pending.current.get(id) === p) pending.current.delete(id);
     setSavedCount((n) => n + 1);
+    if (reload) reloaded.current();
     void flush();
-  }, [boardId]);
+  }, [boardId, show]);
 
   /** Applies and saves changes, and takes photos off the board. */
   const commit = useCallback(

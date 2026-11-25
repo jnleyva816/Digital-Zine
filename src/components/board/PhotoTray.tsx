@@ -24,7 +24,6 @@ interface TrayPage {
 interface PhotoTrayProps {
   boardId: string;
   trayRef: RefObject<HTMLElement | null>;
-  fileInputRef: RefObject<HTMLInputElement | null>;
   /** What the board already has, shown until the tray's own list arrives. */
   initial: BoardAsset[];
   /** The board's live copy of a photo, which may be newer than the tray's. */
@@ -40,7 +39,7 @@ interface PhotoTrayProps {
 }
 
 /** Every photo on this board, to drag onto the free-form canvas (DIG-88). */
-export function PhotoTray({ boardId, trayRef, fileInputRef, initial, latest, isPlaced, revision, onFiles, onPlace, onFind, onDragStart, onHide }: PhotoTrayProps) {
+export function PhotoTray({ boardId, trayRef, initial, latest, isPlaced, revision, onFiles, onPlace, onFind, onDragStart, onHide }: PhotoTrayProps) {
   const [text, setText] = useState("");
   const [search, setSearch] = useState("");
   const [show, setShow] = useState<Show>("all");
@@ -109,7 +108,6 @@ export function PhotoTray({ boardId, trayRef, fileInputRef, initial, latest, isP
               Drop photos or <span className="font-semibold text-vermilion-600 underline underline-offset-2">browse</span>
             </span>
             <input
-              ref={fileInputRef}
               type="file"
               multiple
               accept={ACCEPTED_IMAGE_TYPES.join(",")}

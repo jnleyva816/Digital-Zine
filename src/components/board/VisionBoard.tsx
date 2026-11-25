@@ -76,7 +76,7 @@ export function VisionBoard({
   /** Null until the browser has said how wide the screen is. */
   const [wide, setWide] = useState<boolean | null>(null);
   const [chosenView, setChosenView] = useState(viewPrefs);
-  const layout = useBoardLayout(boardId, initialPlacements);
+  const layout = useBoardLayout(boardId, initialPlacements, () => setBoardError("This board was changed somewhere else, so its layout was reloaded."));
   const assetsRef = useRef(assets);
   assetsRef.current = assets;
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
