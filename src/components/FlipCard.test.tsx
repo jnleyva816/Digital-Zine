@@ -102,3 +102,74 @@ describe("FlipCard full screen button (DIG-49)", () => {
   });
 });
 
+
+describe("FlipCard as a film card (DIG-52)", () => {
+  const recipe = {
+    name: "Kodachrome 64",
+    filmSimulation: "Classic Chrome" as const,
+    grain: "Weak, Small" as const,
+    highlight: -1,
+    whiteBalance: { mode: "Daylight" as const, red: 2, blue: -5 },
+  };
+  const exif = { cameraMake: "FUJIFILM", cameraModel: "X-T5", iso: 200, aperture: "f/2.8", shutterSpeed: "1/250", focalLength: "23mm" };
+  const film = { ...base, kind: "recipe" as const, exif, recipe };
+  const flip = () => screen.getByRole("button", { name: /^Page 1: flip/ });
+
+  it("shows what it was shot on, as the button that flips the card", async () => {
+    render(<FlipCard {...film} />);
+    expect(flip()).toHaveTextContent("X-T5 · Classic Chrome");
+    expect(flip()).toHaveAttribute("aria-pressed", "false");
+    await userEvent.click(flip());
+    expect(flip()).toHaveAttribute("aria-pressed", "true");
+    await userEvent.click(flip());
+    expect(screen.getByTestId("zine-flip-card-1")).toHaveAttribute("data-flipped", "false");
+  });
+
+  it("flips when the photo itself is clicked", async () => {
+    render(<FlipCard {...film} />);
+    await userEvent.click(screen.getByRole("img"));
+    expect(screen.getByTestId("zine-flip-card-1")).toHaveAttribute("data-flipped", "true");
+  });
+
+  it("headlines the film simulation, and every setting is text outside any button", () => {
+    render(<FlipCard {...film} defaultFlipped />);
+    expect(screen.getByRole("heading", { name: "Classic Chrome" })).toBeInTheDocument();
+    expect(screen.getByText("Kodachrome 64")).toBeInTheDocument();
+    for (const value of ["Weak, Small", "-1", "Daylight, +2 Red & -5 Blue"]) {
+      const cell = screen.getByText(value);
+      expect(cell.closest("dd"), value).not.toBeNull();
+      // A button's contents are flattened for screen readers.
+      expect(cell.closest("button, [role=button]"), value).toBeNull();
+    }
+  });
+
+  it("gives the camera back the same treatment, with every value as text", () => {
+    render(<FlipCard {...base} exif={exif} defaultFlipped />);
+    expect(screen.getByRole("heading", { name: "X-T5" })).toBeInTheDocument();
+    for (const value of ["ISO 200", "f/2.8", "1/250", "23mm"]) expect(screen.getByText(value).closest("dd"), value).not.toBeNull();
+  });
+
+  it("copies the recipe as text, says so, and does not flip the card", async () => {
+    const user = userEvent.setup();
+    render(<FlipCard {...film} defaultFlipped />);
+    await user.click(screen.getByRole("button", { name: "Copy recipe" }));
+    expect(await navigator.clipboard.readText()).toContain("Kodachrome 64\n\nFilm Simulation: Classic Chrome\nGrain Effect: Weak, Small");
+    expect(screen.getByRole("status")).toHaveTextContent("Recipe copied");
+    expect(screen.getByTestId("zine-flip-card-1")).toHaveAttribute("data-flipped", "true");
+  });
+
+  it("says when the browser will not copy", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(navigator.clipboard, "writeText").mockRejectedValue(new Error("denied"));
+    render(<FlipCard {...film} defaultFlipped />);
+    await user.click(screen.getByRole("button", { name: "Copy recipe" }));
+    expect(screen.getByRole("status")).toHaveTextContent("Could not copy");
+  });
+
+  it("offers copy only on the back of a recipe, and no chip on a card that does not flip", () => {
+    const { rerender } = render(<FlipCard {...film} />);
+    expect(screen.queryByRole("button", { name: "Copy recipe" })).not.toBeInTheDocument();
+    rerender(<FlipCard {...base} exif={exif} flipEnabled={false} />);
+    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+  });
+});

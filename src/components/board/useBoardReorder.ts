@@ -13,7 +13,7 @@ export interface BoardReorderOptions {
 }
 
 /**
- * Reordering by arrow buttons or drag and drop (DIG-47, moved out of VisionBoard). The new order
+ * Reordering by arrow buttons, keyboard, or drag and drop (DIG-47, moved out of VisionBoard). The new order
  * shows at once and is saved; if the save fails, the previous order comes back with an error.
  */
 export function useBoardReorder({ assets, setAssets, onAnnounce, onError }: BoardReorderOptions) {
@@ -22,6 +22,8 @@ export function useBoardReorder({ assets, setAssets, onAnnounce, onError }: Boar
   // Drag handlers read refs: drag events can fire before React re-renders with new state.
   const dragIdRef = useRef<string | null>(null);
   const dropIndexRef = useRef<number | null>(null);
+  /** The photo picked up from the keyboard (DIG-90), and where it came from. */
+  const [held, setHeld] = useState<{ id: string; from: number } | null>(null);
 
   async function persistOrder(next: BoardAsset[], previous: BoardAsset[], message: string) {
     setAssets(next);
@@ -77,7 +79,50 @@ export function useBoardReorder({ assets, setAssets, onAnnounce, onError }: Boar
     );
   }
 
+  /** Where the held photo is now, if it is still on the board. */
+  function heldIndex(): number {
+    return held ? assets.findIndex((a) => a.id === held.id) : -1;
+  }
+
+  function pickUp(index: number) {
+    setHeld({ id: assets[index].id, from: index });
+    onAnnounce(
+      `${assetLabel(assets[index], index)} picked up, position ${index + 1} of ${assets.length}. Arrow keys move it, Space drops it, Escape cancels.`
+    );
+  }
+
+  /** Shows the held photo at a new position. Nothing is saved until it is dropped. */
+  function holdAt(target: number) {
+    const at = heldIndex();
+    const to = Math.min(Math.max(target, 0), assets.length - 1);
+    if (at < 0 || to === at) return;
+    setAssets(moveItem(assets, at, to));
+    onAnnounce(`${assetLabel(assets[at], at)}, position ${to + 1} of ${assets.length}.`);
+  }
+
+  function dropHeld() {
+    const at = heldIndex();
+    setHeld(null);
+    if (!held || at < 0) return;
+    const label = assetLabel(assets[at], at);
+    if (at === held.from) onAnnounce(`${label} dropped where it was.`);
+    else void persistOrder(assets, moveItem(assets, at, held.from), `${label} moved to position ${at + 1} of ${assets.length}.`);
+  }
+
+  function cancelHeld() {
+    const at = heldIndex();
+    setHeld(null);
+    if (!held || at < 0) return;
+    setAssets(moveItem(assets, at, held.from));
+    onAnnounce(`Move cancelled. ${assetLabel(assets[at], at)} is back at position ${held.from + 1}.`);
+  }
+
   return {
+    heldId: held?.id ?? null,
+    pickUp,
+    holdAt,
+    dropHeld,
+    cancelHeld,
     dragId,
     dropIndex,
     isDragging: () => dragIdRef.current !== null,

@@ -6,7 +6,7 @@ import { getAuthenticatedUser } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isUniqueViolation } from "@/lib/db-errors";
 import { BOARD_ORDER, BOARD_PAGE_MAX } from "@/lib/board-pages";
-import { boardPhotoPage } from "@/lib/board-photos";
+import { TRAY_FILTERS, TRAY_SEARCH_MAX, boardPhotoPage, trayCounts, type TrayFilter } from "@/lib/board-photos";
 import { uploadLimitResponse } from "@/lib/limit-response";
 import { checkUpload } from "@/lib/limits";
 import { enqueueProcessing } from "@/lib/media/queue";
@@ -68,9 +68,18 @@ export async function GET(req: Request) {
     if (!boardId || !Number.isInteger(limit) || limit < 1 || limit > BOARD_PAGE_MAX) {
       return NextResponse.json({ error: `Ask for 1 to ${BOARD_PAGE_MAX} photos of one board.` }, { status: 400 });
     }
-    const page = await boardPhotoPage(user.id, boardId, limit, query.get("cursor"));
+    // The tray's search and filters (DIG-88).
+    const search = query.get("q") ?? "";
+    const show = (query.get("show") ?? "all") as TrayFilter;
+    if (search.length > TRAY_SEARCH_MAX || !TRAY_FILTERS.includes(show)) {
+      return NextResponse.json({ error: "That search is not supported." }, { status: 400 });
+    }
+    const [page, counts] = await Promise.all([
+      boardPhotoPage(user.id, boardId, limit, query.get("cursor"), { search, show }),
+      trayCounts(user.id, boardId),
+    ]);
     if (!page) return NextResponse.json({ error: "That page of photos was not found." }, { status: 400 });
-    return NextResponse.json(page);
+    return NextResponse.json({ ...page, counts });
   }
 
   const assets = await prisma.mediaAsset.findMany({
