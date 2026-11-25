@@ -1,4 +1,5 @@
 import { z } from "zod";
+import "@/lib/zod-setup";
 
 /**
  * How a photo is cropped and framed (DIG-33). Edits are settings stored on the photo; the stored
