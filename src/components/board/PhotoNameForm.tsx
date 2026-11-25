@@ -44,7 +44,7 @@ export function PhotoNameForm({
           autoFocus
           aria-describedby={`${id}-hint`}
           onChange={(e) => setValue(e.target.value)}
-          className="mt-1 w-full rounded-lg border border-paper-300 bg-white px-2.5 py-1.5 text-sm text-ink-900 focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+          className="mt-1 w-full rounded-lg border border-paper-300 bg-white px-2.5 py-1.5 text-sm text-ink-900 focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
         />
         <p id={`${id}-hint`} className="mt-1 text-ink-500">
           {fileName ? `Leave blank to use the file name, ${fileName}.` : "Leave blank to show no name."}

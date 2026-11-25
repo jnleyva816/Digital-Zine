@@ -26,7 +26,7 @@ export function Choice({ pressed, disabled, onClick, className = "", children }:
       aria-pressed={pressed}
       disabled={disabled}
       onClick={onClick}
-      className={`min-h-[44px] rounded-xl text-ink-900 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-40 ${
+      className={`min-h-[44px] rounded-xl text-ink-900 transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-40 ${
         pressed ? "bg-paper-100 shadow-[inset_0_0_0_2px_#161412]" : "bg-white shadow-[inset_0_0_0_1px_#DDD0B6] enabled:hover:bg-paper-100"
       } ${className}`}
     >
@@ -50,7 +50,7 @@ export function Segment({ pressed, onClick, children }: { pressed: boolean; onCl
       type="button"
       aria-pressed={pressed}
       onClick={onClick}
-      className={`min-h-[44px] flex-1 px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-vermilion-500 ${
+      className={`min-h-[44px] flex-1 px-3 py-2 text-sm font-medium transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-vermilion-500 ${
         pressed ? "bg-ink-900 text-paper-50" : "bg-white text-ink-900 hover:bg-paper-100"
       }`}
     >

@@ -40,7 +40,7 @@ export interface EditorZine extends ApiZine {
 const LEAVE_MESSAGE = "You have unsaved changes. Leave without saving?";
 
 const inputClass =
-  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20 read-only:bg-paper-100 read-only:text-ink-500";
+  "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20 read-only:bg-paper-100 read-only:text-ink-500";
 const labelClass = "block font-mono text-xs uppercase tracking-wider text-ink-700";
 const iconButton =
   "rounded-lg border border-paper-300 p-1.5 text-ink-700 transition hover:bg-paper-100 disabled:opacity-30";
@@ -265,7 +265,7 @@ export function ZineEditor({
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="break-words font-serif text-3xl font-bold text-ink-900">{saved.title}</h1>
+            <h1 className="wrap-break-word font-serif text-3xl font-bold text-ink-900">{saved.title}</h1>
             <span
               className={`rounded-full px-3 py-1 font-mono text-[11px] uppercase tracking-wider ${
                 published ? "bg-vermilion-500 text-white" : "border border-paper-300 bg-paper-100 text-ink-700"
@@ -300,7 +300,7 @@ export function ZineEditor({
       </div>
 
       {/* Save and publish bar */}
-      <div className="sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-paper-300 bg-paper-50/95 px-4 py-3 shadow-sm backdrop-blur">
+      <div className="sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-paper-300 bg-paper-50/95 px-4 py-3 shadow-xs backdrop-blur-sm">
         <p aria-live="polite" className="text-sm text-ink-700">
           {dirty ? <span className="font-medium text-vermilion-600">Unsaved changes</span> : status || "No changes"}
         </p>
@@ -331,7 +331,7 @@ export function ZineEditor({
               disabled={!publishable || busy !== null}
               aria-busy={busy === "publish"}
               aria-describedby={publishable ? undefined : `${id}-publish-hint`}
-              className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-40"
+              className="rounded-xl bg-ink-900 px-4 py-2 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-40"
             >
               {busy === "publish" ? "Publishing…" : "Publish"}
             </button>
@@ -439,7 +439,7 @@ export function ZineEditor({
                         sizes="(max-width: 640px) 100vw, 112px"
                       />
                     ) : (
-                      <span className="flex aspect-[4/5] items-center justify-center p-2 text-center text-xs text-paper-50">Photo unavailable</span>
+                      <span className="flex aspect-4/5 items-center justify-center p-2 text-center text-xs text-paper-50">Photo unavailable</span>
                     )}
                   </div>
                   <div className="min-w-0 flex-1 space-y-3">
@@ -559,7 +559,7 @@ export function ZineEditor({
               onClick={() => void loadMore()}
               disabled={loadingMore}
               aria-busy={loadingMore}
-              className="rounded-xl border border-paper-300 bg-white px-5 py-2 text-sm font-medium text-ink-800 shadow-sm transition hover:bg-paper-100 disabled:opacity-60"
+              className="rounded-xl border border-paper-300 bg-white px-5 py-2 text-sm font-medium text-ink-800 shadow-xs transition hover:bg-paper-100 disabled:opacity-60"
             >
               {loadingMore ? "Loading…" : "Load more photos"}
             </button>

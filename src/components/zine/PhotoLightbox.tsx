@@ -195,7 +195,7 @@ export function PhotoLightbox({ pages, current, onNavigate, onClose }: PhotoLigh
   const label = page ? `${page.name || "Photo"}, page ${page.pageNumber} of ${total}` : "Photo";
   const zoomed = zoom.scale > 1;
   const button =
-    "inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-paper-50 backdrop-blur transition hover:bg-white/20 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-30 disabled:hover:bg-white/10";
+    "inline-flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-paper-50 backdrop-blur-sm transition hover:bg-white/20 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 disabled:opacity-30 disabled:hover:bg-white/10";
 
   return (
     <dialog
@@ -212,7 +212,7 @@ export function PhotoLightbox({ pages, current, onNavigate, onClose }: PhotoLigh
       {page ? (
         <div className="relative h-full w-full">
           <div className="absolute inset-x-0 top-0 z-10 flex items-center justify-between gap-3 p-3 sm:p-4">
-            <p aria-live="polite" className="rounded-full bg-black/45 px-3 py-1.5 font-mono text-xs tracking-[0.18em] text-paper-50 backdrop-blur">
+            <p aria-live="polite" className="rounded-full bg-black/45 px-3 py-1.5 font-mono text-xs tracking-[0.18em] text-paper-50 backdrop-blur-sm">
               {`${page.pageNumber} / ${total}`}
             </p>
             <div className="flex items-center gap-2">
@@ -284,7 +284,7 @@ export function PhotoLightbox({ pages, current, onNavigate, onClose }: PhotoLigh
           </button>
 
           {page.caption ? (
-            <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-black/80 to-transparent px-16 pb-4 pt-10 text-center font-serif text-sm leading-relaxed text-paper-50 sm:text-base">
+            <p className="pointer-events-none absolute inset-x-0 bottom-0 z-10 bg-linear-to-t from-black/80 to-transparent px-16 pb-4 pt-10 text-center font-serif text-sm leading-relaxed text-paper-50 sm:text-base">
               {page.caption}
             </p>
           ) : null}

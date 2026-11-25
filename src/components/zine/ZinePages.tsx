@@ -144,7 +144,7 @@ export function ZinePages({ pages }: { pages: ZinePageData[] }) {
                 type="button"
                 aria-pressed={view === mode}
                 onClick={() => chooseView(mode)}
-                className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${
+                className={`inline-flex min-h-9 items-center gap-1.5 rounded-full px-4 text-sm font-medium transition focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 ${
                   view === mode ? "bg-ink-900 text-paper-50" : "text-ink-700 hover:text-ink-900"
                 }`}
               >

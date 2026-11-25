@@ -10,7 +10,7 @@ export function AuthCard({ title, subtitle, children }: { title: string; subtitl
           <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-ink-500">Digital Zine</span>
         </div>
 
-        <div className="mt-8 rounded-2xl border border-paper-300 bg-white p-6 shadow-sm sm:p-8">
+        <div className="mt-8 rounded-2xl border border-paper-300 bg-white p-6 shadow-xs sm:p-8">
           <h1 className="font-serif text-2xl font-bold text-ink-900">{title}</h1>
           {subtitle ? <p className="mt-1.5 text-sm text-ink-500">{subtitle}</p> : null}
           <div className="mt-6">{children}</div>

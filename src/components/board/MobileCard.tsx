@@ -61,7 +61,7 @@ export function MobileCard(props: MobileCardProps) {
         </button>
       </div>
     ) : strip ? (
-      <div data-flow={asset.id} className="overflow-hidden rounded" style={shape}>
+      <div data-flow={asset.id} className="overflow-hidden rounded-sm" style={shape}>
         <EditedPhoto src={asset.publicUrl} alt={label} edit={asset.edit} dims={dims} sizes="(max-width: 640px) 80vw, 480px" blurDataUrl={asset.blurDataUrl} />
       </div>
     ) : (
@@ -72,14 +72,14 @@ export function MobileCard(props: MobileCardProps) {
     <>
       <div
         {...(strip ? { style: { height: photo?.height } } : { "data-flow": asset.id, "data-testid": "photo-cover" })}
-        className={`relative ${strip ? "flex items-center rounded" : "aspect-[4/5] overflow-hidden rounded-t-[11px] bg-ink-900"}`}
+        className={`relative ${strip ? "flex items-center rounded-sm" : "aspect-4/5 overflow-hidden rounded-t-[11px] bg-ink-900"}`}
       >
         {picture}
         <ReorderHandle {...props} className="select-none [-webkit-touch-callout:none]" />
         {strip ? null : (
           <span className="pointer-events-none absolute left-2 top-2 rounded-full bg-ink-900/80 px-[7px] py-[3px] font-mono text-[10.5px] leading-none text-paper-50">{String(index + 1).padStart(2, "0")}</span>
         )}
-        <button type="button" aria-label={`More for ${label}`} aria-haspopup="dialog" onClick={props.onMore} className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500">
+        <button type="button" aria-label={`More for ${label}`} aria-haspopup="dialog" onClick={props.onMore} className="absolute right-0 top-0 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500">
           <span className={round}>
             <Ellipsis className="h-4 w-4" aria-hidden="true" />
           </span>
@@ -88,7 +88,7 @@ export function MobileCard(props: MobileCardProps) {
       <div className={strip ? "flex flex-col gap-1.5 pt-2.5" : "flex flex-col gap-1 px-2.5 pb-2.5 pt-2"}>
         <p className={strip ? "truncate font-serif text-[19px] leading-tight" : "truncate text-[13px] font-semibold leading-tight text-ink-900"}>{label}</p>
         {recipe ? (
-          <p className={`max-w-full self-start truncate rounded-full px-2 py-0.5 font-mono ${strip ? "bg-paper-50/[.12] text-[11px]" : "bg-[#F1E3D3] text-[10.5px] text-[#6B2A14]"}`}>{recipe}</p>
+          <p className={`max-w-full self-start truncate rounded-full px-2 py-0.5 font-mono ${strip ? "bg-paper-50/12 text-[11px]" : "bg-[#F1E3D3] text-[10.5px] text-[#6B2A14]"}`}>{recipe}</p>
         ) : null}
         {strip || !recipe ? <p className={`truncate font-mono ${strip ? "text-[11px] text-[#CFC7BC]" : "text-[10.5px] text-ink-500"}`}>{camera}</p> : null}
         {props.hasFoundRecipe && !asset.recipe ? <p className={`text-xs ${strip ? "text-[#E8A08F]" : "text-vermilion-600"}`}>Recipe found in this photo</p> : null}
@@ -114,7 +114,7 @@ export function MobileCard(props: MobileCardProps) {
         e.preventDefault();
         e.dataTransfer.dropEffect = "move";
       }}
-      className={`relative flex min-w-0 select-none flex-col [-webkit-touch-callout:none] ${strip ? "[scroll-snap-align:start]" : "rounded-xl border bg-paper-50"} ${
+      className={`relative flex min-w-0 select-none flex-col [-webkit-touch-callout:none] ${strip ? "snap-start" : "rounded-xl border bg-paper-50"} ${
         props.held || props.lifted ? "z-10 border-vermilion-500 ring-2 ring-vermilion-500" : "border-paper-300"
       } ${props.lifted ? "opacity-60" : ""}`}
     >

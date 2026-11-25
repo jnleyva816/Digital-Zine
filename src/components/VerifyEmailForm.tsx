@@ -45,7 +45,7 @@ export function VerifyEmailForm({ token }: { token: string }) {
         onClick={verify}
         disabled={loading || failed}
         aria-busy={loading}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:opacity-60"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-5 py-3 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:opacity-60"
       >
         <BadgeCheck className="h-4 w-4" aria-hidden="true" />
         {loading ? "Verifying..." : "Verify my email"}
@@ -77,13 +77,13 @@ export function VerifyEmailForm({ token }: { token: string }) {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-sm focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+              className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
             />
           </div>
           <button
             type="submit"
             disabled={resendState.status === "sending"}
-            className="w-full rounded-xl border border-paper-300 bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-sm hover:bg-paper-100 disabled:opacity-60"
+            className="w-full rounded-xl border border-paper-300 bg-white px-5 py-2.5 text-sm font-semibold text-ink-900 shadow-xs hover:bg-paper-100 disabled:opacity-60"
           >
             Send a new link
           </button>

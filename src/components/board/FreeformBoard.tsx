@@ -440,8 +440,8 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
 
   const chosenItem = chosen ? items.find((i) => i.id === chosen.id)! : null;
   const panning = space || tool === "pan";
-  const toolButton = "inline-flex h-10 items-center gap-1.5 rounded-[10px] px-3 text-[13px] text-ink-900 hover:bg-paper-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:opacity-40";
-  const barButton = "min-h-9 rounded-lg px-2.5 text-xs text-paper-50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-paper-50";
+  const toolButton = "inline-flex h-10 items-center gap-1.5 rounded-[10px] px-3 text-[13px] text-ink-900 hover:bg-paper-200 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:opacity-40";
+  const barButton = "min-h-9 rounded-lg px-2.5 text-xs text-paper-50 hover:bg-white/15 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-paper-50";
   const filesIn = (e: React.DragEvent) => Array.from(e.dataTransfer.types).includes("Files");
 
   return (
@@ -531,7 +531,7 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
         ) : null}
 
         {!trayOpen ? (
-          <button type="button" aria-label="Show photo tray" onPointerDown={(e) => e.stopPropagation()} onClick={() => setTrayOpen(true)} className="absolute left-3 top-3 rounded-xl border border-paper-300 bg-paper-50 p-2.5 text-ink-900 shadow-sm hover:bg-paper-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500">
+          <button type="button" aria-label="Show photo tray" onPointerDown={(e) => e.stopPropagation()} onClick={() => setTrayOpen(true)} className="absolute left-3 top-3 rounded-xl border border-paper-300 bg-paper-50 p-2.5 text-ink-900 shadow-xs hover:bg-paper-200 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500">
             <PanelLeftOpen className="h-4 w-4" aria-hidden="true" />
           </button>
         ) : null}
@@ -565,7 +565,7 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
                 {chosen.spot.look === "print" ? "Plain" : "Print"}
               </button>
             ) : null}
-            <button type="button" className={`${barButton} !text-[#F6A48A]`} onClick={() => takeOff(chosen.id)}>{chosen.kind === "photo" ? "Take off board" : "Delete note"}</button>
+            <button type="button" className={`${barButton} text-[#F6A48A]!`} onClick={() => takeOff(chosen.id)}>{chosen.kind === "photo" ? "Take off board" : "Delete note"}</button>
           </div>
         ) : null}
 
@@ -584,7 +584,7 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
         </div>
 
         {saveProblem ? (
-          <p role="status" onPointerDown={(e) => e.stopPropagation()} className="absolute right-4 top-4 rounded-xl border border-paper-300 bg-paper-50 px-3.5 py-2 text-sm text-ink-800 shadow">
+          <p role="status" onPointerDown={(e) => e.stopPropagation()} className="absolute right-4 top-4 rounded-xl border border-paper-300 bg-paper-50 px-3.5 py-2 text-sm text-ink-800 shadow-sm">
             {saveProblem}{" "}
             <button type="button" onClick={() => void layout.retry()} className="font-semibold text-vermilion-600 underline underline-offset-2">Retry</button>
           </p>
@@ -594,9 +594,9 @@ export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision
       </section>
 
       {ghost ? (
-        <div ref={ghostRef} aria-hidden="true" className="pointer-events-none fixed left-0 top-0 z-50 w-32 -translate-x-full bg-white p-1.5 shadow-2xl">
+        <div ref={ghostRef} aria-hidden="true" className="pointer-events-none fixed left-0 top-0 z-50 w-32 [transform:translateX(-100%)] bg-white p-1.5 shadow-2xl">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={ghost.publicUrl.replace(/\/full\.avif$/, "/w480.avif")} alt="" onError={(e) => (e.currentTarget.src = ghost.publicUrl)} className="aspect-[4/5] w-full object-cover" />
+          <img src={ghost.publicUrl.replace(/\/full\.avif$/, "/w480.avif")} alt="" onError={(e) => (e.currentTarget.src = ghost.publicUrl)} className="aspect-4/5 w-full object-cover" />
         </div>
       ) : null}
     </div>
@@ -621,7 +621,7 @@ function MiniMap({ items, view, size, onJump }: { items: Item[]; view: BoardView
         const r = e.currentTarget.getBoundingClientRect();
         onJump((e.clientX - r.left) / scale + box.left, (e.clientY - r.top) / scale + box.top);
       }}
-      className="absolute bottom-20 right-4 cursor-pointer overflow-hidden rounded-lg border border-paper-300 bg-paper-50/90 shadow"
+      className="absolute bottom-20 right-4 cursor-pointer overflow-hidden rounded-lg border border-paper-300 bg-paper-50/90 shadow-sm"
       style={MAP}
     >
       {items.map((i) => (

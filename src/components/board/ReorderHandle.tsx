@@ -56,7 +56,7 @@ export function ReorderHandle({ label, index, count, held, onToggleHeld, onCance
         if (e.detail === 0) onToggleHeld();
       }}
       onBlur={() => held && onCancelHeld()}
-      className={`absolute inset-0 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500 ${className}`}
+      className={`absolute inset-0 focus-visible:outline-solid focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-vermilion-500 ${className}`}
     />
   );
 }

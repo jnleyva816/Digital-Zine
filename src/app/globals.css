@@ -1,6 +1,50 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@theme {
+  --color-paper-50: #fdfbf7;
+  --color-paper-100: #f7f3ea;
+  --color-paper-200: #ece4d3;
+  --color-paper-300: #ddd0b6;
+
+  --color-ink-500: #6e655b;
+  --color-ink-700: #3d3730;
+  --color-ink-800: #26221e;
+  --color-ink-900: #161412;
+
+  --color-vermilion-500: #d94e28;
+  --color-vermilion-600: #b83d1b;
+
+  --font-serif: Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-sans:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Tailwind 4 changed these defaults; keep the ones the app was designed with (DIG-140). */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  dialog {
+    margin: auto;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: var(--color-gray-400);
+  }
+}
 
 @layer base {
   body {

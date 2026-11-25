@@ -28,7 +28,7 @@ export default function RecipesError({
       <button
         type="button"
         onClick={reset}
-        className="mt-5 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+        className="mt-5 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800"
       >
         Try again
       </button>

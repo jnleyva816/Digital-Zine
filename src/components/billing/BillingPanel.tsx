@@ -128,7 +128,7 @@ export function BillingPanel({
         </p>
       ) : null}
 
-      <section aria-labelledby="current-plan" className="rounded-2xl border border-paper-300 bg-paper-50 p-5 shadow-sm sm:p-6">
+      <section aria-labelledby="current-plan" className="rounded-2xl border border-paper-300 bg-paper-50 p-5 shadow-xs sm:p-6">
         <h2 id="current-plan" className="font-serif text-xl font-bold text-ink-900">
           Your plan: {plan}
         </h2>
@@ -166,7 +166,7 @@ export function BillingPanel({
       </section>
 
       {plan === "Free" ? (
-        <section aria-labelledby="pro-offer" className="rounded-2xl border-2 border-vermilion-500/70 bg-white p-5 shadow-sm sm:p-6">
+        <section aria-labelledby="pro-offer" className="rounded-2xl border-2 border-vermilion-500/70 bg-white p-5 shadow-xs sm:p-6">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <h2 id="pro-offer" className="inline-flex items-center gap-2 font-serif text-xl font-bold text-ink-900">
               <Sparkles className="h-4 w-4 text-vermilion-500" aria-hidden="true" />
@@ -189,7 +189,7 @@ export function BillingPanel({
             onClick={() => void open("checkout")}
             disabled={!configured || previewOnly || busy !== null}
             aria-busy={busy === "checkout"}
-            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 disabled:bg-ink-500 sm:w-auto"
+            className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-ink-900 px-4 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 disabled:bg-ink-500 sm:w-auto"
           >
             {busy === "checkout" ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}
             {busy === "checkout" ? "Opening checkout…" : "Upgrade to Pro"}

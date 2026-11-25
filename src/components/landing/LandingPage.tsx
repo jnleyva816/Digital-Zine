@@ -3,7 +3,7 @@ import { ArrowRight, Check } from "lucide-react";
 import { landingTiers, SIGNUP_HREF, type LandingTier } from "@/lib/landing";
 
 const focus =
-  "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-600";
+  "focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-600";
 
 const STEPS = [
   {
@@ -76,14 +76,14 @@ export function LandingPage() {
             <div className="mt-9 flex flex-wrap items-center gap-x-6 gap-y-4">
               <Link
                 href={SIGNUP_HREF}
-                className={`inline-flex items-center gap-2 rounded-full bg-ink-900 px-6 py-3 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800 ${focus}`}
+                className={`inline-flex items-center gap-2 rounded-full bg-ink-900 px-6 py-3 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800 ${focus}`}
               >
                 Start free
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <a
                 href="#how-it-works"
-                className={`rounded-sm text-sm font-medium text-ink-700 underline underline-offset-4 transition hover:text-ink-900 ${focus}`}
+                className={`rounded-xs text-sm font-medium text-ink-700 underline underline-offset-4 transition hover:text-ink-900 ${focus}`}
               >
                 See how it works
               </a>
@@ -163,7 +163,7 @@ function TierCard({ tier }: { tier: LandingTier }) {
   return (
     <article
       aria-labelledby={id}
-      className={`flex flex-col rounded-2xl bg-white p-7 shadow-sm ${
+      className={`flex flex-col rounded-2xl bg-white p-7 shadow-xs ${
         tier.featured ? "border-2 border-ink-900" : "border border-paper-300"
       }`}
     >
@@ -203,12 +203,12 @@ function SampleCard() {
     <div
       role="img"
       aria-label="Sample zine card: the photo on the front, its camera settings and film recipe on the back."
-      className="relative mx-auto h-[21rem] w-full max-w-md sm:h-[30rem]"
+      className="relative mx-auto h-84 w-full max-w-md sm:h-120"
     >
       {/* The back sits to the right, with its text clear of the photo that overlaps its left edge. */}
       <div
         aria-hidden="true"
-        className="absolute right-0 top-8 h-[17rem] w-[12.5rem] rotate-[4deg] rounded-xl border border-paper-300 bg-paper-100 py-4 pl-12 pr-4 shadow-lg sm:h-[25rem] sm:w-[17rem] sm:py-6 sm:pl-[4.5rem] sm:pr-6"
+        className="absolute right-0 top-8 h-68 w-50 rotate-[4deg] rounded-xl border border-paper-300 bg-paper-100 py-4 pl-12 pr-4 shadow-lg sm:h-100 sm:w-68 sm:py-6 sm:pl-18 sm:pr-6"
       >
         <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-ink-500">Camera</p>
         <p className="mt-2 font-mono text-xs leading-relaxed text-ink-800">
@@ -233,9 +233,9 @@ function SampleCard() {
       </div>
       <div
         aria-hidden="true"
-        className="absolute left-0 top-0 z-10 h-[17rem] w-[11rem] -rotate-[4deg] overflow-hidden rounded-xl border border-paper-300 shadow-xl sm:h-[25rem] sm:w-[15rem]"
+        className="absolute left-0 top-0 z-10 h-68 w-44 rotate-[-4deg] overflow-hidden rounded-xl border border-paper-300 shadow-xl sm:h-100 sm:w-60"
       >
-        <div className="absolute inset-0 bg-gradient-to-b from-[#f4c98f] via-[#d98259] to-[#34262f]" />
+        <div className="absolute inset-0 bg-linear-to-b from-[#f4c98f] via-[#d98259] to-[#34262f]" />
         <div className="absolute left-1/2 top-[34%] h-16 w-16 -translate-x-1/2 rounded-full bg-[#fde8bd]" />
         <div className="absolute inset-x-0 bottom-0 h-[38%] bg-[#2a1f27]" />
         <p className="absolute inset-x-4 bottom-4 font-serif text-base leading-snug text-paper-50 sm:inset-x-5 sm:bottom-5 sm:text-lg">

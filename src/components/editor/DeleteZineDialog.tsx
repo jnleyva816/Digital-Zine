@@ -72,7 +72,7 @@ export function DeleteZineDialog({ open, title, published, onCancel, onConfirm }
             value={typed}
             autoComplete="off"
             onChange={(e) => setTyped(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm shadow-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/20"
+            className="mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-3.5 py-2 text-sm shadow-xs focus:border-red-500 focus:outline-hidden focus:ring-2 focus:ring-red-500/20"
           />
         </div>
         {error ? (

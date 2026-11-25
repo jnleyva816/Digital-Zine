@@ -77,7 +77,7 @@ export function RecipeLibrary({ initial }: { initial: SavedRecipe[] }) {
       <button
         type="button"
         onClick={() => setEditing("new")}
-        className="inline-flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-sm transition hover:bg-ink-800"
+        className="inline-flex items-center gap-2 rounded-xl bg-ink-900 px-5 py-2.5 text-sm font-semibold text-paper-50 shadow-xs transition hover:bg-ink-800"
       >
         <Plus className="h-4 w-4" aria-hidden="true" />
         New recipe

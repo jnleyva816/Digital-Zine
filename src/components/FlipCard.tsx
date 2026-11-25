@@ -93,15 +93,15 @@ export function FlipCard({
               blurDataUrl={blurDataUrl}
             />
 
-            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-gradient-to-b from-black/60 via-black/20 to-transparent p-4 sm:p-5">
-              <span className="rounded-full bg-black/45 px-3 py-1 font-mono text-[11px] tracking-[0.18em] text-paper-50 backdrop-blur-sm">
+            <div className="pointer-events-none absolute inset-x-0 top-0 flex items-center justify-between bg-linear-to-b from-black/60 via-black/20 to-transparent p-4 sm:p-5">
+              <span className="rounded-full bg-black/45 px-3 py-1 font-mono text-[11px] tracking-[0.18em] text-paper-50 backdrop-blur-xs">
                 {String(pageNumber).padStart(2, "0")} /{" "}
                 {String(totalPages).padStart(2, "0")}
               </span>
             </div>
 
             {caption ? (
-              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/50 to-transparent px-5 pb-5 pt-14 sm:px-7 sm:pb-6">
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 bg-linear-to-t from-black/85 via-black/50 to-transparent px-5 pb-5 pt-14 sm:px-7 sm:pb-6">
                 <p className={`font-serif text-base leading-relaxed text-paper-50 sm:text-lg ${onOpenFullScreen ? "mr-12" : ""}`}>
                   {caption}
                 </p>
@@ -118,7 +118,7 @@ export function FlipCard({
               <p className="flex min-h-8 items-center pr-28 font-mono text-xs uppercase tracking-[0.2em] text-ink-500">
                 Plate {String(pageNumber).padStart(2, "0")}
               </p>
-              {name ? <h2 className="mt-3 break-words font-serif text-xl font-bold text-ink-900">{name}</h2> : null}
+              {name ? <h2 className="mt-3 wrap-break-word font-serif text-xl font-bold text-ink-900">{name}</h2> : null}
               {showRecipePrimary && recipe ? <RecipeBack recipe={recipe} exif={exif} /> : <CameraBack exif={exif} />}
             </div>
           ) : null}
@@ -136,7 +136,7 @@ export function FlipCard({
           aria-label={`Page ${pageNumber}: flip to ${reverseName}, ${chip}`}
           aria-pressed={isFlipped}
           onClick={handleToggle}
-          className="absolute right-3 top-3 z-10 inline-flex min-h-9 max-w-[70%] items-center gap-1.5 rounded-full bg-paper-50/95 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-md ring-1 ring-ink-900/10 backdrop-blur transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 sm:right-4 sm:top-4"
+          className="absolute right-3 top-3 z-10 inline-flex min-h-9 max-w-[70%] items-center gap-1.5 rounded-full bg-paper-50/95 px-3.5 py-1.5 text-xs font-semibold text-ink-900 shadow-md ring-1 ring-ink-900/10 backdrop-blur-sm transition hover:bg-white focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 sm:right-4 sm:top-4"
         >
           {isFlipped ? null : showRecipePrimary ? (
             <SlidersHorizontal className="h-3.5 w-3.5 shrink-0 text-vermilion-600" aria-hidden="true" />
@@ -156,7 +156,7 @@ export function FlipCard({
           data-page-expand={pageNumber}
           aria-label={`View page ${pageNumber} full screen`}
           onClick={() => articleRef.current && onOpenFullScreen(articleRef.current)}
-          className="absolute bottom-3 right-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-paper-50 shadow-md backdrop-blur-sm transition hover:bg-black/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 sm:bottom-4 sm:right-4"
+          className="absolute bottom-3 right-3 z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-black/50 text-paper-50 shadow-md backdrop-blur-xs transition hover:bg-black/70 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500 sm:bottom-4 sm:right-4"
         >
           <Maximize2 className="h-5 w-5" aria-hidden="true" />
         </button>

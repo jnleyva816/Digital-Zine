@@ -54,7 +54,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
   return (
     <>
       <Group title="Photos">
-        <p ref={counter} tabIndex={-1} aria-live="polite" className="text-[13px] text-ink-700 outline-none">
+        <p ref={counter} tabIndex={-1} aria-live="polite" className="text-[13px] text-ink-700 outline-hidden">
           {photos.length} of {MINI_PHOTO_LIMIT}
         </p>
         <ul aria-label="Mini zine photos" className="grid grid-cols-3 gap-2">
@@ -107,7 +107,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
                   type="button"
                   aria-label={`Add ${nameOf(page)}`}
                   onClick={() => add(page)}
-                  className="relative h-20 overflow-hidden rounded-md bg-ink-900 hover:opacity-80 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500"
+                  className="relative h-20 overflow-hidden rounded-md bg-ink-900 hover:opacity-80 focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-vermilion-500"
                 >
                   <WebPhoto photo={page.photo} fit="cover" sizes="90px" />
                 </button>

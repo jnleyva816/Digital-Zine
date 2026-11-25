@@ -8,7 +8,7 @@ import type { BoardView } from "@/lib/board-layout";
 const VIEWS = { free: { label: "Free form", icon: Shapes }, grid: { label: "Grid", icon: LayoutGrid }, strip: { label: "Strip", icon: GalleryHorizontal } } as const;
 export type BuiltView = Extract<BoardView, keyof typeof VIEWS>;
 
-const focus = "focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
+const focus = "focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-500";
 
 interface BoardBarProps {
   boardId: string;
@@ -43,7 +43,7 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
     <div className="border-b border-paper-300 bg-paper-50">
       <div className="grid min-h-16 grid-cols-1 items-center gap-3 px-4 py-2.5 sm:px-6 lg:grid-cols-[1fr_auto_1fr]">
         <div className="flex min-w-0 items-center gap-2.5">
-          <Link href="/boards" className={`hidden shrink-0 rounded text-sm text-ink-500 hover:text-ink-900 lg:inline ${focus}`}>
+          <Link href="/boards" className={`hidden shrink-0 rounded-sm text-sm text-ink-500 hover:text-ink-900 lg:inline ${focus}`}>
             Boards /
           </Link>
           {draft === null ? (
@@ -72,7 +72,7 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
                   setDraft(null);
                   setError(null);
                 }}
-                className="w-full min-w-0 min-h-11 rounded-lg border border-paper-300 bg-white px-2 py-1 font-serif lg:min-h-0 text-xl font-bold text-ink-900 focus:border-vermilion-500 focus:outline-none focus:ring-2 focus:ring-vermilion-500/20"
+                className="w-full min-w-0 min-h-11 rounded-lg border border-paper-300 bg-white px-2 py-1 font-serif lg:min-h-0 text-xl font-bold text-ink-900 focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20"
               />
             </form>
           )}
@@ -90,7 +90,7 @@ export function BoardBar({ boardId, name, total, view, views, onView, onRename, 
                 type="button"
                 aria-pressed={view === v}
                 onClick={() => onView(v)}
-                className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg lg:min-h-9 px-3.5 text-sm ${focus} ${view === v ? "bg-paper-50 font-semibold text-ink-900 shadow-sm" : "font-medium text-ink-700 hover:text-ink-900"}`}
+                className={`inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg lg:min-h-9 px-3.5 text-sm ${focus} ${view === v ? "bg-paper-50 font-semibold text-ink-900 shadow-xs" : "font-medium text-ink-700 hover:text-ink-900"}`}
               >
                 <Icon className="h-4 w-4" aria-hidden="true" />
                 {label}

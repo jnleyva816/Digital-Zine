@@ -70,7 +70,7 @@ export function ZineBoardPicker({
             value={choice}
             onChange={(e) => setChoice(e.target.value)}
             aria-describedby={`${id}-hint`}
-            className="mt-1.5 rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-sm"
+            className="mt-1.5 rounded-xl border border-paper-300 bg-white px-3 py-2 text-sm text-ink-900 shadow-xs"
           >
             {boards.map((b) => (
               <option key={b.id} value={b.id}>
