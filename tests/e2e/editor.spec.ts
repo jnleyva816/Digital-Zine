@@ -77,7 +77,7 @@ test("edits pages, warns about unsaved changes, and saves", async ({ page }) => 
     expect(dialog.message()).toContain("unsaved changes");
     void dialog.dismiss();
   });
-  await page.getByRole("link", { name: "Vision Board" }).click();
+  await page.getByRole("link", { name: "Boards", exact: true }).click();
   await expect(page).toHaveURL(/\/editor\//);
 
   await save.click();

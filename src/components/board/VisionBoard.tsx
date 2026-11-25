@@ -1,9 +1,12 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
+import type { BoardViewPrefs, Placement } from "@/lib/board-layout";
 import type { RecipeData } from "@/lib/types";
+import { BoardBar, type BuiltView } from "./BoardBar";
+import { FreeformBoard } from "./FreeformBoard";
 import { assetLabel } from "./board-utils";
 import { StorageMeter } from "./StorageMeter";
 import { PhotoEditor } from "./PhotoEditor";
@@ -14,6 +17,7 @@ import { LoadMore } from "./LoadMore";
 import { PhotoCard } from "./PhotoCard";
 import { UploadDropzone } from "./UploadDropzone";
 import { UploadList } from "./UploadList";
+import { useBoardLayout } from "./useBoardLayout";
 import { useBoardPaging } from "./useBoardPaging";
 import { useBoardReorder } from "./useBoardReorder";
 import { useProcessingPoll } from "./useProcessingPoll";
@@ -23,6 +27,12 @@ import { readApiError, toBoardAsset, type BoardAsset } from "./types";
 export interface VisionBoardProps {
   /** The board on screen (DIG-25). Uploads land here. */
   boardId: string;
+  boardName?: string;
+  /** The views this board was last seen in (DIG-86). */
+  viewPrefs?: BoardViewPrefs;
+  /** The free-form layout (DIG-87), and the placed photos that are not on the first page. */
+  initialPlacements?: Placement[];
+  placedAssets?: BoardAsset[];
   initialAssets: BoardAsset[];
   /** The creator's other boards, for moving photos. */
   otherBoards: { id: string; name: string }[];
@@ -38,12 +48,18 @@ export interface VisionBoardProps {
   savedRecipes?: SavedRecipe[];
 }
 
+const WIDE_SCREEN = "(min-width: 1024px)";
+
 /**
- * The Vision Board: uploads, the photo grid, and each photo's actions. Uploading, paging, the
+ * The Vision Board: its bar, its views, uploads, and each photo's actions. Uploading, paging, the
  * processing poll, and reordering live in their own hooks, and each card in PhotoCard (DIG-47).
  */
 export function VisionBoard({
   boardId,
+  boardName: initialName = "Vision Board",
+  viewPrefs = {},
+  initialPlacements = [],
+  placedAssets = [],
   initialAssets,
   otherBoards,
   otherBoardsBytes,
@@ -54,6 +70,13 @@ export function VisionBoard({
 }: VisionBoardProps) {
   const [savedRecipes, setSavedRecipes] = useState<SavedRecipe[]>(initialSavedRecipes);
   const [assets, setAssets] = useState<BoardAsset[]>(initialAssets);
+  /** Placed photos, and ones picked from the tray, that the paged list has not reached yet. */
+  const [extras, setExtras] = useState<BoardAsset[]>(placedAssets);
+  const [boardName, setBoardName] = useState(initialName);
+  /** Null until the browser has said how wide the screen is. */
+  const [wide, setWide] = useState<boolean | null>(null);
+  const [chosenView, setChosenView] = useState(viewPrefs);
+  const layout = useBoardLayout(boardId, initialPlacements);
   const assetsRef = useRef(assets);
   assetsRef.current = assets;
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
@@ -70,6 +93,66 @@ export function VisionBoard({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const inputId = useId();
   const usedBytes = elsewhereBytes + assets.reduce((sum, a) => sum + a.sizeBytes, 0);
+
+  const byId = useMemo(() => new Map([...extras, ...assets].map((a) => [a.id, a])), [extras, assets]);
+  const findAsset = useCallback((id: string) => byId.get(id), [byId]);
+
+  /** Changes a photo wherever the board keeps it. */
+  function updateAsset(id: string, change: (asset: BoardAsset) => BoardAsset) {
+    const apply = (list: BoardAsset[]) => list.map((a) => (a.id === id ? change(a) : a));
+    setAssets(apply);
+    setExtras(apply);
+  }
+
+  function dropAsset(id: string) {
+    setAssets((prev) => prev.filter((a) => a.id !== id));
+    setExtras((prev) => prev.filter((a) => a.id !== id));
+    layout.forget(id);
+  }
+
+  useEffect(() => {
+    const asked = new URLSearchParams(location.search).get("view");
+    if (asked === "free") setChosenView((v) => ({ ...v, wide: "free" }));
+    if (asked === "grid") setChosenView((v) => ({ ...v, wide: "grid", narrow: "grid" }));
+    const query = typeof matchMedia === "function" ? matchMedia(WIDE_SCREEN) : null;
+    const update = () => setWide(query?.matches ?? false);
+    update();
+    query?.addEventListener("change", update);
+    return () => query?.removeEventListener("change", update);
+  }, []);
+
+  // Free form needs a wide screen; a narrow one always has the grid.
+  const view: BuiltView | null = wide === null ? null : wide && (chosenView.wide ?? "free") === "free" ? "free" : "grid";
+
+  function chooseView(next: BuiltView) {
+    setChosenView((v) => (wide ? { ...v, wide: next } : { ...v, narrow: "grid" }));
+    const params = new URLSearchParams(location.search);
+    params.set("view", next);
+    history.replaceState(history.state, "", `${location.pathname}?${params}`);
+    setAnnouncement(next === "free" ? "Free form view" : "Grid view");
+    // Remembering is a convenience: if it fails, the view still changed.
+    void fetch(`/api/boards/${encodeURIComponent(boardId)}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ viewPrefs: wide ? { wide: next } : { narrow: "grid" } }),
+    }).catch(() => undefined);
+  }
+
+  async function renameBoard(name: string): Promise<string | null> {
+    try {
+      const res = await fetch(`/api/boards/${encodeURIComponent(boardId)}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name }),
+      });
+      if (!res.ok) return await readApiError(res, "Could not rename the board.");
+    } catch {
+      return "Could not reach the server. Check your connection and try again.";
+    }
+    setBoardName(name);
+    setAnnouncement(`Board renamed to ${name}.`);
+    return null;
+  }
 
   const { cursor, total, setTotal, loadingMore, loadMoreError, loadMore, sentinelRef } = useBoardPaging({
     boardId,
@@ -105,7 +188,7 @@ export function VisionBoard({
       if (!res.ok) throw new Error(await readApiError(res, "Could not retry processing."));
       const body = (await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
       const updated = toBoardAsset(body.asset);
-      setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, ...updated, recipe: a.recipe } : a)));
+      updateAsset(asset.id, (a) => ({ ...a, ...updated, recipe: a.recipe }));
     } catch (err) {
       setBoardError(err instanceof Error ? err.message : "Could not retry processing.");
     }
@@ -129,7 +212,7 @@ export function VisionBoard({
       if (!res.ok) return await readApiError(res, "Could not save the recipe.");
       const body = (await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
       const updated = toBoardAsset(body.asset);
-      setAssets((prev) => prev.map((a) => (a.id === assetId ? updated : a)));
+      updateAsset(assetId, () => updated);
       forgetFound(assetId);
       setEditingId(null);
       setAnnouncement(recipe ? "Recipe saved." : "Recipe removed.");
@@ -149,10 +232,10 @@ export function VisionBoard({
       });
       if (!res.ok) return await readApiError(res, "Could not use the saved recipe.");
       const updated = toBoardAsset(((await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] }).asset);
-      setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, kind: updated.kind, recipe: updated.recipe, recipeId: updated.recipeId } : a)));
+      updateAsset(assetId, (a) => ({ ...a, kind: updated.kind, recipe: updated.recipe, recipeId: updated.recipeId }));
       setSavedRecipes((prev) =>
         prev.map((r) => {
-          const before = assets.find((a) => a.id === assetId)?.recipeId;
+          const before = byId.get(assetId)?.recipeId;
           if (r.id === recipeId) return { ...r, photoCount: r.photoCount + 1 };
           if (r.id === before) return { ...r, photoCount: Math.max(0, r.photoCount - 1) };
           return r;
@@ -178,7 +261,7 @@ export function VisionBoard({
       if (!res.ok) return await readApiError(res, "Could not save the recipe to your library.");
       const { recipe: saved } = (await res.json()) as { recipe: SavedRecipe };
       setSavedRecipes((prev) => [...prev, saved].sort((a, b) => a.recipe.name.localeCompare(b.recipe.name)));
-      setAssets((prev) => prev.map((a) => (a.id === assetId ? { ...a, kind: "recipe", recipe: saved.recipe, recipeId: saved.id } : a)));
+      updateAsset(assetId, (a) => ({ ...a, kind: "recipe", recipe: saved.recipe, recipeId: saved.id }));
       setEditingId(null);
       setAnnouncement(`“${saved.recipe.name}” saved to your recipes.`);
       return null;
@@ -193,7 +276,7 @@ export function VisionBoard({
     try {
       const res = await fetch(`/api/assets/${encodeURIComponent(asset.id)}`, { method: "DELETE" });
       if (!res.ok) throw new Error(await readApiError(res, "Could not delete the photo."));
-      setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+      dropAsset(asset.id);
       setTotal((t) => Math.max(0, t - 1));
       forgetFound(asset.id);
       setAnnouncement(`${assetLabel(asset, index)} deleted.`);
@@ -216,9 +299,7 @@ export function VisionBoard({
       const body = (await res.json()) as { asset: Parameters<typeof toBoardAsset>[0] };
       const updated = toBoardAsset(body.asset);
       // The response may carry a size read for the first time, which crops need.
-      setAssets((prev) =>
-        prev.map((a) => (a.id === asset.id ? { ...a, edit: updated.edit, width: updated.width, height: updated.height } : a))
-      );
+      updateAsset(asset.id, (a) => ({ ...a, edit: updated.edit, width: updated.width, height: updated.height }));
     } catch {
       return "Could not reach the server. Check your connection and try again.";
     }
@@ -238,7 +319,7 @@ export function VisionBoard({
     } catch {
       return "Could not reach the server. Check your connection and try again.";
     }
-    setAssets((prev) => prev.map((a) => (a.id === asset.id ? { ...a, name } : a)));
+    updateAsset(asset.id, (a) => ({ ...a, name }));
     setNamingId(null);
     setAnnouncement(name ? `Photo named “${name}”.` : "Photo name cleared.");
     return null;
@@ -256,7 +337,8 @@ export function VisionBoard({
       return "Could not reach the server. Check your connection and try again.";
     }
     const target = otherBoards.find((b) => b.id === targetId);
-    setAssets((prev) => prev.filter((a) => a.id !== asset.id));
+    dropAsset(asset.id);
+    setTotal((t) => Math.max(0, t - 1));
     setElsewhereBytes((bytes) => bytes + asset.sizeBytes);
     forgetFound(asset.id);
     setMovingId(null);
@@ -265,29 +347,70 @@ export function VisionBoard({
   }
 
   const photoEditingIndex = assets.findIndex((a) => a.id === photoEditId);
-  const photoEditing = photoEditingIndex >= 0 ? assets[photoEditingIndex] : null;
+  const photoEditing = byId.get(photoEditId ?? "") ?? null;
   const editingIndex = assets.findIndex((a) => a.id === editingId);
-  const editing = editingIndex >= 0 ? assets[editingIndex] : null;
+  const editing = byId.get(editingId ?? "") ?? null;
+  const problem = boardError ? (
+    <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
+      <span>{boardError}</span>
+      <button type="button" onClick={() => setBoardError(null)} className="shrink-0 text-xs font-medium underline underline-offset-2">
+        Dismiss
+      </button>
+    </div>
+  ) : null;
 
   return (
-    <div className="space-y-6">
+    <>
       <p aria-live="polite" className="sr-only">
         {announcement}
       </p>
+      <BoardBar
+        boardId={boardId}
+        name={boardName}
+        total={total}
+        view={view}
+        views={wide ? ["free", "grid"] : ["grid"]}
+        onView={chooseView}
+        onRename={renameBoard}
+        onUpload={() => fileInputRef.current?.click()}
+      />
+
+      {view === "free" ? (
+        <>
+          {uploads.length > 0 || problem ? (
+            <div className="space-y-3 border-b border-paper-300 bg-paper-50 px-6 py-3">
+              <UploadList uploads={uploads} onDismiss={dismiss} />
+              {problem}
+            </div>
+          ) : null}
+          <FreeformBoard
+            boardId={boardId}
+            assets={assets}
+            findAsset={findAsset}
+            placements={layout.placements}
+            commit={layout.commit}
+            saveFailed={layout.saveFailed}
+            onRetry={() => void layout.retry()}
+            trayRevision={`${total}:${assets.filter((a) => a.status === "ready").length}:${layout.savedCount}`}
+            fileInputRef={fileInputRef}
+            onFiles={enqueue}
+            onKnown={(asset) => setExtras((prev) => (prev.some((a) => a.id === asset.id) ? prev : [...prev, asset]))}
+            onEditPhoto={setPhotoEditId}
+            onEditRecipe={setEditingId}
+            onAnnounce={setAnnouncement}
+          />
+        </>
+      ) : null}
+
+      {view === "grid" ? (
+      <div className="mx-auto max-w-7xl space-y-6 px-4 py-6 sm:px-6">
 
       <UploadDropzone inputId={inputId} fileInputRef={fileInputRef} onFiles={enqueue} isReordering={reorder.isDragging} />
       <StorageMeter usedBytes={usedBytes} />
 
       <UploadList uploads={uploads} onDismiss={dismiss} />
 
-      {boardError ? (
-        <div role="alert" className="flex items-start justify-between gap-3 rounded-xl border border-red-300 bg-red-50 px-4 py-3 text-sm text-red-800">
-          <span>{boardError}</span>
-          <button type="button" onClick={() => setBoardError(null)} className="shrink-0 text-xs font-medium underline underline-offset-2">
-            Dismiss
-          </button>
-        </div>
-      ) : null}
+      {problem}
 
       {assets.length === 0 && !isUploading ? (
         <div className="rounded-2xl border border-paper-300 bg-white px-6 py-14 text-center">
@@ -386,6 +509,9 @@ export function VisionBoard({
         </>
       )}
 
+      </div>
+      ) : null}
+
       {photoEditing ? (
         <PhotoEditor
           open
@@ -412,6 +538,6 @@ export function VisionBoard({
         onLink={(recipeId) => (editing ? linkRecipe(editing.id, recipeId) : Promise.resolve(null))}
         onSaveToLibrary={(recipe) => (editing ? saveRecipeToLibrary(editing.id, recipe) : Promise.resolve(null))}
       />
-    </div>
+    </>
   );
 }

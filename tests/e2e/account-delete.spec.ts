@@ -49,7 +49,8 @@ test("a creator deletes their account: the zine, the files, and the sign-in are 
   expect(await storedFileExists(assets[0].storageKey)).toBe(true);
 
   await signIn(page, user.email, user.password);
-  await page.getByRole("link", { name: "Account" }).click();
+  await page.getByRole("button", { name: "Account menu" }).click();
+  await page.getByRole("link", { name: "Account", exact: true }).click();
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole("heading", { name: "Delete account" })).toBeVisible();
   await expect(page.getByText(/cannot be undone/i)).toBeVisible();

@@ -1,3 +1,4 @@
+import { defaultPdfSettings } from "../../src/lib/pdf-settings";
 import { expect, test } from "@playwright/test";
 import { cropPixels, parsePhotoEdit } from "../../src/lib/photo-edit";
 import { boardCards, createUserWithPhotos, defaultBoardId, deleteUser, makePro, signIn, testDb } from "./helpers";
@@ -21,6 +22,7 @@ test("a creator crops and frames a photo, and the board, the zine, and the PDF a
         title: "Harbor Notes",
         slug,
         published: true,
+        pdfSettings: defaultPdfSettings("darkroom", "a4"),
         publishedAt: new Date(),
         pages: { create: [{ pageNumber: 1, content: { assetId: assets[0].id, caption: "" } }] },
       },

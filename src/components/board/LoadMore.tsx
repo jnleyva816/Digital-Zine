@@ -1,10 +1,10 @@
 "use client";
 
-import type { RefObject } from "react";
+import type { Ref } from "react";
 import { Loader2 } from "lucide-react";
 
 export interface LoadMoreProps {
-  sentinelRef: RefObject<HTMLDivElement | null>;
+  sentinelRef: Ref<HTMLDivElement>;
   loading: boolean;
   error: string | null;
   onLoadMore: () => void;

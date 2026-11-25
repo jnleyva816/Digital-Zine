@@ -1,3 +1,4 @@
+import { defaultPdfSettings } from "../../src/lib/pdf-settings";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { publicZinePath } from "../../src/lib/public-zine-path";
@@ -147,6 +148,8 @@ test.describe("Content Security Policy", () => {
     await expectNoViolations(watch, "the editor");
 
     // The PDF download (Pro) makes a blob and saves it.
+    // Its style is set here until the editor has the style panel (DIG-71).
+    await testDb.zine.updateMany({ where: { title: "CSP Walk" }, data: { pdfSettings: defaultPdfSettings("darkroom", "a4") } });
     const download = page.waitForEvent("download");
     await page.getByRole("button", { name: /export|download|pdf/i }).first().click();
     expect((await download).suggestedFilename()).toMatch(/\.pdf$/);
