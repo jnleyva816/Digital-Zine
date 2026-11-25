@@ -4,6 +4,7 @@ import { LegalPage } from "@/components/LegalPage";
 export const metadata: Metadata = {
   title: "Terms",
   description: "The terms for using Folio.",
+  alternates: { canonical: "/terms" },
 };
 
 export default function TermsPage() {

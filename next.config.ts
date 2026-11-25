@@ -4,6 +4,8 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Playwright builds into its own folder so test runs never clobber a running `next dev`.
   distDir: process.env.NEXT_DIST_DIR || ".next",
+  // Do not announce the stack (DIG-104).
+  poweredByHeader: false,
   serverExternalPackages: ["@react-pdf/renderer", "sharp", "pg-boss"],
   images: {
     loader: "custom",

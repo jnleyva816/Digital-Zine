@@ -1,7 +1,8 @@
 import sharp, { type Sharp } from "sharp";
-import { AVIF_QUALITY, VARIANT_WIDTHS } from "@/lib/limits";
+import { AVIF_QUALITY } from "@/lib/limits";
+import { variantWidthsFor } from "./variant-urls";
 
-export { pickVariantUrl, variantKeys } from "./variant-urls";
+export { pickVariantUrl, splitSourceWidth, variantKeys, variantWidthsFor, withSourceWidth } from "./variant-urls";
 
 export interface RenderedImage {
   bytes: Buffer;
@@ -42,7 +43,7 @@ export async function renderVariants(input: Buffer) {
 
   const full = await encode(source.clone().avif(avif));
   const widths: RenderedImage[] = [];
-  for (const w of VARIANT_WIDTHS.filter((w) => w < width)) {
+  for (const w of variantWidthsFor(width)) {
     widths.push(await encode(source.clone().resize({ width: w }).avif(avif)));
   }
   const og = await encode(

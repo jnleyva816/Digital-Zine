@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EmailNotConfiguredError, sendVerificationEmail } from "@/lib/email";
+import { EmailNotConfiguredError, sendGoogleSignInReminderEmail, sendPasswordResetEmail, sendVerificationEmail } from "@/lib/email";
 
 // DIG-94: Resend over fetch. No dependency, and a clear failure when it is not set up.
 const LINK = "https://zine.test/verify-email?token=abc123";
@@ -104,6 +104,70 @@ describe("sendVerificationEmail", () => {
     await sendVerificationEmail("ada@example.com", LINK);
     expect(fetchMock).not.toHaveBeenCalled();
     expect(log.mock.calls.flat().join(" ")).toContain(LINK);
+    vi.unstubAllGlobals();
+  });
+});
+
+// DIG-107: the password reset email and the Google reminder share the sender with verification.
+describe("sendPasswordResetEmail", () => {
+  const RESET = "https://zine.test/reset-password?token=abc123";
+
+  it("posts the link, and says it works once and for one hour", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_123");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await sendPasswordResetEmail("ada@example.com", RESET);
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.to).toEqual(["ada@example.com"]);
+    expect(sent.subject).toMatch(/reset/i);
+    for (const part of [sent.text, sent.html]) {
+      expect(part).toContain(RESET);
+      expect(part).toMatch(/one hour/i);
+      expect(part).toMatch(/ignore this email/i);
+    }
+    vi.unstubAllGlobals();
+  });
+
+  it("escapes the link in the HTML part", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_123");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await sendPasswordResetEmail("ada@example.com", 'https://zine.test/r?a=1&b="2"');
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).html).toContain("a=1&amp;b=&quot;2&quot;");
+    vi.unstubAllGlobals();
+  });
+
+  it("throws with Resend's reason when it refuses, and refuses in production without a key", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_123");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response('{"name":"validation_error","message":"bad"}', { status: 422 })));
+    await expect(sendPasswordResetEmail("ada@example.com", RESET)).rejects.toThrow("Resend rejected the email (422): validation_error: bad");
+    vi.unstubAllGlobals();
+    vi.stubEnv("RESEND_API_KEY", "");
+    vi.stubEnv("NODE_ENV", "production");
+    await expect(sendPasswordResetEmail("ada@example.com", RESET)).rejects.toBeInstanceOf(EmailNotConfiguredError);
+  });
+
+  it("prints the link to the console without a key outside production", async () => {
+    const info = vi.spyOn(console, "info").mockImplementation(() => undefined);
+    await sendPasswordResetEmail("ada@example.com", RESET);
+    expect(info).toHaveBeenCalledWith(expect.stringContaining(RESET));
+    info.mockRestore();
+  });
+});
+
+describe("sendGoogleSignInReminderEmail", () => {
+  it("says to sign in with Google, links the sign-in page, and carries no reset link", async () => {
+    vi.stubEnv("RESEND_API_KEY", "re_test_123");
+    const fetchMock = vi.fn().mockResolvedValue(new Response("{}", { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+    await sendGoogleSignInReminderEmail("ada@example.com", "https://zine.test/signin");
+    const sent = JSON.parse(fetchMock.mock.calls[0][1].body);
+    expect(sent.to).toEqual(["ada@example.com"]);
+    for (const part of [sent.text, sent.html]) {
+      expect(part).toMatch(/sign in with google/i);
+      expect(part).toContain("https://zine.test/signin");
+      expect(part).not.toMatch(/reset-password|token=/);
+    }
     vi.unstubAllGlobals();
   });
 });

@@ -4,6 +4,7 @@ import { LegalPage } from "@/components/LegalPage";
 export const metadata: Metadata = {
   title: "Privacy Policy",
   description: "What Folio collects, why, and who handles it.",
+  alternates: { canonical: "/privacy" },
 };
 
 export default function PrivacyPage() {

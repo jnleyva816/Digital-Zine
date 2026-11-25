@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { LandingPage } from "@/components/landing/LandingPage";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { siteUrl } from "@/lib/site";
+import { landingJsonLd } from "@/lib/structured-data";
 
 const title = "Folio: photo zines you can flip";
 const description =
@@ -12,12 +15,17 @@ export const metadata: Metadata = {
   description,
   alternates: { canonical: "/" },
   openGraph: { title, description, type: "website", url: "/", siteName: "Folio" },
-  twitter: { card: "summary", title, description },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 /** Creators go straight to their board; everyone else sees what the app is (DIG-95). */
 export default async function RootPage() {
   const session = await auth();
   if (session?.user?.id) redirect("/board");
-  return <LandingPage />;
+  return (
+    <>
+      <JsonLd data={landingJsonLd(siteUrl())} />
+      <LandingPage />
+    </>
+  );
 }

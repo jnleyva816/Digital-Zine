@@ -43,6 +43,7 @@ Live at **https://folio-digital-zine.app**.
 ### Under the hood
 
 - **Security.** Rate limits on sign-in, sign-up, uploads, writes, and PDF export. Storage keys are validated so one creator cannot reach another's files. Uploads are checked and never served as HTML. Original files are deleted once their copies are made, so GPS data inside them is never served. Production refuses to start with a missing or example `AUTH_SECRET`.
+- **Search and AI crawlers (DIG-106).** `/robots.txt` welcomes search engines, keeps them out of the signed-in areas, and turns AI-training crawlers away by name (the list is `AI_TRAINING_CRAWLERS` in `src/lib/seo.ts`). `/sitemap.xml` lists the landing page, the legal pages, and every published zine, read live so an unpublished zine drops out at once. Public zines and the landing page carry JSON-LD. `/llms.txt` describes the product for assistants and says the site is not available for AI training. All of them take their address from `NEXT_PUBLIC_APP_URL`. If Cloudflare's managed robots.txt is on, it adds its own AI-crawler rules in front of ours; the two say the same thing.
 - **Quality.** Test-driven: unit, component, API, and end-to-end tests run in CI on every pull request.
 - **Operations.** Prisma migrations run on every deploy, `GET /api/health` checks the database, and errors go to Sentry.
 
@@ -220,6 +221,7 @@ Every variable lives in `.env.example`. Only the first group is required.
 | `RESEND_API_KEY`, `EMAIL_FROM` | Production | Send verification emails (see "Sign-up"). Without a key, production refuses sign-up; elsewhere the link is printed to the console. `RESEND_API_URL` overrides the endpoint, for tests. |
 | `AUTH_GOOGLE_ID`, `AUTH_GOOGLE_SECRET` | No | Turn on Continue with Google (see "Sign-up"). Unset hides the button. |
 | `TRUSTED_PROXY_HOPS` | No | How many proxies sit in front of the app, for reading the client IP (see "Sign-in rate limits"). Default: `1` |
+| `CSP_MODE` | No | `enforce` makes the Content Security Policy block violations. Anything else (the default) only reports them to `/api/csp-report` and Sentry. Deploy report-only, watch for a day, then set `enforce`. |
 | `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN` | No | Report server and browser errors to Sentry. Unset means nothing is sent. `NEXT_PUBLIC_SENTRY_DSN` is read at build time. |
 | `SENTRY_AUTH_TOKEN`, `SENTRY_ORG`, `SENTRY_PROJECT` | No | Build time only: upload source maps so Sentry shows readable stack traces |
 
@@ -237,6 +239,18 @@ Sign-up is limited to 10 per IP per hour, and asking for another link to 3 per e
 - `https://<your domain>/api/auth/callback/google`
 
 Then set `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`. The Google buttons only appear when both are set.
+
+## Forgot password (DIG-107)
+
+`/signin` links to `/forgot-password`. Whoever asks gets the same answer ("If that address has an account, we sent a link") and the answer goes out before the address is looked up, so neither the wording nor the response time shows who has an account. A password account is emailed a link valid for one hour; a Google-only account is emailed a reminder to sign in with Google; an unknown address gets nothing. Only a hash of the token is stored, and asking again retires the older link. Requests are limited to 3 per email and 20 per IP per hour, and attempts to use a link to 20 per IP per hour.
+
+Opening the link (`/reset-password?token=…`) spends nothing; submitting a new password does, once. A refused password (too short, too long, not matching, or the account's own email) does not use the link up. A reset changes the password, retires every other reset link, marks the email verified, signs the creator in, and **signs out every session from before the reset**: each session records when it began, the account records `sessionsValidAfter`, and every check compares the two. Reset emails go through the same Resend setup as verification.
+
+## Deleting an account (DIG-108)
+
+`/account` (linked from the studio header) has a "Delete account" section that lists exactly what goes: the Vision Boards and photos and every stored copy, the zines (published ones stop working at once and leave the sitemap), saved recipes, and the account. The creator types their email address and gives the account's password; an account with no password (Google only) must have signed in within the last five minutes instead. A password that is given must be right. Attempts are limited to 5 per creator per hour.
+
+The order is repeatable: any live Stripe subscription is cancelled first, immediately and with no refund (refunds are DIG-15), and the Stripe customer is deleted; then every file under `users/<id>/` is deleted from storage; then the database row goes, and its cascades remove the rest. If a step fails, the account stays, the creator is told to try again, and the error goes to Sentry tagged `area: account-deletion` with the account's ID only. A retry skips what is already done. The only admin cannot delete their own account. Deleting the Stripe customer removes the saved card and contact details; Stripe keeps its own payment records as the law requires.
 
 ## Billing (Stripe)
 

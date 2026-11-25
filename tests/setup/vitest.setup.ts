@@ -10,6 +10,17 @@ vi.mock("next/cache", () => ({
   revalidatePath: vi.fn(),
 }));
 
+// `after()` runs work once the response is sent, and only works inside a request. Here the work is
+// started at once and remembered, so a test can `await settleAfter()` (tests/api/helpers.ts) before
+// it checks what the work did (DIG-107).
+vi.mock("next/server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("next/server")>()),
+  after: (task: (() => unknown) | Promise<unknown>) => {
+    const g = globalThis as { __afterTasks?: Promise<unknown>[] };
+    (g.__afterTasks ??= []).push(Promise.resolve().then(() => (typeof task === "function" ? task() : task)));
+  },
+}));
+
 afterEach(() => {
   cleanup();
 });

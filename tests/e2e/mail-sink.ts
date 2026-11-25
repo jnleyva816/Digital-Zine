@@ -40,6 +40,14 @@ export async function startMailSink() {
         .filter((m) => m.to.includes(email))
         .map((m) => m.text.match(/https?:\/\/\S+\/verify-email\?token=[\w-]+/)?.[0])
         .filter((link): link is string => Boolean(link)),
+    /** Password reset links sent to `email`, oldest first (DIG-107). */
+    resetLinksFor: (email: string) =>
+      mail
+        .filter((m) => m.to.includes(email))
+        .map((m) => m.text.match(/https?:\/\/\S+\/reset-password\?token=[\w-]+/)?.[0])
+        .filter((link): link is string => Boolean(link)),
+    /** Everything sent to `email`, oldest first. */
+    mailTo: (email: string) => mail.filter((m) => m.to.includes(email)),
     close: () => new Promise<void>((resolve) => server.close(() => resolve())),
   };
 }

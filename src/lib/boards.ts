@@ -1,5 +1,6 @@
 import type { Prisma, PrismaClient } from "@prisma/client";
 import { z } from "zod";
+import "@/lib/zod-setup";
 import { DEFAULT_BOARD_NAME } from "./board-migration";
 
 type Db = Prisma.TransactionClient | PrismaClient;
