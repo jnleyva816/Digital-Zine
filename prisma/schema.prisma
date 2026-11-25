@@ -63,6 +63,24 @@ model User {
   sessionsValidAfter   DateTime?
 }
 
+enum AdminActionType {
+  grant_admin
+  revoke_admin
+}
+
+/// DIG-136: what an admin did to an account, and when. IDs only, with no foreign keys, so a record
+/// outlives both accounts and holds no names or emails.
+model AdminAction {
+  id        String          @id @default(cuid())
+  actorId   String
+  targetId  String
+  action    AdminActionType
+  createdAt DateTime        @default(now())
+
+  @@index([targetId, createdAt])
+  @@index([actorId, createdAt])
+}
+
 /// DIG-94: a single-use email verification link. Only the SHA-256 of the token is stored.
 model EmailVerificationToken {
   id        String   @id @default(cuid())

@@ -50,6 +50,16 @@ describe("StudioHeader", () => {
     expect(signOut).toHaveBeenCalledWith({ callbackUrl: "/signin" });
   });
 
+  it("links an admin, and nobody else, to the admin panel; viewing as Free hides it (DIG-136)", async () => {
+    const { rerender } = render(<StudioHeader user={{ ...user, role: "admin" }} />);
+    await userEvent.click(menu());
+    expect(screen.getByRole("link", { name: "Admin panel" })).toHaveAttribute("href", "/admin");
+    rerender(<StudioHeader user={{ ...user, role: "admin", viewingAsFree: true }} />);
+    expect(screen.queryByRole("link", { name: "Admin panel" })).not.toBeInTheDocument();
+    rerender(<StudioHeader user={user} />);
+    expect(screen.queryByRole("link", { name: "Admin panel" })).not.toBeInTheDocument();
+  });
+
   it("closes with Escape, returning focus, and with a click elsewhere", async () => {
     render(<StudioHeader user={user} />);
     await userEvent.click(menu());
