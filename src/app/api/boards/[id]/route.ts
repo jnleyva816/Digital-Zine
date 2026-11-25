@@ -1,12 +1,19 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getAuthenticatedUser } from "@/lib/auth";
+import { boardViewPrefsSchema, parseViewPrefs } from "@/lib/board-layout";
 import { boardNameSchema } from "@/lib/boards";
 import { prisma } from "@/lib/prisma";
 import { withUserLock } from "@/lib/usage";
 import { limitRequest } from "@/lib/rate-limit";
 
-const renameSchema = z.object({ name: boardNameSchema });
+const updateSchema = z
+  .object({
+    name: boardNameSchema.optional(),
+    /** The view this screen size last used, or the grid layout (DIG-85). Merged into what is stored. */
+    viewPrefs: boardViewPrefsSchema.optional(),
+  })
+  .refine((body) => body.name !== undefined || body.viewPrefs !== undefined, "Give the board a name.");
 const deleteSchema = z.object({ moveToBoardId: z.string().min(1).optional() }).nullable();
 
 type Context = { params: Promise<{ id: string }> };
@@ -18,17 +25,20 @@ export async function PATCH(req: Request, context: Context) {
   if (limited) return limited;
 
   const { id } = await context.params;
-  const existing = await prisma.board.findFirst({ where: { id, ownerId: user.id }, select: { id: true } });
+  const existing = await prisma.board.findFirst({ where: { id, ownerId: user.id }, select: { id: true, viewPrefs: true } });
   if (!existing) return NextResponse.json({ error: "Board not found" }, { status: 404 });
 
-  const parsed = renameSchema.safeParse(await req.json().catch(() => null));
+  const parsed = updateSchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message ?? "Invalid board" }, { status: 400 });
   }
 
   const board = await prisma.board.update({
     where: { id: existing.id },
-    data: { name: parsed.data.name },
+    data: {
+      ...(parsed.data.name !== undefined ? { name: parsed.data.name } : {}),
+      ...(parsed.data.viewPrefs ? { viewPrefs: { ...parseViewPrefs(existing.viewPrefs), ...parsed.data.viewPrefs } } : {}),
+    },
     select: { id: true, name: true, sortOrder: true },
   });
   return NextResponse.json({ board });

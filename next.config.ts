@@ -1,11 +1,17 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
+import { MAX_UPLOAD_BYTES } from "./src/lib/limits";
 
 const nextConfig: NextConfig = {
   // Playwright builds into its own folder so test runs never clobber a running `next dev`.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   // Do not announce the stack (DIG-104).
   poweredByHeader: false,
+  experimental: {
+    // Next cuts off request bodies past 10 MB on routes behind middleware, which includes local
+    // uploads (DIG-120). Just above our own limit, so the route still sees and refuses a larger file.
+    middlewareClientMaxBodySize: MAX_UPLOAD_BYTES + 1024 * 1024,
+  },
   serverExternalPackages: ["@react-pdf/renderer", "sharp", "pg-boss"],
   images: {
     loader: "custom",

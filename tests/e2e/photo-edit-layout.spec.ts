@@ -10,7 +10,13 @@ test.afterAll(async () => {
 async function openEditor(page: Page) {
   const { user } = await createUserWithPhotos();
   await signIn(page, user.email, user.password);
-  await page.getByRole("button", { name: "Edit persimmon.jpg" }).click();
+  if (page.viewportSize()!.width < 1024) {
+    // On a phone, a photo's actions are in its menu (DIG-93).
+    await page.getByRole("button", { name: "More for persimmon.jpg" }).click();
+    await page.getByRole("dialog").getByRole("button", { name: "Edit" }).click();
+  } else {
+    await page.getByRole("button", { name: "Edit persimmon.jpg" }).click();
+  }
   const dialog = page.getByRole("dialog", { name: "Edit persimmon.jpg" });
   await expect(dialog).toBeVisible();
   return { user, dialog };

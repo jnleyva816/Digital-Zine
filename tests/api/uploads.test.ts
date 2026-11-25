@@ -134,6 +134,34 @@ describe("PUT /api/uploads/local/[...key]", () => {
     await expect(fs.readFile(path.join(dir, "users", me.id, "1795033492437-abc-fog.jpg"), "utf8")).resolves.toBe("jpeg-bytes");
   });
 
+  it("refuses a body shorter than its Content-Length with 400 and writes nothing (DIG-120)", async () => {
+    const key = ["users", me.id, "cut-off.jpg"];
+    const res = await PUT(
+      new Request("http://test.local/", {
+        method: "PUT",
+        headers: { "Content-Type": "image/jpeg", "Content-Length": "5000" },
+        body: new Uint8Array(4000),
+      }),
+      params({ key })
+    );
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "The upload was cut off. Try again." });
+    await expect(fs.access(path.join(dir, ...key))).rejects.toThrow();
+  });
+
+  it("accepts a body that matches its Content-Length (DIG-120)", async () => {
+    const res = await PUT(
+      new Request("http://test.local/", {
+        method: "PUT",
+        headers: { "Content-Type": "image/jpeg", "Content-Length": "4000" },
+        body: new Uint8Array(4000),
+      }),
+      params({ key: ["users", me.id, "whole.jpg"] })
+    );
+    expect(res.status).toBe(200);
+    expect((await fs.stat(path.join(dir, "users", me.id, "whole.jpg"))).size).toBe(4000);
+  });
+
   it("refuses an escaped segment rather than decoding it again (DIG-35)", async () => {
     expect((await put(["users", me.id, "a%20b.jpg"], "jpeg-bytes")).status).toBe(400);
   });

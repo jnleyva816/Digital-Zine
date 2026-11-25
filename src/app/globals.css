@@ -8,6 +8,13 @@
   }
 }
 
+/* Small screens have a bottom bar (DIG-93); no page ends under it. */
+@media (max-width: 1023.98px) {
+  body:has([data-studio-tabs]) {
+    padding-bottom: calc(4rem + env(safe-area-inset-bottom));
+  }
+}
+
 /* 3D Flip Card utilities */
 .flip-perspective {
   perspective: 1400px;
@@ -64,5 +71,73 @@ dialog[data-lightbox][open] {
 
   ::view-transition-group(zine-photo) {
     animation-duration: 0s;
+  }
+}
+
+/* Photos move between the board's views (DIG-92). They differ in shape from view to view, so each picture fills its box. */
+[data-board-transition]::view-transition-group(*) {
+  animation-duration: 0.3s;
+  animation-timing-function: cubic-bezier(0, 0, 0.2, 1);
+}
+
+[data-board-transition]::view-transition-old(*),
+[data-board-transition]::view-transition-new(*) {
+  height: 100%;
+  object-fit: cover;
+}
+
+[data-board-transition="fade"]::view-transition-group(*) {
+  animation-duration: 0.15s;
+}
+
+/* Reading modes on a public zine (DIG-50). Scrolling settles on a page; "proximity" never traps a tall one. */
+html:has([data-zine-scroll]) {
+  scroll-snap-type: y proximity;
+}
+
+/* A page turns on the spine: in from the right going forward, from the left going back. */
+.book-spread[data-turn] {
+  animation: book-turn-next 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: left center;
+}
+
+.book-spread[data-turn="prev"] {
+  animation-name: book-turn-prev;
+  transform-origin: right center;
+}
+
+@keyframes book-turn-next {
+  from {
+    opacity: 0.2;
+    transform: perspective(1800px) rotateY(28deg);
+  }
+}
+
+@keyframes book-turn-prev {
+  from {
+    opacity: 0.2;
+    transform: perspective(1800px) rotateY(-28deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .book-spread[data-turn] {
+    animation: book-slide-next 0.15s ease-out;
+  }
+
+  .book-spread[data-turn="prev"] {
+    animation-name: book-slide-prev;
+  }
+}
+
+@keyframes book-slide-next {
+  from {
+    transform: translateX(1rem);
+  }
+}
+
+@keyframes book-slide-prev {
+  from {
+    transform: translateX(-1rem);
   }
 }

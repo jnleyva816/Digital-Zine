@@ -132,7 +132,7 @@ test.describe("Vision Board, seeded creator", () => {
     await expect(boardCards(page).first()).toBeVisible();
     const overflows = await page.evaluate(() => document.documentElement.scrollWidth > window.innerWidth);
     expect(overflows).toBe(false);
-    await expect(page.getByRole("link", { name: "Vision Board" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Boards", exact: true })).toBeVisible();
   });
 });
 
