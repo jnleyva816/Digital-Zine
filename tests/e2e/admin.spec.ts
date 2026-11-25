@@ -1,3 +1,4 @@
+import { defaultPdfSettings } from "../../src/lib/pdf-settings";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createUserWithPhotos, deleteUser, signIn, testDb, defaultBoardId } from "./helpers";
@@ -24,6 +25,7 @@ async function userWithZine(page: Page, { admin }: { admin: boolean }) {
       title: "Admin Check",
       slug: `admin-${randomUUID().slice(0, 8)}`,
       published: true,
+      pdfSettings: defaultPdfSettings("darkroom", "a4"),
       publishedAt: new Date(),
       pages: { create: assets.map((a, i) => ({ pageNumber: i + 1, content: { assetId: a.id, caption: "" } })) },
     },
@@ -59,7 +61,7 @@ test("View as Free shows an admin exactly what a Free user sees, until switched 
   await expect(viewSwitch(page)).toHaveAttribute("aria-checked", "true");
   await expect(page.getByText("PDF export is a Pro feature.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Free Tier" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Free plan" })).toBeVisible();
   expect((await page.request.get(`/api/pdf/${zine.slug}`)).status()).toBe(403);
 
   // It sticks across pages and reloads.
@@ -77,7 +79,7 @@ test("View as Free shows an admin exactly what a Free user sees, until switched 
 
 test("regular users get no switch and cannot use the admin cookie", async ({ page, context, baseURL }) => {
   const zine = await userWithZine(page, { admin: false });
-  await expect(page.getByRole("link", { name: "Free Tier" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Free plan" })).toBeVisible();
   await expect(viewSwitch(page)).toHaveCount(0);
 
   const res = await page.request.post("/api/admin/view-as", { data: { viewAsFree: true } });

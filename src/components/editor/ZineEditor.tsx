@@ -14,6 +14,8 @@ import { assetLabel } from "@/components/board/board-utils";
 import { publicZinePath } from "@/lib/public-zine-path";
 import { DeleteZineDialog } from "./DeleteZineDialog";
 import { PdfExport } from "./PdfExport";
+import type { PreviewZine } from "./PdfPagePreview";
+import type { PdfSettings } from "@/lib/pdf-settings";
 import {
   addPage,
   canPublish,
@@ -53,6 +55,8 @@ export function ZineEditor({
   boardTotal,
   pageAssets = [],
   tier,
+  authorName = null,
+  pdfSettings = null,
 }: {
   zine: EditorZine;
   /** The creator's public ID: the first part of the zine's address (DIG-102). */
@@ -69,6 +73,10 @@ export function ZineEditor({
   /** Photos already on pages that have since moved to another board. */
   pageAssets?: BoardAsset[];
   tier: "free" | "pro";
+  /** The byline the PDF prints: the creator's display name, never their email address. */
+  authorName?: string | null;
+  /** How the zine's PDF looks, or null before its first style (DIG-71). */
+  pdfSettings?: PdfSettings | null;
 }) {
   const router = useRouter();
   const id = useId();
@@ -76,6 +84,7 @@ export function ZineEditor({
   const [saved, setSaved] = useState<EditorDraft>(initial);
   const [draft, setDraft] = useState<EditorDraft>(initial);
   const [published, setPublished] = useState(zine.published);
+  const [publishedAt, setPublishedAt] = useState(zine.publishedAt);
   const [slugLocked, setSlugLocked] = useState(zine.publishedAt !== null);
   const [busy, setBusy] = useState<null | "save" | "publish" | "unpublish">(null);
   const [error, setError] = useState<string | null>(null);
@@ -119,6 +128,30 @@ export function ZineEditor({
   const assetsById = useMemo(
     () => new Map([...boardAssets, ...pageAssets].map((a, i) => [a.id, { asset: a, index: i }])),
     [boardAssets, pageAssets]
+  );
+  // What the PDF would print: the saved pages whose photos are still there, numbered without gaps.
+  const preview = useMemo<PreviewZine>(
+    () => ({
+      title: saved.title,
+      description: saved.description || null,
+      authorName,
+      publishedAt: publishedAt ?? new Date().toISOString(),
+      pages: saved.pages
+        .flatMap((page) => {
+          const asset = assetsById.get(page.assetId)?.asset;
+          return asset ? [{ page, asset }] : [];
+        })
+        .map(({ page, asset }, i) => ({
+          pageNumber: i + 1,
+          assetId: asset.id,
+          name: asset.name?.trim() || null,
+          caption: page.caption.trim(),
+          photo: { src: asset.publicUrl, edit: asset.edit, dims: dimsOf(asset) },
+          exif: page.flipEnabled ? asset.exif : null,
+          recipe: page.flipEnabled ? asset.recipe : null,
+        })),
+    }),
+    [saved, assetsById, authorName, publishedAt]
   );
   const labelFor = (assetId: string) => {
     const entry = assetsById.get(assetId);
@@ -178,6 +211,7 @@ export function ZineEditor({
     setSaved(fresh);
     setDraft(fresh);
     setPublished(next.published);
+    setPublishedAt(next.publishedAt);
     setSlugLocked(next.publishedAt !== null);
     router.refresh();
   }
@@ -205,6 +239,7 @@ export function ZineEditor({
     if (!next) return;
     // Only the status changes; keep any unsaved local edits.
     setPublished(next.published);
+    setPublishedAt(next.publishedAt);
     setSlugLocked(next.publishedAt !== null);
     setStatus("Unpublished");
     router.refresh();
@@ -250,7 +285,15 @@ export function ZineEditor({
           ) : null}
           {published ? (
             <div className="mt-3">
-              <PdfExport slug={saved.slug} tier={tier} dirty={dirty} />
+              <PdfExport
+                zineId={zine.id}
+                slug={saved.slug}
+                tier={tier}
+                dirty={dirty}
+                settings={pdfSettings}
+                preview={preview}
+                onStyled={() => router.refresh()}
+              />
             </div>
           ) : null}
         </div>

@@ -17,7 +17,8 @@ export const metadata: Metadata = {
 
 const dateFormat = new Intl.DateTimeFormat("en-US", { dateStyle: "medium" });
 
-export default async function ZineListPage() {
+export default async function ZineListPage({ searchParams }: { searchParams: Promise<{ board?: string | string[] }> }) {
+  const { board: fromBoard } = await searchParams;
   const user = await getAuthenticatedUser();
   if (!user) redirect("/signin?callbackUrl=%2Feditor");
 
@@ -53,7 +54,7 @@ export default async function ZineListPage() {
         <p className="mt-1 text-sm text-ink-500">Sequence photos from your board into pages, then publish.</p>
 
         <div className="mt-6">
-          <NewZineForm boards={boards.map((b) => ({ id: b.id, name: b.name }))} limitReached={limitReached} />
+          <NewZineForm boards={boards.map((b) => ({ id: b.id, name: b.name }))} initialBoardId={typeof fromBoard === "string" ? fromBoard : undefined} limitReached={limitReached} />
         </div>
 
         {zines.length === 0 ? (

@@ -18,9 +18,8 @@ Seen red first, then green. Name the assertion that failed and the command that 
 
 ## Verification
 
-- [ ] `npm run build`
-- [ ] `npm test`
-- [ ] `npm run test:e2e`
+- [ ] Local checks from "Which tests to run" in `CLAUDE.md`. List them:
+- [ ] Full local run, if that section requires one
 - [ ] CI is green on this pull request
 
 ## Handoff

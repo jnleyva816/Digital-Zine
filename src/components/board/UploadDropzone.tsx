@@ -33,12 +33,12 @@ export function UploadDropzone({ inputId, fileInputRef, onFiles, isReordering }:
         setActive(false);
         if (e.dataTransfer.files.length > 0) onFiles(e.dataTransfer.files);
       }}
-      className={`rounded-2xl border-2 border-dashed px-5 py-6 text-center transition sm:py-8 ${
+      className={`rounded-2xl border-2 border-dashed px-5 py-3 text-center transition ${
         active ? "border-vermilion-500 bg-vermilion-500/5" : "border-paper-300 bg-paper-100/60"
       }`}
     >
-      <ImagePlus className="mx-auto h-7 w-7 text-vermilion-500" aria-hidden="true" />
-      <p className="mt-2 text-sm text-ink-700">
+      <p className="text-sm text-ink-700">
+        <ImagePlus className="mr-2 inline h-5 w-5 text-vermilion-500" aria-hidden="true" />
         Drop photos here, or{" "}
         <label htmlFor={inputId} className="cursor-pointer font-semibold text-vermilion-600 underline underline-offset-2 hover:text-vermilion-500">
           choose files
