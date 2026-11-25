@@ -1,5 +1,6 @@
 import React from "react";
 import { Image as PdfImage, Text, View } from "@react-pdf/renderer";
+import { placeCard } from "./recipe-card";
 import { FillPhoto, cameraLine, fitTitle, monthOf, twoDigits } from "./shared";
 import type { PdfTemplateDefinition, TemplateContext } from "./types";
 
@@ -40,14 +41,20 @@ export const darkroom: PdfTemplateDefinition = {
 
   PhotoPage({ ctx, page }) {
     const { zine, settings, faces, palette, u } = ctx;
+    const card = placeCard(ctx, page);
+    const caption = settings.captions ? page.caption : "";
     const camera = cameraLine(page.exif);
     const number = settings.pageNumbers ? `${twoDigits(page.pageNumber)} / ${twoDigits(zine.pages.length)}` : "";
     return (
       <View style={{ flexGrow: 1, paddingHorizontal: u(22), paddingTop: u(22), paddingBottom: u(20) }}>
-        <FillPhoto page={page} />
-        {settings.captions && page.caption ? (
-          <Text style={{ ...faces.caption, fontSize: u(12), lineHeight: 1.4, marginTop: u(14) }}>{page.caption}</Text>
+        <FillPhoto page={page}>{card.over}</FillPhoto>
+        {caption || card.beside ? (
+          <View style={{ flexDirection: "row", alignItems: "flex-start", marginTop: u(14) }}>
+            <Text style={{ ...faces.caption, flexGrow: 1, flexBasis: 0, fontSize: u(12), lineHeight: 1.4 }}>{caption}</Text>
+            {card.beside}
+          </View>
         ) : null}
+        {card.under}
         {camera || number ? (
           <View style={{ marginTop: u(14), flexDirection: "row", justifyContent: "space-between" }}>
             <Text style={small(ctx)}>{camera}</Text>
