@@ -1,5 +1,5 @@
 import React from "react";
-import { Text, View } from "@react-pdf/renderer";
+import { Text, View } from "./primitives";
 import { cardExif, cardLine, cardRows } from "@/lib/recipe-card";
 import { edgeColor, twoDigits } from "./shared";
 import type { PdfRenderedPageItem, TemplateContext } from "./types";

@@ -3,33 +3,11 @@ import { Document, Page, View, renderToBuffer } from "@react-pdf/renderer";
 import { registerPdfFonts } from "@/lib/pdf-fonts";
 import { miniPalette } from "@/lib/mini-zine";
 import { MiniSheet } from "@/lib/pdf-templates/mini";
-import { PALETTES, type PdfPaper, type PdfSettings } from "@/lib/pdf-settings";
-import { TYPEFACE_FACES } from "@/lib/pdf-typefaces";
 import { PDF_TEMPLATES } from "@/lib/pdf-templates";
+import { PAPER_POINTS, templateContext } from "@/lib/pdf-templates/context";
 import type { PdfZinePayload, TemplateContext } from "@/lib/pdf-templates/types";
 
 export type { PdfRenderedPageItem, PdfZinePayload } from "@/lib/pdf-templates/types";
-
-/** Page sizes in points. */
-const PAPER_POINTS: Record<PdfPaper, { width: number; height: number }> = {
-  letter: { width: 612, height: 792 },
-  a4: { width: 595.28, height: 841.89 },
-};
-
-/** The design canvas draws its pages 397 px wide. */
-const CANVAS_WIDTH = 397;
-
-export function templateContext(zine: PdfZinePayload, settings: PdfSettings = zine.settings): TemplateContext {
-  const size = PAPER_POINTS[settings.paper];
-  return {
-    zine,
-    settings,
-    faces: TYPEFACE_FACES[settings.typeface],
-    palette: PALETTES[settings.palette],
-    ...size,
-    u: (px) => (px * size.width) / CANVAS_WIDTH,
-  };
-}
 
 /** One sheet, exactly. A page that wraps grows a second sheet; a page that does not is resized to its content. */
 function Sheet({ ctx, children }: { ctx: TemplateContext; children: React.ReactNode }) {

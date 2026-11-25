@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
 import { defaultPdfSettings } from "../../src/lib/pdf-settings";
+import { readPdf } from "../pdf-text";
 import { createUserWithPhotos, deleteUser, makePro, signIn, testDb, defaultBoardId } from "./helpers";
 
 test.afterAll(async () => {
@@ -14,7 +15,7 @@ test.afterEach(async () => {
   cleanup = [];
 });
 
-async function creatorWithZine(page: Page, { pro, published }: { pro: boolean; published: boolean }) {
+async function creatorWithZine(page: Page, { pro, published, styled = true }: { pro: boolean; published: boolean; styled?: boolean }) {
   const { user, assets } = await createUserWithPhotos();
   cleanup.push(user.id);
   if (pro) await makePro(user.id);
@@ -25,7 +26,7 @@ async function creatorWithZine(page: Page, { pro, published }: { pro: boolean; p
       title: "Brine & Light",
       slug: `pdf-${randomUUID().slice(0, 8)}`,
       published,
-      pdfSettings: defaultPdfSettings("darkroom", "a4"),
+      ...(styled ? { pdfSettings: defaultPdfSettings("darkroom", "a4") } : {}),
       publishedAt: published ? new Date() : null,
       pages: {
         create: assets.map((a, i) => ({ pageNumber: i + 1, content: { assetId: a.id, caption: `Plate ${i + 1}` } })),
@@ -95,4 +96,73 @@ test("downloading with unsaved edits does not trigger the leave warning", async 
   await downloading;
   expect(dialogs).toEqual([]);
   await expect(page.getByText("Unsaved changes")).toBeVisible();
+});
+
+const savedStyle = async (id: string) => (await testDb.zine.findUniqueOrThrow({ where: { id } })).pdfSettings;
+
+test("a first PDF: pick a template and paper size, then export in that style", async ({ page }) => {
+  const zine = await creatorWithZine(page, { pro: true, published: true, styled: false });
+  await expect(page.getByRole("button", { name: "Download PDF" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  const exportPdf = panel.getByRole("button", { name: "Export PDF" });
+  await expect(panel.getByRole("button", { pressed: true })).toHaveCount(0);
+  await expect(exportPdf).toBeDisabled();
+  await panel.getByRole("button", { name: /^Gallery Light pages/ }).click();
+  await expect(exportPdf).toBeDisabled();
+  await panel.getByRole("button", { name: /^Letter/ }).click();
+
+  const downloading = page.waitForEvent("download");
+  await exportPdf.click();
+  const pages = readPdf(await fs.readFile(await (await downloading).path()));
+  expect(pages).toHaveLength(4);
+  expect(pages[0].width).toBeCloseTo(612, 0);
+  // Only Gallery numbers its pages as plates.
+  expect(pages[1].text).toContain("PLATE 1");
+  expect(await savedStyle(zine.id)).toEqual(defaultPdfSettings("gallery", "letter"));
+});
+
+test("changing the template changes the preview, the saved style, and the next export", async ({ page }) => {
+  const zine = await creatorWithZine(page, { pro: true, published: true });
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  const cover = panel.getByRole("img", { name: "Cover" });
+  await expect(cover).toHaveCSS("background-color", "rgb(22, 20, 18)");
+
+  await panel.getByRole("button", { name: /^Riso Two-ink/ }).click();
+  await expect(cover).toHaveCSS("background-color", "rgb(242, 237, 228)");
+  // The preview's photos and fonts really load, under the enforced Content Security Policy.
+  await expect
+    .poll(() => cover.locator("img").evaluateAll((imgs) => imgs.every((i) => (i as HTMLImageElement).complete && (i as HTMLImageElement).naturalWidth > 0)))
+    .toBe(true);
+  await expect.poll(() => page.evaluate(() => [...document.fonts].some((f) => /anton/i.test(f.family) && f.status === "loaded"))).toBe(true);
+
+  // By keyboard, and back out of the panel.
+  await panel.getByRole("button", { name: "Typewriter" }).focus();
+  await page.keyboard.press("Enter");
+  await expect(panel.getByRole("button", { name: "Typewriter" })).toHaveAttribute("aria-pressed", "true");
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await expect.poll(() => savedStyle(zine.id)).toEqual({ ...defaultPdfSettings("riso", "a4"), typeface: "typewriter" });
+
+  await page.reload();
+  const downloading = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download PDF" }).click();
+  const pages = readPdf(await fs.readFile(await (await downloading).path()));
+  expect(pages[0].text).toContain("3 PAGES");
+});
+
+test("a Free creator styles and previews on a phone without sideways scrolling", async ({ page }) => {
+  const zine = await creatorWithZine(page, { pro: false, published: true, styled: false });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Style your PDF" }).click();
+  const panel = page.getByRole("dialog", { name: "Style your PDF" });
+  await panel.getByRole("button", { name: /^Contact Sheet/ }).click();
+  await panel.getByRole("button", { name: /^A4/ }).click();
+  await expect(panel.getByRole("img", { name: "Cover" })).toContainText("Brine & Light");
+  await expect(panel.getByRole("button", { name: "Export PDF" })).toHaveCount(0);
+  await expect(panel.getByRole("link", { name: "Upgrade to Pro" })).toBeVisible();
+  expect(await panel.evaluate((d) => d.scrollWidth <= d.clientWidth)).toBe(true);
+  await expect.poll(() => savedStyle(zine.id)).toEqual(defaultPdfSettings("contact", "a4"));
 });
