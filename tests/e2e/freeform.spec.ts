@@ -145,3 +145,36 @@ test("the board fits a wide screen with no page scrolling, and trips no content 
   expect(await page.evaluate(() => document.documentElement.scrollHeight - document.documentElement.clientHeight)).toBeLessThanOrEqual(0);
   expect(errors.filter((e) => /Content Security Policy/i.test(e))).toEqual([]);
 });
+
+// DIG-89
+test("a sticky note is written, moved, and still there after a reload", async ({ page }) => {
+  const { boardId } = await open(page);
+  await page.getByRole("button", { name: "Note", exact: true }).click();
+  await page.keyboard.type("night set: 3 to 7");
+  const created = page.waitForResponse((r) => r.url().endsWith("/notes") && r.request().method() === "POST" && r.status() === 201);
+  await page.keyboard.press("Escape");
+  await created;
+  const note = canvas(page).getByRole("button", { name: /^Note: night set: 3 to 7, / });
+  const from = await centre(note);
+  const before = await testDb.boardNote.findFirstOrThrow({ where: { boardId } });
+  const moved = saved(page);
+  await drag(page, from, { x: from.x + 120, y: from.y + 60 });
+  await moved;
+  await page.reload();
+  await expect(note).toBeVisible();
+  const after = await testDb.boardNote.findFirstOrThrow({ where: { boardId } });
+  expect([after.x - before.x, after.y - before.y].map(Math.round)).toEqual([120, 60]);
+  await expect(note).toHaveCSS("color", "rgb(61, 55, 48)");
+  await expect(note).toHaveCSS("background-color", "rgb(246, 231, 168)");
+
+  // Dropped on the tray, a note goes back; it is not deleted.
+  await drag(page, await centre(note), await centre(tray(page)));
+  await expect(note).toBeVisible();
+  expect((await testDb.boardNote.findFirstOrThrow({ where: { boardId } })).x).toBe(after.x);
+  await note.dblclick();
+  await page.getByRole("textbox", { name: "Note text" }).fill("");
+  const gone = page.waitForResponse((r) => r.request().method() === "DELETE" && r.ok());
+  await page.keyboard.press("Escape");
+  await gone;
+  expect(await testDb.boardNote.count({ where: { boardId } })).toBe(0);
+});

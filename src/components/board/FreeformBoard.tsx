@@ -1,18 +1,28 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { Hand, Maximize, MousePointer2, PanelLeftOpen } from "lucide-react";
-import type { Placement } from "@/lib/board-layout";
+import { Hand, Maximize, MousePointer2, PanelLeftOpen, StickyNote as NoteIcon } from "lucide-react";
+import { MAX_BOARD_NOTES, type BoardNote, type Placement } from "@/lib/board-layout";
 import { NUDGE, SIZE_STEP, bounds, clampWidth, fitView, nextTilt, resizeFrom, scatter, tidy, toBoard, zoomAt, type BoardViewport, type Corner, type Item } from "@/lib/freeform";
 import { assetLabel } from "./board-utils";
 import { PhotoTray } from "./PhotoTray";
 import { PlacedPhoto, placedHeight, placedTransform } from "./PlacedPhoto";
+import { StickyNote, noteMinHeight } from "./StickyNote";
+import type { useBoardLayout } from "./useBoardLayout";
 import { ACCEPTED_IMAGE_TYPES, type BoardAsset } from "./types";
 
 /** A pointer that moves less than this has clicked, not dragged. */
 const DRAG_SLOP = 4;
 const NEW_WIDTH = 200;
 const START: BoardViewport = { x: 0, y: 0, zoom: 1 };
+
+/** One thing on the board: a photo, or a note (DIG-89). */
+type Layer = { id: string; label: string; z: number } & (
+  | { kind: "photo"; spot: Placement; asset: BoardAsset }
+  | { kind: "note"; spot: BoardNote; asset?: undefined }
+);
+
+const noteLabel = (text: string) => `Note "${text.length > 40 ? `${text.slice(0, 40)}…` : text}"`;
 
 type Drag =
   | { kind: "move" | "resize"; id: string; corner?: Corner; startX: number; startY: number; from: Item; el: HTMLElement; moved: boolean; next: { x: number; y: number; width: number } }
@@ -23,10 +33,7 @@ export interface FreeformBoardProps {
   boardId: string;
   assets: BoardAsset[];
   findAsset: (id: string) => BoardAsset | undefined;
-  placements: Placement[];
-  commit: (changed: Placement[], removed?: string[]) => void;
-  saveFailed: boolean;
-  onRetry: () => void;
+  layout: ReturnType<typeof useBoardLayout>;
   trayRevision: string;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   onFiles: (files: FileList) => void;
@@ -38,10 +45,14 @@ export interface FreeformBoardProps {
 }
 
 /** The free-form board (DIG-87): photos placed anywhere, over a tray to place them from (DIG-88). */
-export function FreeformBoard({ boardId, assets, findAsset, placements, commit, saveFailed, onRetry, trayRevision, fileInputRef, onFiles, onKnown, onEditPhoto, onEditRecipe, onAnnounce }: FreeformBoardProps) {
+export function FreeformBoard({ boardId, assets, findAsset, layout, trayRevision, fileInputRef, onFiles, onKnown, onEditPhoto, onEditRecipe, onAnnounce }: FreeformBoardProps) {
+  const { placements, notes, commit, addNote, typeNote, finishNote, deleteNote, saveProblem } = layout;
   const [view, setView] = useState<BoardViewport>(START);
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [selected, setSelected] = useState<string | null>(null);
+  /** The note being written on, and how tall each note is. */
+  const [editing, setEditing] = useState<string | null>(null);
+  const [noteHeights, setNoteHeights] = useState<Record<string, number>>({});
   const [tool, setTool] = useState<"select" | "pan">("select");
   const [space, setSpace] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -63,27 +74,34 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
   toolRef.current = space ? "pan" : tool;
 
   // In stacking order, which is also Tab order. A photo that is gone is not drawn.
-  const placed = useMemo(
-    () =>
-      [...placements]
-        .sort((a, b) => a.z - b.z || a.assetId.localeCompare(b.assetId))
-        .flatMap((placement) => {
-          const asset = findAsset(placement.assetId);
-          return asset ? [{ placement, asset, label: assetLabel(asset, 0) }] : [];
-        }),
-    [placements, findAsset]
-  );
+  const layers = useMemo(() => {
+    const photos = placements.flatMap((spot): Layer[] => {
+      const asset = findAsset(spot.assetId);
+      return asset ? [{ kind: "photo", id: spot.assetId, label: assetLabel(asset, 0), z: spot.z, spot, asset }] : [];
+    });
+    const written = notes.map((spot): Layer => ({ kind: "note", id: spot.id, label: noteLabel(spot.text), z: spot.z, spot }));
+    return [...photos, ...written].sort((a, b) => a.z - b.z || a.id.localeCompare(b.id));
+  }, [placements, notes, findAsset]);
   const items: Item[] = useMemo(
-    () => placed.map(({ placement: p, asset }) => ({ id: p.assetId, x: p.x, y: p.y, width: p.width, height: placedHeight(asset, p.width, p.look), rotation: p.rotation })),
-    [placed]
+    () =>
+      layers.map(({ id, spot, ...layer }) => ({
+        id,
+        x: spot.x,
+        y: spot.y,
+        width: spot.width,
+        height: layer.kind === "photo" ? placedHeight(layer.asset, spot.width, (spot as Placement).look) : (noteHeights[id] ?? noteMinHeight(spot.width)),
+        rotation: spot.rotation,
+      })),
+    [layers, noteHeights]
   );
   const placedIds = useMemo(() => new Set(placements.map((p) => p.assetId)), [placements]);
-  const topZ = placements.reduce((max, p) => Math.max(max, p.z), 0);
-  const chosen = placed.find((p) => p.asset.id === selected) ?? null;
+  const topZ = layers.at(-1)?.z ?? 0;
+  const chosen = layers.find((l) => l.id === selected) ?? null;
 
-  /** The latest values for the stable handlers below, so memoized photos are not re-rendered by every change. */
-  const now = useRef({ placed, items, commit, onAnnounce, topZ });
-  now.current = { placed, items, commit, onAnnounce, topZ };
+  /** The latest values for the stable handlers below, so memoized items are not re-rendered by every change. */
+  const now = useRef({ layers, items, onAnnounce, editing });
+  now.current = { layers, items, onAnnounce, editing };
+  const layerOf = (id: string) => now.current.layers.find((l) => l.id === id);
 
   useLayoutEffect(() => {
     const el = canvasRef.current;
@@ -134,37 +152,78 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
     };
   }, []);
 
-  const change = useCallback((id: string, over: Partial<Placement>, said?: string) => {
-    const at = now.current.placed.find((p) => p.asset.id === id);
-    if (!at) return;
-    now.current.commit([{ ...at.placement, ...over }]);
-    if (said) now.current.onAnnounce(`${at.label} ${said}.`);
-  }, []);
+  const change = useCallback(
+    (id: string, over: Partial<Placement>, said?: string) => {
+      const layer = layerOf(id);
+      if (!layer) return;
+      if (layer.kind === "photo") commit([{ ...layer.spot, ...over }]);
+      else {
+        const { x, y, width, rotation, z } = { ...layer.spot, ...over };
+        commit([], [], [{ id, x, y, width, rotation, z }]);
+      }
+      if (said) now.current.onAnnounce(`${layer.label} ${said}.`);
+    },
+    [commit]
+  );
 
-  const takeOff = useCallback((id: string) => {
-    const at = now.current.placed.find((p) => p.asset.id === id);
-    if (!at) return;
-    now.current.commit([], [id]);
-    setSelected(null);
-    now.current.onAnnounce(`${at.label} taken off the board.`);
-  }, []);
+  /** Off the board: a photo stays in the tray, a note is deleted. */
+  const takeOff = useCallback(
+    (id: string) => {
+      const layer = layerOf(id);
+      if (!layer) return;
+      if (layer.kind === "photo") commit([], [id]);
+      else deleteNote(id);
+      setSelected(null);
+      now.current.onAnnounce(`${layer.label} ${layer.kind === "photo" ? "taken off the board" : "deleted"}.`);
+    },
+    [commit, deleteNote]
+  );
 
   const resizeBy = useCallback(
     (id: string, by: number) => {
-      const at = now.current.placed.find((p) => p.asset.id === id);
-      if (!at) return;
-      const width = clampWidth(at.placement.width + by);
-      change(id, { width }, width === at.placement.width ? "is at its limit" : by > 0 ? "made larger" : "made smaller");
+      const layer = layerOf(id);
+      if (!layer) return;
+      const width = clampWidth(layer.spot.width + by);
+      change(id, { width }, width === layer.spot.width ? "is at its limit" : by > 0 ? "made larger" : "made smaller");
     },
     [change]
   );
 
+  const editNote = useCallback((id: string) => {
+    setSelected(id);
+    setEditing(id);
+  }, []);
+
+  const endEdit = useCallback(
+    (id: string) => {
+      // Escape ends the edit, and then the field's own blur asks again.
+      if (now.current.editing !== id) return;
+      now.current.editing = null;
+      setEditing(null);
+      if (finishNote(id) === "removed") {
+        setSelected(null);
+        now.current.onAnnounce("Empty note removed.");
+      }
+    },
+    [finishNote]
+  );
+
+  // Leaving the view, or turning a tablet, does not lose what was being written.
+  useEffect(
+    () => () => {
+      if (now.current.editing) finishNote(now.current.editing);
+    },
+    [finishNote]
+  );
+
+  const onNoteHeight = useCallback((id: string, height: number) => setNoteHeights((prev) => (prev[id] === height ? prev : { ...prev, [id]: height })), []);
+
   const onItemKey = useCallback(
     (id: string, e: React.KeyboardEvent) => {
-      const at = now.current.placed.find((p) => p.asset.id === id);
-      if (!at || e.ctrlKey || e.metaKey || e.altKey) return;
+      const layer = layerOf(id);
+      if (!layer || e.ctrlKey || e.metaKey || e.altKey) return;
       const step = e.shiftKey ? NUDGE.large : NUDGE.small;
-      const { x, y } = at.placement;
+      const { x, y } = layer.spot;
       const moves: Record<string, [Partial<Placement>, string]> = {
         ArrowLeft: [{ x: x - step }, "moved left"],
         ArrowRight: [{ x: x + step }, "moved right"],
@@ -176,11 +235,14 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
       else if (e.key === "]") resizeBy(id, SIZE_STEP);
       else if (e.key === "Delete" || e.key === "Backspace") takeOff(id);
       else if (e.key === "Escape") setSelected(null);
-      else if (e.key === "Enter") setSelected(id);
+      else if (e.key === "Enter") {
+        if (layer.kind === "note") editNote(id);
+        else setSelected(id);
+      }
       else return;
       e.preventDefault();
     },
-    [change, resizeBy, takeOff]
+    [change, resizeBy, takeOff, editNote]
   );
 
   // Selection follows focus, so Tab walks the photos; a press focuses too.
@@ -294,7 +356,8 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
     d.el.style.width = `${d.from.width}px`;
     if (cancelled) return;
     if (d.kind === "move" && over(trayRef.current, e)) {
-      takeOff(d.id);
+      // A note has no place in the tray, so it goes back to where it was.
+      if (placedIds.has(d.id)) takeOff(d.id);
       return;
     }
     const round = (n: number) => Math.round(n * 10) / 10;
@@ -323,6 +386,19 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
     onAnnounce(`${assetLabel(asset, 0)} placed on the board.`);
   }
 
+  function writeNote() {
+    const centre = toBoard(view, middle);
+    editNote(
+      addNote({
+        x: Math.round(centre.x - NEW_WIDTH / 2),
+        y: Math.round(centre.y - noteMinHeight(NEW_WIDTH) / 2),
+        width: NEW_WIDTH,
+        rotation: Math.round((Math.random() - 0.5) * 6),
+        z: topZ + 1,
+      })
+    );
+  }
+
   const middle = { x: size.width / 2, y: size.height / 2 };
 
   function find(id: string) {
@@ -337,11 +413,15 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
     const to = new Map(moves.map(({ id, ...m }) => [id, m]));
     setAnimate(true);
     setTimeout(() => setAnimate(false), 350);
-    commit(placed.map(({ placement }) => ({ ...placement, ...to.get(placement.assetId) })));
+    commit(
+      layers.flatMap((l) => (l.kind === "photo" ? [{ ...l.spot, ...to.get(l.id) }] : [])),
+      [],
+      layers.flatMap((l) => (l.kind === "note" ? [{ id: l.id, width: l.spot.width, z: l.z, x: l.spot.x, y: l.spot.y, rotation: l.spot.rotation, ...to.get(l.id) }] : []))
+    );
     onAnnounce(said);
   }
 
-  const chosenItem = chosen ? items.find((i) => i.id === chosen.asset.id)! : null;
+  const chosenItem = chosen ? items.find((i) => i.id === chosen.id)! : null;
   const panning = space || tool === "pan";
   const toolButton = "inline-flex h-10 items-center gap-1.5 rounded-[10px] px-3 text-[13px] text-ink-900 hover:bg-paper-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-vermilion-500 disabled:opacity-40";
   const barButton = "min-h-9 rounded-lg px-2.5 text-xs text-paper-50 hover:bg-white/15 focus-visible:outline focus-visible:outline-2 focus-visible:outline-paper-50";
@@ -409,24 +489,25 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
         }}
       >
         <div ref={worldRef} className="absolute left-0 top-0 origin-top-left" style={{ transform: `translate(${view.x}px, ${view.y}px) scale(${view.zoom})` }}>
-          {placed.map(({ placement, asset, label }, i) => (
-            <PlacedPhoto
-              key={asset.id}
-              asset={asset}
-              placement={placement}
-              label={label}
-              position={`${i + 1} of ${placed.length}`}
-              selected={selected === asset.id}
-              animate={animate}
-              onFocus={onItemFocus}
-              onPointerDown={onItemDown}
-              onResizeStart={onResizeStart}
-              onKeyDown={onItemKey}
-            />
-          ))}
+          {layers.map((layer, i) => {
+            const shared = {
+              position: `${i + 1} of ${layers.length}`,
+              selected: selected === layer.id,
+              animate,
+              onFocus: onItemFocus,
+              onPointerDown: onItemDown,
+              onResizeStart,
+              onKeyDown: onItemKey,
+            };
+            return layer.kind === "photo" ? (
+              <PlacedPhoto key={layer.id} asset={layer.asset} placement={layer.spot} label={layer.label} {...shared} />
+            ) : (
+              <StickyNote key={layer.id} note={layer.spot} editing={editing === layer.id} onEdit={editNote} onType={typeNote} onFinish={endEdit} onHeight={onNoteHeight} {...shared} />
+            );
+          })}
         </div>
 
-        {placed.length === 0 ? (
+        {layers.length === 0 ? (
           <p className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 px-6 text-center text-sm text-ink-500">
             Nothing placed yet. Drag photos here from the tray, or focus one and press Enter.
           </p>
@@ -438,10 +519,10 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
           </button>
         ) : null}
 
-        {chosen && chosenItem && !dragging ? (
+        {chosen && chosenItem && !dragging && !editing ? (
           <div
             role="toolbar"
-            aria-label="Selected photo"
+            aria-label={chosen.kind === "photo" ? "Selected photo" : "Selected note"}
             onPointerDown={(e) => e.stopPropagation()}
             className="absolute z-10 flex max-w-[calc(100%-1rem)] -translate-x-1/2 flex-wrap items-center gap-0.5 rounded-xl bg-ink-900 p-1 shadow-lg"
             style={{
@@ -450,16 +531,24 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
             }}
           >
             <span className="max-w-32 truncate px-2 text-xs text-paper-200">{chosen.label}</span>
-            <button type="button" className={barButton} onClick={() => onEditPhoto(chosen.asset.id)}>Edit</button>
-            <button type="button" className={barButton} onClick={() => onEditRecipe(chosen.asset.id)}>Recipe</button>
-            <button type="button" aria-label="Smaller" className={barButton} onClick={() => resizeBy(chosen.asset.id, -SIZE_STEP)}>−</button>
-            <button type="button" aria-label="Larger" className={barButton} onClick={() => resizeBy(chosen.asset.id, SIZE_STEP)}>+</button>
-            <button type="button" className={barButton} onClick={() => change(chosen.asset.id, { rotation: nextTilt(chosen.placement.rotation) }, "tilted")}>Tilt</button>
-            <button type="button" className={barButton} onClick={() => change(chosen.asset.id, { z: topZ + 1 }, "brought to front")}>To front</button>
-            <button type="button" className={barButton} onClick={() => change(chosen.asset.id, { look: chosen.placement.look === "print" ? "plain" : "print" }, "border changed")}>
-              {chosen.placement.look === "print" ? "Plain" : "Print"}
-            </button>
-            <button type="button" className={`${barButton} !text-[#F6A48A]`} onClick={() => takeOff(chosen.asset.id)}>Take off board</button>
+            {chosen.kind === "photo" ? (
+              <>
+                <button type="button" className={barButton} onClick={() => onEditPhoto(chosen.id)}>Edit</button>
+                <button type="button" className={barButton} onClick={() => onEditRecipe(chosen.id)}>Recipe</button>
+              </>
+            ) : (
+              <button type="button" className={barButton} onClick={() => editNote(chosen.id)}>Edit</button>
+            )}
+            <button type="button" aria-label="Smaller" className={barButton} onClick={() => resizeBy(chosen.id, -SIZE_STEP)}>−</button>
+            <button type="button" aria-label="Larger" className={barButton} onClick={() => resizeBy(chosen.id, SIZE_STEP)}>+</button>
+            <button type="button" className={barButton} onClick={() => change(chosen.id, { rotation: nextTilt(chosen.spot.rotation) }, "tilted")}>Tilt</button>
+            <button type="button" className={barButton} onClick={() => change(chosen.id, { z: topZ + 1 }, "brought to front")}>To front</button>
+            {chosen.kind === "photo" ? (
+              <button type="button" className={barButton} onClick={() => change(chosen.id, { look: chosen.spot.look === "print" ? "plain" : "print" }, "border changed")}>
+                {chosen.spot.look === "print" ? "Plain" : "Print"}
+              </button>
+            ) : null}
+            <button type="button" className={`${barButton} !text-[#F6A48A]`} onClick={() => takeOff(chosen.id)}>{chosen.kind === "photo" ? "Take off board" : "Delete note"}</button>
           </div>
         ) : null}
 
@@ -467,19 +556,20 @@ export function FreeformBoard({ boardId, assets, findAsset, placements, commit, 
           <div role="toolbar" aria-label="Board tools" onPointerDown={(e) => e.stopPropagation()} className="flex flex-wrap items-center gap-0.5 rounded-2xl border border-paper-300 bg-paper-50 p-1 shadow-lg" style={{ pointerEvents: "auto" }}>
             <button type="button" aria-pressed={tool === "select"} onClick={() => setTool("select")} className={`${toolButton} ${tool === "select" ? "bg-paper-200" : ""}`}><MousePointer2 className="h-4 w-4" aria-hidden="true" />Select</button>
             <button type="button" aria-pressed={tool === "pan"} onClick={() => setTool("pan")} className={`${toolButton} ${tool === "pan" ? "bg-paper-200" : ""}`}><Hand className="h-4 w-4" aria-hidden="true" />Pan</button>
+            <button type="button" disabled={notes.length >= MAX_BOARD_NOTES} title={notes.length >= MAX_BOARD_NOTES ? `A board can hold ${MAX_BOARD_NOTES} notes.` : undefined} onClick={writeNote} className={toolButton}><NoteIcon className="h-4 w-4" aria-hidden="true" />Note</button>
             <button type="button" aria-label="Zoom out" onClick={() => setView((v) => zoomAt(v, middle, Math.round((v.zoom - 0.1) * 10) / 10))} className={toolButton}>−</button>
             <span data-testid="board-zoom" className="min-w-11 text-center font-mono text-xs text-ink-700">{Math.round(view.zoom * 100)}%</span>
             <button type="button" aria-label="Zoom in" onClick={() => setView((v) => zoomAt(v, middle, Math.round((v.zoom + 0.1) * 10) / 10))} className={toolButton}>+</button>
             <button type="button" onClick={() => setView(fitView(items, size))} className={toolButton}><Maximize className="h-4 w-4" aria-hidden="true" />Fit</button>
-            <button type="button" disabled={placed.length === 0} onClick={() => arrange(tidy(items), "Photos tidied into a grid.")} className={toolButton}>Tidy up</button>
-            <button type="button" disabled={placed.length === 0} onClick={() => arrange(scatter(items, Math.random), "Photos scattered.")} className={toolButton}>Scatter</button>
+            <button type="button" disabled={layers.length === 0} onClick={() => arrange(tidy(items), "Board tidied into a grid.")} className={toolButton}>Tidy up</button>
+            <button type="button" disabled={layers.length === 0} onClick={() => arrange(scatter(items, Math.random), "Board scattered.")} className={toolButton}>Scatter</button>
           </div>
         </div>
 
-        {saveFailed ? (
+        {saveProblem ? (
           <p role="status" onPointerDown={(e) => e.stopPropagation()} className="absolute right-4 top-4 rounded-xl border border-paper-300 bg-paper-50 px-3.5 py-2 text-sm text-ink-800 shadow">
-            Couldn&apos;t save layout.{" "}
-            <button type="button" onClick={onRetry} className="font-semibold text-vermilion-600 underline underline-offset-2">Retry</button>
+            {saveProblem}{" "}
+            <button type="button" onClick={() => void layout.retry()} className="font-semibold text-vermilion-600 underline underline-offset-2">Retry</button>
           </p>
         ) : null}
 

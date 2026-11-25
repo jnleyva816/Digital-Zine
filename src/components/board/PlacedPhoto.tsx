@@ -73,19 +73,22 @@ export const PlacedPhoto = memo(function PlacedPhoto({ asset, placement, label, 
         ) : null}
         {placement.tape ? <span aria-hidden="true" className="absolute -top-2.5 left-1/2 -ml-[35px] h-5 w-[70px] -rotate-[4deg] bg-[#E8D6AA]/75" /> : null}
       </div>
-      {selected
-        ? (Object.keys(CORNERS) as Corner[]).map((corner) => (
-            <span
-              key={corner}
-              aria-hidden="true"
-              data-corner={corner}
-              onPointerDown={(e) => onResizeStart(asset.id, corner, e)}
-              className={`absolute flex h-5 w-5 touch-none items-center justify-center ${CORNERS[corner]}`}
-            >
-              <span className="h-2.5 w-2.5 rounded-sm border-2 border-vermilion-500 bg-white" />
-            </span>
-          ))
-        : null}
+      {selected ? <ResizeHandles id={asset.id} onResizeStart={onResizeStart} /> : null}
     </div>
   );
 });
+
+/** The selected item's corners, for a pointer; the toolbar and keyboard resize too. */
+export function ResizeHandles({ id, onResizeStart }: { id: string; onResizeStart: PlacedPhotoProps["onResizeStart"] }) {
+  return (Object.keys(CORNERS) as Corner[]).map((corner) => (
+    <span
+      key={corner}
+      aria-hidden="true"
+      data-corner={corner}
+      onPointerDown={(e) => onResizeStart(id, corner, e)}
+      className={`absolute flex h-5 w-5 touch-none items-center justify-center ${CORNERS[corner]}`}
+    >
+      <span className="h-2.5 w-2.5 rounded-sm border-2 border-vermilion-500 bg-white" />
+    </span>
+  ));
+}

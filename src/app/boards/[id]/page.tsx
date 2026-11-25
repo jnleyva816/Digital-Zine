@@ -27,7 +27,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
   const board = await prisma.board.findFirst({ where: { id, ownerId: user.id }, select: { id: true, name: true, viewPrefs: true } });
   if (!board) notFound();
 
-  const [firstPage, otherBoards, accountBytes, pages, latestZine, savedRecipes, placed] = await Promise.all([
+  const [firstPage, otherBoards, accountBytes, pages, latestZine, savedRecipes, placed, notes] = await Promise.all([
     // The first page only; the board loads more as it scrolls (DIG-29).
     boardPhotoPage(user.id, board.id, BOARD_PAGE_SIZE, null),
     prisma.board.findMany({
@@ -49,6 +49,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
     listSavedRecipes(prisma, user.id),
     // The free-form layout, with its photos: they may be anywhere in the board's order (DIG-87).
     prisma.boardPlacement.findMany({ where: { boardId: board.id }, include: { asset: { select: BOARD_ASSET_SELECT } } }),
+    prisma.boardNote.findMany({ where: { boardId: board.id }, select: { id: true, text: true, x: true, y: true, width: true, rotation: true, z: true } }),
   ]);
 
   const assets = firstPage?.assets ?? [];
@@ -79,6 +80,7 @@ export default async function BoardPage({ params }: { params: Promise<{ id: stri
           boardName={board.name}
           viewPrefs={parseViewPrefs(board.viewPrefs)}
           initialPlacements={placements}
+          initialNotes={notes}
           placedAssets={placed.filter((p) => !onFirstPage.has(p.assetId)).map((p) => toBoardAsset(p.asset))}
           initialAssets={assets.map(toBoardAsset)}
           otherBoards={otherBoards}

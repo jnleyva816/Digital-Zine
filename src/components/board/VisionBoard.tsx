@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { ImagePlus } from "lucide-react";
 import type { FoundRecipe } from "@/lib/fuji-makernote";
-import type { BoardViewPrefs, Placement } from "@/lib/board-layout";
+import type { BoardNote, BoardViewPrefs, Placement } from "@/lib/board-layout";
 import type { RecipeData } from "@/lib/types";
 import { BoardBar, type BuiltView } from "./BoardBar";
 import { FreeformBoard } from "./FreeformBoard";
@@ -32,6 +32,8 @@ export interface VisionBoardProps {
   viewPrefs?: BoardViewPrefs;
   /** The free-form layout (DIG-87), and the placed photos that are not on the first page. */
   initialPlacements?: Placement[];
+  /** The free-form board's sticky notes (DIG-89). */
+  initialNotes?: BoardNote[];
   placedAssets?: BoardAsset[];
   initialAssets: BoardAsset[];
   /** The creator's other boards, for moving photos. */
@@ -59,6 +61,7 @@ export function VisionBoard({
   boardName: initialName = "Vision Board",
   viewPrefs = {},
   initialPlacements = [],
+  initialNotes = [],
   placedAssets = [],
   initialAssets,
   otherBoards,
@@ -76,7 +79,7 @@ export function VisionBoard({
   /** Null until the browser has said how wide the screen is. */
   const [wide, setWide] = useState<boolean | null>(null);
   const [chosenView, setChosenView] = useState(viewPrefs);
-  const layout = useBoardLayout(boardId, initialPlacements, () => setBoardError("This board was changed somewhere else, so its layout was reloaded."));
+  const layout = useBoardLayout(boardId, initialPlacements, initialNotes, () => setBoardError("This board was changed somewhere else, so its layout was reloaded."));
   const assetsRef = useRef(assets);
   assetsRef.current = assets;
   const [elsewhereBytes, setElsewhereBytes] = useState(otherBoardsBytes);
@@ -387,10 +390,7 @@ export function VisionBoard({
             boardId={boardId}
             assets={assets}
             findAsset={findAsset}
-            placements={layout.placements}
-            commit={layout.commit}
-            saveFailed={layout.saveFailed}
-            onRetry={() => void layout.retry()}
+            layout={layout}
             trayRevision={`${total}:${assets.filter((a) => a.status === "ready").length}:${layout.savedCount}`}
             fileInputRef={fileInputRef}
             onFiles={enqueue}
