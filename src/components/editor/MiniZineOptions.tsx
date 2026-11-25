@@ -5,7 +5,7 @@ import { ArrowLeft, ArrowRight, X } from "lucide-react";
 import { MINI_PHOTO_MINIMUM, miniInnerPages, pickMiniPages } from "@/lib/mini-zine";
 import { MINI_PHOTO_LIMIT, type PdfSettings } from "@/lib/pdf-settings";
 import { FoldingSteps } from "./FoldingSteps";
-import { WebPhoto, type PreviewPage, type PreviewZine } from "./PdfPagePreview";
+import { WebPhoto, nameOf, onePerPhoto, type PreviewPage, type PreviewZine } from "./PdfPagePreview";
 import { Check, Group } from "./pdf-panel-ui";
 import type { PdfStyle } from "./usePdfStyle";
 
@@ -19,7 +19,6 @@ export function miniPlan(look: PdfSettings | null, zine: PreviewZine) {
 
 export const enoughMiniPhotos = (look: PdfSettings | null, zine: PreviewZine) => miniPlan(look, zine).photos.length >= MINI_PHOTO_MINIMUM;
 
-const nameOf = (page: PreviewPage) => page.name || page.caption || `Photo ${page.pageNumber}`;
 const tool = "flex h-8 w-8 items-center justify-center rounded-md bg-ink-900/80 text-paper-50 transition hover:bg-ink-900 aria-disabled:opacity-40 disabled:opacity-40";
 
 /** What the mini zine holds: its photos, in order, and its own options (DIG-74). */
@@ -32,8 +31,7 @@ export function MiniZineOptions({ style, zine }: { style: PdfStyle; zine: Previe
 
   const full = photos.length >= MINI_PHOTO_LIMIT;
   const chosen = new Set(photos.map((p) => p.assetId));
-  // A photo can be on several pages; the mini zine takes it once.
-  const others = zine.pages.filter((p, i) => !chosen.has(p.assetId) && zine.pages.findIndex((q) => q.assetId === p.assetId) === i);
+  const others = onePerPhoto(zine.pages).filter((p) => !chosen.has(p.assetId));
 
   const choose = (next: PreviewPage[]) => style.edit({ miniPhotos: [...new Set(next.map((p) => p.assetId))] });
   function move(from: number, to: number) {
@@ -146,8 +144,11 @@ const NOTES = { photo: "Photo", intro: "Intro (free page)", recipes: "Recipes (f
 export function MiniZineGuide({ style, zine }: { style: PdfStyle; zine: PreviewZine }) {
   const id = useId();
   const { photos, inner } = miniPlan(style.look, zine);
+  const cover = style.look?.cover;
   const strip: { label: string; note: string; page?: PreviewPage }[] = [
-    { label: "Cover", note: "Title, byline", page: photos[0] },
+    cover?.style === "title" || !cover
+      ? { label: "Cover", note: "Title, byline" }
+      : { label: "Cover", note: cover.style === "grid" ? "Photos, title" : "Photo, title", page: cover.style === "grid" ? photos[0] : (zine.pages.find((p) => p.assetId === cover.photo) ?? photos[0]) },
     ...inner.map((p, i) => ({ label: String(i + 2), note: NOTES[p.kind], page: p.kind === "photo" ? p.photo : undefined })),
     { label: "Back", note: "Link to the online zine" },
   ];

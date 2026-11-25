@@ -141,13 +141,17 @@ export async function PATCH(
     }
   }
 
-  if (parsed.data.pdfSettings?.miniPhotos.length) {
+  const { miniPhotos = [], cover } = parsed.data.pdfSettings ?? {};
+  if (miniPhotos.length || cover?.photo) {
     // The pages this save leaves the zine with. Those photos are the owner's own, checked below.
     const onPages =
       parsed.data.pages?.map((p) => p.assetId) ??
       (await prisma.zinePage.findMany({ where: { zineId: existing.id }, select: { content: true } })).map((p) => parsePageContent(p.content).assetId);
-    if (parsed.data.pdfSettings.miniPhotos.some((assetId) => !onPages.includes(assetId))) {
+    if (miniPhotos.some((assetId) => !onPages.includes(assetId))) {
       return NextResponse.json({ error: "The mini zine can only use photos that are on this zine's pages." }, { status: 400 });
+    }
+    if (cover?.photo && !onPages.includes(cover.photo)) {
+      return NextResponse.json({ error: "The cover can only use a photo that is on this zine's pages." }, { status: 400 });
     }
   }
 

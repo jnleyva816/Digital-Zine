@@ -331,3 +331,42 @@ describe("GET /api/pdf/[slug]", () => {
     expect(fetchSpy.mock.calls.map((c) => String(c[0]))).not.toContainEqual(expect.stringContaining("attacker.example"));
   });
 });
+
+describe("cover (DIG-126)", () => {
+  const images = (content: string) => (content.match(/ Do\b/g) ?? []).length;
+  const covered = (cover: PdfSettings["cover"], over: Partial<PdfSettings> = {}) => ({ ...defaultPdfSettings("darkroom", "a4"), cover, ...over });
+  async function firstPage(assetIds: string[], settings: PdfSettings, format = "booklet") {
+    const { slug } = await zine(pro.id, assetIds, { settings });
+    const res = await GET(new Request(`http://test/api/pdf/${slug}?format=${format}`), params({ slug }));
+    expect(res.status).toBe(200);
+    return readPdf(Buffer.from(await res.arrayBuffer()))[0];
+  }
+
+  it("has no photo on Title only, and one on Full-page photo", async () => {
+    const a = await photo(pro.id);
+    expect(images((await firstPage([a.id], covered({ style: "title", photo: null }))).content)).toBe(0);
+    expect(images((await firstPage([a.id], covered({ style: "full", photo: null }))).content)).toBe(1);
+  });
+
+  it("falls back to the first photo when the chosen one has left the zine or cannot be read", async () => {
+    const a = await photo(pro.id);
+    const lost = await photo(pro.id, { writeFile: false });
+    expect(images((await firstPage([a.id], covered({ style: "full", photo: "gone" }))).content)).toBe(1);
+    expect(images((await firstPage([a.id, lost.id], covered({ style: "full", photo: lost.id }))).content)).toBe(1);
+  });
+
+  it("puts a photo on the mini zine's cover that is not one of its inside photos", async () => {
+    const all = await Promise.all(Array.from({ length: 7 }, () => photo(pro.id)));
+    const ids = all.map((a) => a.id);
+    const inside = { miniPhotos: ids.slice(0, 6) };
+    expect(images((await firstPage(ids, covered({ style: "title", photo: null }, inside), "mini")).content)).toBe(6);
+    expect(images((await firstPage(ids, covered({ style: "full", photo: ids[6] }, inside), "mini")).content)).toBe(7);
+  });
+
+  it("never prints another creator's photo, even if the settings name one", async () => {
+    const mine = await photo(pro.id);
+    const theirs = await photo(otherPro.id);
+    const page = await firstPage([mine.id, theirs.id], covered({ style: "full", photo: theirs.id }));
+    expect(images(page.content)).toBe(1);
+  });
+});

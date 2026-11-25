@@ -158,6 +158,18 @@ describe("PATCH pdfSettings (DIG-64)", () => {
     expect((await patch(zine.id, { pages: [], pdfSettings: { ...style, miniPhotos: [offPage.id] } })).status).toBe(400);
   });
 
+  it("only takes a cover photo that is on this zine's pages (DIG-126)", async () => {
+    const onPage = await createAsset(me.id, 0);
+    const offPage = await createAsset(me.id, 1);
+    const zine = await createZine("Issue", [onPage.id]);
+    for (const photo of [offPage.id, "no-such-photo"]) {
+      expect((await patch(zine.id, { pdfSettings: { ...style, cover: { style: "full", photo } } })).status, photo).toBe(400);
+    }
+    expect((await patch(zine.id, { pdfSettings: { ...style, cover: { style: "full", photo: onPage.id } } })).status).toBe(200);
+    const saved = await prisma.zine.findUniqueOrThrow({ where: { id: zine.id } });
+    expect(saved.pdfSettings).toMatchObject({ cover: { style: "full", photo: onPage.id } });
+  });
+
   it("is refused when signed out, and for someone else's zine", async () => {
     const zine = await createZine("Issue", []);
     mockedUser.mockResolvedValueOnce(null);

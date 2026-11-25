@@ -32,6 +32,26 @@ describe("withTemplate", () => {
   });
 });
 
+describe("the cover (DIG-126)", () => {
+  it("starts as the title only, with no photo chosen", () => {
+    for (const t of ["darkroom", "contact", "gallery", "riso"] as const) expect(defaultPdfSettings(t, "a4").cover).toEqual({ style: "title", photo: null });
+  });
+
+  it("is the template's own photo cover for a style saved before covers could be chosen", () => {
+    const { cover: _, ...old } = base;
+    expect(parsePdfSettings(old)).toEqual({ ...base, cover: { style: "template", photo: null } });
+  });
+
+  it("is kept when the template changes", () => {
+    const cover = { style: "grid" as const, photo: "a" };
+    expect(withTemplate({ ...base, cover }, "riso").cover).toEqual(cover);
+  });
+
+  it.each([[{ style: "collage", photo: null }], [{ style: "full" }], [{ style: "full", photo: "" }], [{ style: "full", photo: null, size: 2 }]])("refuses %j", (cover) => {
+    expect(pdfSettingsSchema.safeParse({ ...base, cover }).success).toBe(false);
+  });
+});
+
 describe("validation", () => {
   it.each([
     ["an unknown template", { template: "neon" }],

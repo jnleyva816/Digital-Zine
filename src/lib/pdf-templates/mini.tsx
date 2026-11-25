@@ -3,7 +3,8 @@ import { Image as PdfImage, Line, Rect, Svg, Text, View } from "@react-pdf/rende
 import { miniInnerPages, type MiniInnerPage } from "@/lib/mini-zine";
 import { cardRows } from "@/lib/recipe-card";
 import type { FujiRecipe } from "@/lib/fuji-recipe";
-import { FillPhoto, cameraLine, fitTitle, monthOf, twoDigits } from "./shared";
+import { PhotoGrid } from "./covers";
+import { FillPhoto, cameraLine, coverPage, fitTitle, monthOf, twoDigits } from "./shared";
 import type { PdfRenderedPageItem, TemplateContext } from "./types";
 
 /** Home printers cannot print the outer quarter inch. */
@@ -79,14 +80,33 @@ function Photo({ ctx, page, width }: { ctx: TemplateContext; page: PdfRenderedPa
 }
 
 function Front({ ctx, inner }: PanelProps) {
-  const { zine, faces, palette } = ctx;
+  const { zine, settings, faces, palette } = ctx;
+  const style = settings.cover.style;
+  const cover = coverPage(zine);
   return (
     <>
-      <Text style={{ ...eyebrow(ctx), marginBottom: 6 }}>FOLIO · MINI ZINE</Text>
-      {zine.pages[0] ? <Photo ctx={ctx} page={zine.pages[0]} width={inner.width} /> : null}
-      <View style={{ marginTop: 8 }}>
-        <Title ctx={ctx} size={18} maxLines={5} />
-      </View>
+      {style === "full" ? null : <Text style={{ ...eyebrow(ctx), marginBottom: 6 }}>FOLIO · MINI ZINE</Text>}
+      {style === "title" ? (
+        <View style={{ flexGrow: 1, flexBasis: 0, justifyContent: "center" }}>
+          <Title ctx={ctx} size={24} maxLines={7} />
+          <View style={{ width: 24, height: 1.5, backgroundColor: palette.accent, marginTop: 10 }} />
+        </View>
+      ) : (
+        <>
+          {style === "grid" ? (
+            <PhotoGrid pages={zine.pages.slice(0, 4)} gap={3} />
+          ) : cover && style === "full" ? (
+            <View style={{ flexGrow: 1, flexBasis: 0, marginHorizontal: -MARGIN, marginTop: -MARGIN }}>
+              <FillPhoto page={{ ...cover, imageFit: "cover" }} />
+            </View>
+          ) : cover ? (
+            <Photo ctx={ctx} page={cover} width={inner.width} />
+          ) : null}
+          <View style={{ marginTop: 8 }}>
+            <Title ctx={ctx} size={18} maxLines={5} />
+          </View>
+        </>
+      )}
       <Text style={{ ...faces.text, fontSize: SMALL, color: palette.muted, marginTop: 8 }}>{[zine.authorName, monthOf(zine.publishedAt)].filter(Boolean).join(" · ")}</Text>
     </>
   );

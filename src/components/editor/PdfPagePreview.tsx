@@ -7,6 +7,7 @@ import { withSourceWidth } from "@/lib/media/variant-urls";
 import { frameLayout, type PhotoEdit } from "@/lib/photo-edit";
 import type { PdfPalette, PdfSettings } from "@/lib/pdf-settings";
 import { PDF_TEMPLATES } from "@/lib/pdf-templates";
+import { Cover } from "@/lib/pdf-templates/covers";
 import { templateContext } from "@/lib/pdf-templates/context";
 import type { PdfRenderedPageItem, PdfZinePayload } from "@/lib/pdf-templates/types";
 import { webFontFamily } from "./pdf-web-fonts";
@@ -30,6 +31,12 @@ export interface PreviewZine {
   publishedAt: string;
   pages: PreviewPage[];
 }
+
+/** What to call a page's photo. */
+export const nameOf = (page: PreviewPage) => page.name || page.caption || `Photo ${page.pageNumber}`;
+
+/** A photo can be on several pages; its first. */
+export const onePerPhoto = (pages: PreviewPage[]) => pages.filter((p, i) => pages.findIndex((q) => q.assetId === p.assetId) === i);
 
 /** About a third of A4. */
 export const PREVIEW_WIDTH = 290;
@@ -180,12 +187,13 @@ export function PdfPagePreview({ settings, zine, page, label, width = PREVIEW_WI
       imageSrc: photo as unknown as PdfRenderedPageItem["imageSrc"],
       imageFit: photo.edit ? "contain" : "cover",
     }));
-    const full: PdfZinePayload = { ...zine, pages, settings };
+    const chosen = zine.pages.findIndex((p) => p.assetId === settings.cover.photo);
+    const full: PdfZinePayload = { ...zine, pages, coverPhoto: pages[chosen] ?? null, settings };
     return { payload: full, shown: page === "cover" ? null : pages.find((p) => p.pageNumber === page.pageNumber) };
   }, [zine, settings, page]);
 
   const ctx = templateContext(payload);
-  const { Cover, PhotoPage } = PDF_TEMPLATES[settings.template];
+  const { PhotoPage } = PDF_TEMPLATES[settings.template];
   const scale = width / ctx.width;
   const content = page === "cover" ? <Cover ctx={ctx} /> : shown ? <PhotoPage ctx={ctx} page={shown} /> : null;
   return (

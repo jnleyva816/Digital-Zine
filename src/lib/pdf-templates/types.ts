@@ -25,6 +25,8 @@ export interface PdfZinePayload {
   /** ISO date. */
   publishedAt: string;
   pages: PdfRenderedPageItem[];
+  /** The photo chosen for the cover, when it is not the first (DIG-126). It need not be one of `pages`. */
+  coverPhoto?: PdfRenderedPageItem | null;
   settings: PdfSettings;
 }
 

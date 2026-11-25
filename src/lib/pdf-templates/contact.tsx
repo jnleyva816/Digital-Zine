@@ -1,7 +1,7 @@
 import React from "react";
 import { Image as PdfImage, Polygon, Rect, Svg, Text, View } from "./primitives";
 import { placeCard } from "./recipe-card";
-import { FillPhoto, cameraLine, edgeColor, fitTitle, monthOf, twoDigits } from "./shared";
+import { FillPhoto, cameraLine, coverPage, edgeColor, fitTitle, monthOf, twoDigits } from "./shared";
 import type { PdfTemplateDefinition, TemplateContext } from "./types";
 
 const FILM = "#111111";
@@ -43,7 +43,9 @@ export const contact: PdfTemplateDefinition = {
   Cover({ ctx }) {
     const { zine, faces, palette, u, width } = ctx;
     const strip = width - u(52);
-    const frames = zine.pages.slice(0, 4);
+    // The chosen photo leads the strip.
+    const lead = coverPage(zine);
+    const frames = lead ? [lead, ...zine.pages.filter((p) => p.pageNumber !== lead.pageNumber)].slice(0, 4) : [];
     const line = { ...faces.detail, fontSize: u(8.5), letterSpacing: u(1.1), textTransform: "uppercase" as const, color: palette.muted };
     const cell = (strip - u(22)) / (frames.length === 1 ? 1 : 2);
     return (

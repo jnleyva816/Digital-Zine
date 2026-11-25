@@ -40,8 +40,14 @@ export function usePdfStyle(zineId: string, initial: PdfSettings | null, pageAss
         const res = await fetch(`/api/zines/${encodeURIComponent(zineId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          // The server refuses a mini zine photo whose page has since been removed.
-          body: JSON.stringify({ pdfSettings: { ...settings, miniPhotos: settings.miniPhotos.filter((id) => onPages.current.includes(id)) } }),
+          // The server refuses a mini zine or cover photo whose page has since been removed.
+          body: JSON.stringify({
+            pdfSettings: {
+              ...settings,
+              miniPhotos: settings.miniPhotos.filter((id) => onPages.current.includes(id)),
+              cover: { ...settings.cover, photo: settings.cover.photo && onPages.current.includes(settings.cover.photo) ? settings.cover.photo : null },
+            },
+          }),
           // A choice made just before leaving the page still arrives.
           keepalive: true,
         });

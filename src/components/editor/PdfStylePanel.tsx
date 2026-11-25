@@ -8,6 +8,7 @@ import { TYPEFACE_FACES } from "@/lib/pdf-typefaces";
 import { PREVIEW_WIDTH, PdfPagePreview, WebPhoto, type PreviewPage, type PreviewZine, type WebPhotoSource } from "./PdfPagePreview";
 import { Check, Choice, Group, PanelLayout, SaveError, Segment, UpgradePrompt, savedMessage, segments } from "./pdf-panel-ui";
 import { webFontFamily } from "./pdf-web-fonts";
+import { CoverOptions } from "./CoverOptions";
 import { MiniZineGuide, MiniZineOptions, enoughMiniPhotos } from "./MiniZineOptions";
 import { RecipeCardOptions } from "./RecipeCardOptions";
 import type { PdfStyle } from "./usePdfStyle";
@@ -182,6 +183,8 @@ export function PdfStylePanel({ style, zine, tier, dirty, busy, done, exportErro
                   ))}
                 </div>
               </Group>
+
+              <CoverOptions style={style} zine={zine} />
 
               {mini ? <MiniZineOptions style={style} zine={zine} /> : null}
 
