@@ -3,7 +3,8 @@ import sharp from "sharp";
 import { getAuthenticatedUser } from "@/lib/auth";
 import { renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
-import { parsePdfSettings } from "@/lib/pdf-settings";
+import { duotone } from "@/lib/media/duotone";
+import { PALETTES, parsePdfSettings } from "@/lib/pdf-settings";
 import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
 import { prisma } from "@/lib/prisma";
 import { limitRequest } from "@/lib/rate-limit";
@@ -121,6 +122,10 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
   });
   const assetMap = new Map(assets.map((a) => [a.id, a]));
 
+  // Riso prints every photo in the palette's two inks (DIG-69).
+  const { text: ink1, accent: ink2, page: paper } = PALETTES[settings.palette];
+  const ink = (image: Buffer) => (settings.template === "riso" ? duotone(image, { ink1, ink2, paper }) : image);
+
   const loaded = await mapLimit(pageContents, PDF_IMAGE_CONCURRENCY, async ({ page, content }) => {
       const asset = assetMap.get(content.assetId);
       if (!asset) return null;
@@ -130,7 +135,7 @@ export async function GET(_req: Request, context: { params: Promise<{ slug: stri
       return {
         name: asset.name?.trim() || null,
         caption: content.caption?.trim() ?? "",
-        imageSrc: { data: image, format: "jpg" as const },
+        imageSrc: { data: await ink(image), format: "jpg" as const },
         // An edited photo is already cropped and framed, so it is printed whole.
         imageFit: edit ? ("contain" as const) : ("cover" as const),
         // A card that does not flip has no back, on screen or on paper.
