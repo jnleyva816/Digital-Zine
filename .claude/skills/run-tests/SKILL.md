@@ -10,7 +10,7 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 | When | Run |
 | --- | --- |
 | While coding | Only the test files you are working on |
-| Before a commit | `npx vitest run --changed`, `npx tsc --noEmit`, and the e2e specs for the flow you touched |
+| Before a commit | `npx vitest run --changed` and the e2e specs for the flow you touched. The pre-commit hook runs `tsc` |
 | Pull request | Nothing extra. CI runs the build and every suite |
 | Docs or Markdown only | Nothing |
 | Milestone named by the owner, or a change to dependencies, build config, route structure, the Prisma schema, auth, middleware, payments, or shared test helpers | Full run: `npm run build`, then `npm test`, then `npm run test:e2e`, one after another |
@@ -21,7 +21,7 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 
 ## Commands
 - Unit, component, API: `npx vitest run <file> [<file>...]`.
-- TypeScript: `npx tsc --noEmit`. Until `DIG-123` lands, one known error at `src/lib/exif-client.test.ts:10` is expected; only new errors count.
+- TypeScript: `npx tsc --noEmit`. Known errors are listed in `.githooks/tsc-known-errors.txt` (today one, at `src/lib/exif-client.test.ts:10`, until `DIG-123`); only new errors count. Delete a line there once its error is fixed.
 - E2E: `npm run test:e2e -- tests/e2e/<spec>.spec.ts --reporter=line`.
   - It builds into `.next-e2e/` first, which is slow.
   - If `next dev` holds port 3417, prefix the command with `E2E_PORT=3418`. The mail sink takes `E2E_PORT + 100`.

@@ -10,6 +10,7 @@ Work from what you already know. Do not re-run test suites to write the summary.
 1. **Facts.** Run `git status --short` and `git log --oneline origin/main..HEAD`. Recall which test commands ran this session and their results.
 2. **Commit** anything that exists only in the working tree, on the ticket's branch.
    - Message: `DIG-123: <what changed>`. If the ticket is not done, add `(checkpoint)`. If a committed test fails, name it in the message.
+   - If the pre-commit `tsc` check fails, fix the error. Use `--no-verify` only for a checkpoint commit whose message names the failure.
    - End the message with the attribution lines this environment gives.
    - Push, unless the handoff page says this branch is not pushed.
 3. **PR.**

@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Type-checks before a commit that stages TypeScript (DIG-143, owner's choice:
+# tsc only; Vitest is left out because it resets the shared test database).
+# Enable once per clone:  git config core.hooksPath .githooks
+# Known errors to ignore are listed in .githooks/tsc-known-errors.txt.
+# A checkpoint commit that says so may skip this with --no-verify.
+git diff --cached --name-only --diff-filter=ACMR | grep -qE '\.(ts|tsx)$' || exit 0
+
+root=$(git rev-parse --show-toplevel)
+if [ -z "${TSC_CMD:-}" ]; then
+  if command -v npx >/dev/null; then TSC_CMD="npx tsc --noEmit --pretty false"
+  else TSC_CMD="nix shell nixpkgs#nodejs_22 -c npx tsc --noEmit --pretty false"; fi
+fi
+known="$root/.githooks/tsc-known-errors.txt"
+errors=$(cd "$root" && eval "$TSC_CMD" 2>&1 | grep -E 'error TS[0-9]+' | { if [ -s "$known" ]; then grep -vF -f "$known"; else cat; fi; })
+[ -z "$errors" ] && exit 0
+echo "pre-commit: new TypeScript errors (npx tsc --noEmit):"
+echo "$errors" | head -20
+echo "Fix them, or for a checkpoint commit that says so, commit with --no-verify."
+exit 1
