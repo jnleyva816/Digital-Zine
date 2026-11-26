@@ -57,7 +57,11 @@ export async function authorizeCredentials(
   }
 
   await clearRateLimit("signin-email", emailFromIp);
+  if (user.deactivatedAt) throw new AccountDeactivatedError();
   // Said only after the password is right, so this never tells a stranger which emails exist.
   if (!user.emailVerifiedAt) throw new EmailNotVerifiedError();
   return { id: user.id, email: user.email, name: user.name ?? user.email.split("@")[0] };
 }
+
+/** An admin deactivated the account (DIG-137). Said only once the credentials are proven. */
+export class AccountDeactivatedError extends Error {}

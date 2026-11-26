@@ -1,5 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { prisma } from "@/lib/prisma";
+import { AccountDeactivatedError } from "@/lib/sign-in";
 
 export const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
 
@@ -43,8 +44,10 @@ export async function consumeVerificationToken(token: string) {
   const spent = await prisma.emailVerificationToken.deleteMany({ where: { id: row.id } });
   if (spent.count !== 1) return null;
 
-  const user = await prisma.user.findUnique({ where: { id: row.userId }, select: { id: true, email: true, name: true, emailVerifiedAt: true } });
+  const user = await prisma.user.findUnique({ where: { id: row.userId }, select: { id: true, email: true, name: true, emailVerifiedAt: true, deactivatedAt: true } });
   if (!user) return null;
+  // The link proves the inbox, so the person may be told; nothing is verified (DIG-137).
+  if (user.deactivatedAt) throw new AccountDeactivatedError();
   if (!user.emailVerifiedAt) {
     await prisma.user.update({ where: { id: user.id }, data: { emailVerifiedAt: new Date() } });
   }

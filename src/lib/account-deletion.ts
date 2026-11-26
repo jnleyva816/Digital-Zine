@@ -85,8 +85,9 @@ const LAST_ADMIN = {
  * zines, and recipes. A failure at any step stops there with the account still in place, tells
  * the owner through Sentry, and tells the creator to try again; a retry skips what is already
  * done. Published zines leave the sitemap with the row, and their cached pages are dropped.
+ * `deletedBy` is the admin who deleted someone else's account (DIG-137).
  */
-export async function deleteAccountCompletely(userId: string): Promise<DeletionResult> {
+export async function deleteAccountCompletely(userId: string, options: { deletedBy?: string } = {}): Promise<DeletionResult> {
   const user = await prisma.user.findUnique({
     where: { id: userId },
     select: { id: true, role: true, stripeCustomerId: true, stripeSubscriptionId: true },
@@ -133,6 +134,8 @@ export async function deleteAccountCompletely(userId: string): Promise<DeletionR
         await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtext('dz-last-admin'))`;
         if ((await tx.user.count({ where: { role: "admin", id: { not: user.id } } })) === 0) return "last_admin" as const;
       }
+      // An admin's deletion is recorded with the row's removal, so neither happens alone (DIG-137).
+      if (options.deletedBy) await tx.adminAction.create({ data: { actorId: options.deletedBy, targetId: user.id, action: "delete_user" } });
       await tx.user.delete({ where: { id: user.id } });
       return "deleted" as const;
     });

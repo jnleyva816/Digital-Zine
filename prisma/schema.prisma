@@ -61,6 +61,29 @@ model User {
   /// Sessions issued before this moment are signed out (DIG-107). Set when a password is reset, so
   /// a stolen session does not survive. Null until then.
   sessionsValidAfter   DateTime?
+  /// Set by an admin (DIG-137): the account cannot sign in and its zines are hidden. Null when active.
+  deactivatedAt        DateTime?
+}
+
+enum AdminActionType {
+  grant_admin
+  revoke_admin
+  deactivate
+  reactivate
+  delete_user
+}
+
+/// DIG-136: what an admin did to an account, and when. IDs only, with no foreign keys, so a record
+/// outlives both accounts and holds no names or emails.
+model AdminAction {
+  id        String          @id @default(cuid())
+  actorId   String
+  targetId  String
+  action    AdminActionType
+  createdAt DateTime        @default(now())
+
+  @@index([targetId, createdAt])
+  @@index([actorId, createdAt])
 }
 
 /// DIG-94: a single-use email verification link. Only the SHA-256 of the token is stored.

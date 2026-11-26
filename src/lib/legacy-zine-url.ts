@@ -8,7 +8,7 @@ import { prisma } from "@/lib/prisma";
  */
 export async function legacyZineAddress(slug: string): Promise<{ owner: string; slug: string } | null> {
   const zine = await prisma.zine.findFirst({
-    where: { slug, published: true },
+    where: { slug, published: true, owner: { deactivatedAt: null } },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { slug: true, owner: { select: { publicId: true } } },
   });

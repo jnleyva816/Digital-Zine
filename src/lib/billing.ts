@@ -3,7 +3,8 @@
  * DIG-11): while Stripe retries a failed renewal the creator keeps Pro, and they drop to Free
  * once Stripe marks the subscription `unpaid` or `canceled`.
  */
-const PRO_STATUSES = new Set(["active", "trialing", "past_due"]);
+export const PRO_SUBSCRIPTION_STATUSES = ["active", "trialing", "past_due"] as const;
+const PRO_STATUSES = new Set<string>(PRO_SUBSCRIPTION_STATUSES);
 
 export function tierForStatus(status: string): "free" | "pro" {
   return PRO_STATUSES.has(status) ? "pro" : "free";

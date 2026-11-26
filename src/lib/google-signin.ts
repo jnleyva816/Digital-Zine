@@ -3,7 +3,7 @@ import { prisma } from "@/lib/prisma";
 
 export type GoogleResolution =
   | { ok: true; userId: string }
-  | { ok: false; reason: "unverified_email" | "email_linked_elsewhere" | "invalid_profile" };
+  | { ok: false; reason: "unverified_email" | "email_linked_elsewhere" | "invalid_profile" | "deactivated" };
 
 /**
  * Turns a Google profile into one of our accounts (DIG-94, owner's rules of 20 Nov).
@@ -25,11 +25,13 @@ export async function resolveGoogleUser(profile: {
   if (profile.email_verified !== true) return { ok: false, reason: "unverified_email" };
 
   try {
-    const known = await prisma.user.findUnique({ where: { googleId: sub }, select: { id: true } });
-    if (known) return { ok: true, userId: known.id };
+    const known = await prisma.user.findUnique({ where: { googleId: sub }, select: { id: true, deactivatedAt: true } });
+    // Google has proven who this is, so they may be told the account is deactivated (DIG-137).
+    if (known) return known.deactivatedAt ? { ok: false, reason: "deactivated" } : { ok: true, userId: known.id };
 
-    const byEmail = await prisma.user.findUnique({ where: { email }, select: { id: true, googleId: true, emailVerifiedAt: true } });
+    const byEmail = await prisma.user.findUnique({ where: { email }, select: { id: true, googleId: true, emailVerifiedAt: true, deactivatedAt: true } });
     if (byEmail) {
+      if (byEmail.deactivatedAt) return { ok: false, reason: "deactivated" };
       if (byEmail.googleId) return { ok: false, reason: "email_linked_elsewhere" };
       await prisma.user.update({
         where: { id: byEmail.id },

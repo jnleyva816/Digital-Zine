@@ -15,6 +15,9 @@ export type RateLimitRule =
   | "forgot-ip"
   | "reset-ip"
   | "account-delete"
+  | "admin-read"
+  | "admin-action"
+  | "admin-reauth"
   | "csp-report"
   | "upload"
   | "write"
@@ -42,6 +45,12 @@ export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: 
   "reset-ip": { limit: 20, windowSeconds: 60 * 60 },
   /** Attempts to delete an account per creator (DIG-108), right or wrong, so a password cannot be guessed here. */
   "account-delete": { limit: 5, windowSeconds: 60 * 60 },
+  /** Searches and pages of the admin panel's lists, per admin (DIG-136). */
+  "admin-read": { limit: 120, windowSeconds: 60 },
+  /** Changes to other people's accounts, per admin, allowed or refused. */
+  "admin-action": { limit: 60, windowSeconds: 60 * 60 },
+  /** Passwords given to confirm an admin action. A right one clears the count, so this counts guesses. */
+  "admin-reauth": { limit: 5, windowSeconds: 15 * 60 },
   /** CSP violation reports per client IP (DIG-104). A browser sends a few; more is noise or abuse. */
   "csp-report": { limit: 60, windowSeconds: 60 },
   /** Upload presigns per user. */
@@ -103,6 +112,9 @@ const MESSAGES: Record<RateLimitRule, string> = {
   "forgot-ip": "Too many password resets requested.",
   "reset-ip": "Too many attempts to reset a password.",
   "account-delete": "You have tried to delete your account too many times.",
+  "admin-read": "You're searching too quickly.",
+  "admin-action": "You've made too many changes to accounts.",
+  "admin-reauth": "Too many password attempts.",
   "csp-report": "Too many reports.",
   upload: "You've reached the limit of 300 uploads an hour.",
   write: "You're making changes too quickly.",
