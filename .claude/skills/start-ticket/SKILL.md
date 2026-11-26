@@ -18,7 +18,7 @@ Read only what is listed here. Do not open the archived handoff, the old log, or
 3. **Read the ticket.** `get_issue` with fields `id, title, description, status, labels, gitBranchName, parentId`. Then `list_comments` with `limit: 2` and `orderBy: createdAt`: the newest comment is the checkpoint. Read older comments only when the newest one points to them.
 4. **Decisions.** Only if the ticket raises a product question, read `docs/decisions/README.md` and then the one file that answers it.
 5. **Branch.**
-   - `git status --short` first. Never touch uncommitted work that belongs to another ticket.
+   - The session-start hook already printed the branch and the uncommitted files. Never touch uncommitted work that belongs to another ticket.
    - Resuming: switch to the ticket's existing branch, or its worktree (`git worktree list`).
    - New, with a clean tree: `git fetch origin && git switch -c <gitBranchName> origin/main`.
    - New, with someone else's work in the tree: `git worktree add ../digital-zine-<id> -b <gitBranchName> origin/main`. If tests will run there while another session also runs tests, it needs its own test database (see `tests/AGENTS.md`).

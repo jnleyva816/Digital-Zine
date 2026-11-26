@@ -8,6 +8,10 @@ Linear is the source of truth for **what** to build and where each ticket stands
 
 Use the `start-ticket` skill (`.claude/skills/start-ticket/SKILL.md`; in Cursor, read that file and follow it). In short: read the short [Agent handoff](https://linear.app/joshsws/document/agent-handoff-1dfe2c98ac86) page, then only your ticket and its newest comment, which is the checkpoint. Do not read the archived handoff, the old log, or whole long documents "for context".
 
+## Hooks
+
+In Claude Code, `.claude/settings.json` runs hooks that cost no tokens. A session starts with the branch, the ticket ID, and the uncommitted files already printed. Commits and pushes on `main` are blocked, and a force-push or `gh pr merge` asks the owner. When files changed this session and are not committed, the owner sees a warning at the end of a turn. Once per clone, run `git config core.hooksPath .githooks`: the pre-commit hook then runs `tsc` when TypeScript is staged. `scripts/check-agent-docs.sh` enforces the size budgets in CI.
+
 ## Read when relevant
 
 | When you touch | Read first |
@@ -27,7 +31,7 @@ Claude Code loads a folder's `CLAUDE.md`, which imports its `AGENTS.md`, when yo
 - Work runs ticket by ticket in the Linear team **Digital-Zine**. Projects are goals. The active project is named on the handoff page only.
 - Every ticket has exactly one **Area** label (UI/UX, Backend, Security, Payments, Data, Infra, Docs) and one **Type** label (Bug, Feature, Improvement). Label the tickets you create. Split large cross-cutting work into sub-issues.
 - Security belongs to every ticket: anything touching auth, permissions, payments, uploads, or user data gets tests for its abuse cases. The Security label is for work whose main purpose is security.
-- One branch and one PR per ticket. Branch off an up-to-date `main` using the ticket's `gitBranchName`, and put the ticket ID in the PR title. Never commit to `main`.
+- One branch and one PR per ticket. Branch off an up-to-date `main` using the ticket's `gitBranchName`, and put the ticket ID in the PR title. Never commit to or push `main`.
 - When the handoff page names an integration branch or a shared branch, follow it instead: one commit per ticket with its ID in the message, and push only when the owner says so.
 - Only the owner merges. Do not merge unless the user says so in this session.
 

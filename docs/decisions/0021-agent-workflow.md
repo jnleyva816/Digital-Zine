@@ -7,4 +7,5 @@ Decided: owner, 25 Nov 2026, DIG-141; replaces DIG-31.
 - Decisions live here, one file each. Code constraints live in folder `AGENTS.md` files. Production setup lives in `docs/operations.md`.
 - `AGENTS.md` is the only copy of the rules. `CLAUDE.md` files import it, and Cursor reads it. `.cursor/rules/` is gone.
 - Session start, session close, and test runs are skills (`start-ticket`, `close-session`, `run-tests`), and long test runs go to the `test-runner` subagent on a small model (`DIG-142`).
-- Next phases: hooks (`DIG-143`) and parallel worktrees (`DIG-144`).
+- Hooks enforce what prose used to (`DIG-143`): session-start context, no commits or pushes on `main`, the owner is asked before a force-push or merge, a warning about uncommitted work, `tsc` before a commit (not Vitest, because it resets the shared test database), and size budgets checked in CI.
+- Next phase: parallel worktrees (`DIG-144`).
