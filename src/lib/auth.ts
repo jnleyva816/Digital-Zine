@@ -4,7 +4,7 @@ import Google from "next-auth/providers/google";
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/prisma";
 import { effectiveAccess, VIEW_AS_FREE_COOKIE } from "@/lib/entitlements";
-import { EmailNotVerifiedError, SignInRateLimitedError, authorizeCredentials } from "@/lib/sign-in";
+import { AccountDeactivatedError, EmailNotVerifiedError, SignInRateLimitedError, authorizeCredentials } from "@/lib/sign-in";
 import { consumeVerificationToken } from "@/lib/email-verification";
 import { googleEnabled } from "@/lib/google-config";
 import { resolveGoogleUser } from "@/lib/google-signin";
@@ -20,11 +20,17 @@ class EmailNotVerifiedSignin extends CredentialsSignin {
   code = "email_not_verified";
 }
 
+/** An admin deactivated the account (DIG-137). Only sent once the credentials are proven. */
+class AccountDeactivatedSignin extends CredentialsSignin {
+  code = "account_deactivated";
+}
+
 /** Where a refused Google sign-in lands, with a reason the form can explain (DIG-94). */
 const GOOGLE_REFUSALS = {
   unverified_email: "google_unverified",
   email_linked_elsewhere: "google_linked_elsewhere",
   invalid_profile: "google_failed",
+  deactivated: "account_deactivated",
 } as const;
 
 declare module "next-auth" {
@@ -55,6 +61,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         } catch (error) {
           if (error instanceof SignInRateLimitedError) throw new RateLimitedSignin();
           if (error instanceof EmailNotVerifiedError) throw new EmailNotVerifiedSignin();
+          if (error instanceof AccountDeactivatedError) throw new AccountDeactivatedSignin();
           throw error;
         }
       },
@@ -66,7 +73,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       credentials: { token: { label: "Token", type: "text" } },
       async authorize(credentials) {
         const token = typeof credentials?.token === "string" ? credentials.token : "";
-        const user = await consumeVerificationToken(token);
+        let user;
+        try {
+          user = await consumeVerificationToken(token);
+        } catch (error) {
+          if (error instanceof AccountDeactivatedError) throw new AccountDeactivatedSignin();
+          throw error;
+        }
         return user ? { id: user.id, email: user.email, name: user.name ?? user.email.split("@")[0] } : null;
       },
     }),
@@ -124,15 +137,18 @@ export async function getAuthenticatedUser() {
       role: true,
       subscriptionStatus: true,
       stripeCustomerId: true,
+      deactivatedAt: true,
     },
   });
-  if (!user) return null;
+  // A deactivated account is signed out (DIG-137); the session check ends it too, this is the backstop.
+  if (!user || user.deactivatedAt) return null;
 
   // `tier` is what feature checks use: Pro for admins (unless viewing as Free), otherwise the
   // billed tier. `billingTier` is what Stripe says, for the billing page.
   const viewAsFree = (await cookies()).get(VIEW_AS_FREE_COOKIE)?.value === "1";
-  const access = effectiveAccess(user, viewAsFree);
+  const { deactivatedAt: _deactivated, ...account } = user;
+  const access = effectiveAccess(account, viewAsFree);
   // When this session began, for actions that ask for a recent sign-in (DIG-108).
   const signedInAt = typeof session?.authAt === "number" ? session.authAt : null;
-  return { ...user, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree, signedInAt };
+  return { ...account, tier: access.tier, billingTier: user.tier, viewingAsFree: access.viewingAsFree, signedInAt };
 }

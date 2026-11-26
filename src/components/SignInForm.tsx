@@ -9,11 +9,15 @@ import { safeCallbackUrl } from "@/lib/safe-callback-url";
 import { useResendVerification } from "@/lib/use-resend-verification";
 import { GoogleButton, OrDivider } from "@/components/GoogleButton";
 
+/** Shown only once the person has proven who they are (DIG-137). */
+const DEACTIVATED = "This account has been deactivated by an admin, so you cannot sign in.";
+
 /** Why a Google sign-in came back to this page (`?error=` from `auth.ts`, DIG-94). */
 const GOOGLE_ERRORS: Record<string, string> = {
   google_unverified: "Google has not verified that email address, so we cannot sign you in with it.",
   google_linked_elsewhere: "That email belongs to an account linked to a different Google account.",
   google_failed: "We could not sign you in with Google. Try again, or use your email and password.",
+  account_deactivated: DEACTIVATED,
 };
 
 const DEV_EMAIL = "creator@digitalzine.local";
@@ -61,6 +65,12 @@ export function SignInForm({ showDevCredentials, googleEnabled = false }: SignIn
     if (res?.code === "email_not_verified") {
       setUnverified(true);
       setError("Verify your email before signing in. We sent you a link when you signed up.");
+      setLoading(false);
+      return;
+    }
+
+    if (res?.code === "account_deactivated") {
+      setError(DEACTIVATED);
       setLoading(false);
       return;
     }

@@ -142,6 +142,7 @@ export function StudioHeader({ user, publishedPath }: StudioHeaderProps) {
                     <span aria-hidden="true" className="ml-auto font-mono text-[11px] uppercase text-ink-500 lg:hidden">{plan}</span>
                   </Link>
                   <Link href="/account" className={item}>Account</Link>
+                  {showAdminBadge ? <Link href="/admin" className={item}>Admin panel</Link> : null}
                   <button type="button" onClick={() => signOut({ callbackUrl: "/signin" })} className={item}>
                     <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
                     Sign out

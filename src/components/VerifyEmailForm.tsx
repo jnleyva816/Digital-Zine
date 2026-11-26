@@ -23,6 +23,11 @@ export function VerifyEmailForm({ token }: { token: string }) {
     setError(null);
     try {
       const res = await signIn("email-verification", { token, redirect: false });
+      if (res?.code === "account_deactivated") {
+        setError("This account has been deactivated by an admin, so you cannot sign in.");
+        setLoading(false);
+        return;
+      }
       if (!res || res.error) {
         setFailed(true);
         setError("This link is expired or already used. Ask for a new one below.");

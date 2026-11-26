@@ -17,7 +17,7 @@ const PUBLIC_PAGES = ["/", "/terms", "/privacy"];
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const zines = await prisma.zine.findMany({
-    where: { published: true },
+    where: { published: true, owner: { deactivatedAt: null } },
     select: { slug: true, updatedAt: true, owner: { select: { publicId: true } } },
     orderBy: { updatedAt: "desc" },
     take: MAX_URLS - PUBLIC_PAGES.length,

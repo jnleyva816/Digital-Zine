@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
 import { decidingSubscription, tierForStatus } from "@/lib/billing";
+import { cancelIfDeactivated } from "@/lib/admin-users";
 import { handleDispute, handleFraudWarning, handleRefund } from "@/lib/billing-risk";
 import { prisma } from "@/lib/prisma";
 import { getStripeClient } from "@/lib/stripe";
@@ -34,6 +35,7 @@ async function syncSubscription(stripe: Stripe, subscriptionId: string) {
       stripeSubscriptionId: current.id,
     },
   });
+  await cancelIfDeactivated(stripe, user, current);
 }
 
 /** Links the Checkout's customer to the user who started it, if that user has no other customer. */
