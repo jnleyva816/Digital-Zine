@@ -41,4 +41,5 @@ Work from what you already know. Do not re-run test suites to write the summary.
 8. **Milestone update.** Post one only when a project goal is met, after a deploy, or after a merge into `main`.
    - `save_status_update` with `type: project`, the active project, and a health value.
    - Three to six lines.
-9. **Tell the owner,** in at most five lines: the ticket state, the PR link, the next step, and anything waiting on them.
+9. **Worktree.** When the ticket is merged and its folder came from `scripts/worktree-new.sh`, offer to remove it with `scripts/worktree-remove.sh dig-123`. Ask first.
+10. **Tell the owner,** in at most five lines: the ticket state, the PR link, the next step, and anything waiting on them.
