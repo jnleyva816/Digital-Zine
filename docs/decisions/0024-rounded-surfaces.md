@@ -1,6 +1,6 @@
 # Rounded surfaces and soft shadows
 
-Decided: owner, 26 Nov 2026, DIG-147. Changes the "Surfaces" line of `0022-design-language.md`; the rest of 0022 stands.
+Decided: owner, 26 Nov 2026, DIG-147. Changes the "Surfaces" line of `0023-design-language.md`; the rest of 0023 stands.
 
 - Corners are rounded on the scale in `DESIGN.md` (6, 10, 14, 18 px, and pill). Buttons, chips, and tags are pills.
 - Shadows are soft and used on lifted layers only (dragged photos, menus, dialogs). Cards stay flat with a hairline.

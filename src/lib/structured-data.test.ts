@@ -12,6 +12,7 @@ function zine(overrides: Partial<PublicZine> = {}): PublicZine {
     title: "Brine & Light",
     description: "Three plates from the pickling shelf.",
     ownerName: "Mara Ito",
+    ownerHandle: null,
     publishedAt: "2026-11-02T12:00:00.000Z",
     pages: [
       {

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { publicZinePath } from "@/lib/public-zine-path";
 import { StudioHeader } from "@/components/StudioHeader";
 import { DeleteAccountPanel } from "@/components/account/DeleteAccountPanel";
+import { ProfilePanel } from "@/components/account/ProfilePanel";
 
 export const metadata: Metadata = {
   title: "Account",
@@ -17,7 +18,7 @@ export default async function AccountPage() {
   if (!user) redirect("/signin?callbackUrl=%2Faccount");
 
   const [account, latestZine] = await Promise.all([
-    prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true } }),
+    prisma.user.findUnique({ where: { id: user.id }, select: { passwordHash: true, handle: true, name: true, bio: true } }),
     prisma.zine.findFirst({
       where: { ownerId: user.id },
       orderBy: { updatedAt: "desc" },
@@ -39,6 +40,7 @@ export default async function AccountPage() {
             Signed in as <span className="break-all font-medium text-ink-700">{user.email}</span>.
           </p>
         </div>
+        <ProfilePanel initial={{ handle: account?.handle ?? null, name: account?.name ?? null, bio: account?.bio ?? null }} />
         <DeleteAccountPanel
           email={user.email}
           hasPassword={Boolean(account?.passwordHash)}

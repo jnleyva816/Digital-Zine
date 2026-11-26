@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { ZinePages } from "@/components/zine/ZinePages";
+import { profilePath } from "@/lib/handles";
 import { getPublicZine, shareDescription } from "@/lib/public-zine";
 import { publicZinePath } from "@/lib/public-zine-path";
 import { siteUrl } from "@/lib/site";
@@ -72,9 +74,18 @@ export default async function PublicZinePage({ params }: Props) {
             {zine.title}
           </h1>
           <p className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-ink-500">
-            {zine.ownerName ? (
+            {zine.ownerName || zine.ownerHandle ? (
               <>
-                <span className="font-medium text-ink-700">By {zine.ownerName}</span>
+                <span className="font-medium text-ink-700">
+                  By{" "}
+                  {zine.ownerHandle ? (
+                    <Link href={profilePath(zine.ownerHandle)} className="underline decoration-paper-300 underline-offset-4 hover:text-ink-900 hover:decoration-ink-500">
+                      {zine.ownerName ?? `@${zine.ownerHandle}`}
+                    </Link>
+                  ) : (
+                    zine.ownerName
+                  )}
+                </span>
                 {zine.publishedAt ? <span aria-hidden="true">·</span> : null}
               </>
             ) : null}
