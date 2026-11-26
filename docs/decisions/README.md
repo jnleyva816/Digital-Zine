@@ -26,3 +26,4 @@ To add one: copy the shape of an existing file, take the next number, and add on
 - [0020](0020-testing.md) **Testing**: TDD, which tests run where, Done
 - [0021](0021-agent-workflow.md) **Agent workflow and context**: tickets, handoff page, this folder, `AGENTS.md`
 - [0022](0022-design-language.md) **Design language**: Darkroom and Archival Paper, fonts, accent, motion, surfaces
+- [0023](0023-rounded-surfaces.md) **Rounded surfaces**: radius scale, pill buttons, soft shadows, 3:1 control edges (amends 0022 surfaces)
