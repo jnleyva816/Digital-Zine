@@ -34,6 +34,13 @@ describe("type check in CI", () => {
     expect(typeCheck).toBeLessThan(ci.indexOf("run: npm run build"));
   });
 
+  it("generates the Prisma client first, since the cached node_modules can hold one from an older schema", () => {
+    const ci = read(".github/workflows/ci.yml");
+    const generate = ci.indexOf("run: npx prisma generate");
+    expect(generate).toBeGreaterThan(-1);
+    expect(generate).toBeLessThan(ci.indexOf("run: npx tsc --noEmit"));
+  });
+
   it("covers test files", () => {
     const tsconfig = JSON.parse(read("tsconfig.json")) as { include: string[]; exclude?: string[] };
     expect(tsconfig.include).toEqual(expect.arrayContaining(["**/*.ts", "**/*.tsx"]));
