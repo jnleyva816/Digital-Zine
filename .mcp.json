@@ -1,8 +1,11 @@
 {
   "mcpServers": {
     "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp@latest"]
+      "command": "nix-shell",
+      "args": [
+        "--run",
+        "exec npx -y @playwright/mcp@latest --headless --executable-path \"$PLAYWRIGHT_CHROMIUM_EXECUTABLE\""
+      ]
     },
     "frontend-inspo": {
       "command": "npx",
