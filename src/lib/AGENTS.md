@@ -16,6 +16,7 @@ Constraints the code does not make obvious. Extend these modules; do not rewrite
 ## Public zines
 - Build every public address with `publicZinePath(owner, slug)` (`public-zine-path.ts`), where `owner` is `User.publicId`.
 - `getPublicZine` reads through `unstable_cache`, tagged `public-zine:<creator>/<slug>` (`publicZineTag`), one-hour max age. Anything that changes what readers see must call `revalidatePublicZines` or `revalidateZinesUsingAssets` (`public-zine-cache.ts`).
+- Private zines (DIG-112, decision 0023): any new list of zines (Discover, search, feeds) filters `visibility: "public"`. The viewer gates through `isUnlocked` (`zine-access.ts`); never put a private zine's fields in metadata.
 - The media worker revalidates through `globalThis.__incrementalCache`, because `revalidateTag` throws outside a request. That is internal Next API: recheck it on every Next upgrade.
 
 ## PDF
