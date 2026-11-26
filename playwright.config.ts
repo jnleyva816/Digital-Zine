@@ -1,7 +1,8 @@
 import { defineConfig, devices } from "@playwright/test";
 import { loadTestEnv } from "./scripts/test-db";
 
-const port = Number(process.env.E2E_PORT ?? 3417);
+// A worktree sets its own port in `.env.test.local` (scripts/worktree-new.sh, DIG-144).
+const port = Number(process.env.E2E_PORT ?? loadTestEnv().E2E_PORT ?? 3417);
 const baseURL = `http://localhost:${port}`;
 // A local stand-in for Resend, started by tests/e2e/signup.spec.ts (DIG-94).
 const mailPort = port + 100;
