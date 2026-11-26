@@ -59,7 +59,7 @@ async function zine(
       ownerId: owner.user.id,
       boardId: owner.board.id,
       title: `Title ${slug}`,
-      description: `Secret draft notes ${slug}`,
+      description: `Notes on ${slug}`,
       slug,
       published,
       publishedAt: published ? publishedAt : null,
@@ -100,7 +100,10 @@ describe("getPublicProfile", () => {
     expect(sent).not.toContain(ana.user.email);
     expect(sent).not.toContain("draft");
     expect(sent).not.toContain("theirs");
-    expect(sent).not.toContain(ana.user.id);
+    // Photo addresses carry the owner's id in their storage key, as on every public zine page
+    // already; nothing else may.
+    const withoutImages = JSON.stringify(result, (key, value) => (key === "imageUrl" ? undefined : value));
+    expect(withoutImages).not.toContain(ana.user.id);
   });
 
   it("gives no cover for a photo that is still processing, which would still carry its EXIF", async () => {

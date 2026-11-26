@@ -60,6 +60,8 @@ export interface PublicZine {
   title: string;
   description: string | null;
   ownerName: string | null;
+  /** The creator's handle, so the byline can link `/u/<handle>` (DIG-111), or null without one. */
+  ownerHandle: string | null;
   /** ISO date. A string, not a Date, because the page data is cached as JSON (DIG-27). */
   publishedAt: string | null;
   pages: PublicZinePage[];
@@ -87,7 +89,7 @@ async function loadPublicZine(owner: string, slug: string): Promise<PublicZine |
       title: true,
       description: true,
       publishedAt: true,
-      owner: { select: { name: true, publicId: true } },
+      owner: { select: { name: true, publicId: true, handle: true } },
       pages: { orderBy: { pageNumber: "asc" }, select: { pageNumber: true, flipEnabled: true, content: true } },
     },
   });
@@ -143,6 +145,7 @@ async function loadPublicZine(owner: string, slug: string): Promise<PublicZine |
     title: zine.title,
     description: zine.description,
     ownerName: zine.owner.name?.trim() || null,
+    ownerHandle: zine.owner.handle,
     publishedAt: zine.publishedAt?.toISOString() ?? null,
     pages,
   };
