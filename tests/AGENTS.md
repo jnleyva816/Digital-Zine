@@ -1,7 +1,7 @@
 # tests: notes
 
 ## Local machine
-- NixOS with no global Node: `source scripts/nix-env.sh && nix shell nixpkgs#nodejs_22 nixpkgs#openssl -c <command>`. The script sets the Prisma engine and Chromium paths.
+- NixOS with no global Node: `nix-shell --run '<command>'`. `shell.nix` provides Node 22 and sets the Prisma engine and Chromium paths.
 - Postgres runs in the `digital-zine-pg` Docker container, which has no restart policy; after a reboot run `docker start digital-zine-pg`. The dev database is `digital_zine` at `127.0.0.1:5432`, user `zine`, password `zine`. Tests use `digital_zine_test` from `.env.test`.
 - Ports 3000 and 3100 are taken. Smoke-test `next start` on 3417. While `next dev` holds 3417, run e2e with `E2E_PORT=3418`.
 - Seeded dev user: `creator@digitalzine.local` / `zine1234`. The owner's dev database has their own data (a renamed "Car Show" zine): do not re-seed it.
