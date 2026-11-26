@@ -1,5 +1,5 @@
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import { PrismaClient } from "@prisma/client";
@@ -8,9 +8,17 @@ import { migrateToBoards } from "../src/lib/board-migration";
 // npm scripts, Vitest, and Playwright all run from the repository root.
 const ROOT = process.cwd();
 
-/** Values from `.env.test`. They override anything inherited from the shell or `.env`. */
-export function loadTestEnv(): Record<string, string> {
-  const parsed = parseEnv(readFileSync(path.join(ROOT, ".env.test"), "utf8"));
+/**
+ * Values from `.env.test`, then from the gitignored `.env.test.local` when it exists. A worktree
+ * uses the local file for its own database and port (`scripts/worktree-new.sh`, DIG-144). They
+ * override anything inherited from the shell or `.env`.
+ */
+export function loadTestEnv(root: string = ROOT): Record<string, string> {
+  const read = (file: string) => {
+    const full = path.join(root, file);
+    return existsSync(full) ? parseEnv(readFileSync(full, "utf8")) : {};
+  };
+  const parsed = { ...read(".env.test"), ...read(".env.test.local") };
   return Object.fromEntries(
     Object.entries(parsed).filter((entry): entry is [string, string] => typeof entry[1] === "string")
   );

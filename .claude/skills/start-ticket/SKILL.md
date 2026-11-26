@@ -21,7 +21,7 @@ Read only what is listed here. Do not open the archived handoff, the old log, or
    - The session-start hook already printed the branch and the uncommitted files. Never touch uncommitted work that belongs to another ticket.
    - Resuming: switch to the ticket's existing branch, or its worktree (`git worktree list`).
    - New, with a clean tree: `git fetch origin && git switch -c <gitBranchName> origin/main`.
-   - New, with someone else's work in the tree: `git worktree add ../digital-zine-<id> -b <gitBranchName> origin/main`. If tests will run there while another session also runs tests, it needs its own test database (see `tests/AGENTS.md`).
+   - New, with someone else's work in the tree, or while another session is working: `scripts/worktree-new.sh <gitBranchName>`. It gives the ticket its own worktree, test database, and e2e port, so the two sessions' tests never collide. Work in the folder it prints.
    - When the handoff page names a shared or integration branch for this ticket, use that branch instead.
    - When the ticket is blocked by an unmerged ticket whose files it needs, branch off that ticket's branch and say so in the PR ("stacked on #N").
 6. **Status.** If starting, set it to In Progress and assign it to `me`.

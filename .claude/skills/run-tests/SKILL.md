@@ -16,7 +16,8 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 | Milestone named by the owner, or a change to dependencies, build config, route structure, the Prisma schema, auth, middleware, payments, or shared test helpers | Full run: `npm run build`, then `npm test`, then `npm run test:e2e`, one after another |
 
 ## Environment
-- There is no global Node. Wrap commands: `nix shell nixpkgs#nodejs_22 -c <command>`.
+- There is no global Node, and Prisma and Playwright need NixOS paths. Run: `source scripts/nix-env.sh && nix shell nixpkgs#nodejs_22 nixpkgs#openssl -c <command>`.
+- A new worktree needs `npx prisma generate` after `npm ci` (`scripts/worktree-new.sh` does both).
 - Database down: `docker start digital-zine-pg`. If Prisma cannot open `libquery_engine.node`: `nix build --no-link nixpkgs#prisma-engines_6`.
 
 ## Commands
@@ -24,11 +25,11 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 - TypeScript: `npx tsc --noEmit`. Known errors are listed in `.githooks/tsc-known-errors.txt` (today one, at `src/lib/exif-client.test.ts:10`, until `DIG-123`); only new errors count. Delete a line there once its error is fixed.
 - E2E: `npm run test:e2e -- tests/e2e/<spec>.spec.ts --reporter=line`.
   - It builds into `.next-e2e/` first, which is slow.
-  - If `next dev` holds port 3417, prefix the command with `E2E_PORT=3418`. The mail sink takes `E2E_PORT + 100`.
+  - The port comes from `E2E_PORT`, then `.env.test.local` (worktrees), then 3417. If `next dev` holds 3417 in the main checkout, prefix the command with `E2E_PORT=3418`. The mail sink takes the port + 100.
   - `E2E_SKIP_BUILD` is for CI: it starts `next start` from `.next`, not `.next-e2e`, so it runs a stale build locally.
 
 ## Traps
-- **Vitest and Playwright both reset `digital_zine_test` when they start.** Never run them at the same time, and never alongside another session's tests on the same database. Run them one after another.
+- **Vitest and Playwright both reset the test database when they start.** Never run them at the same time, and never alongside another session's tests on the same database. Run them one after another. For true parallel work, each session uses its own worktree from `scripts/worktree-new.sh`, which has its own database and port (in `.env.test.local`).
 - `vitest run --changed` runs every test while `.env.test` has uncommitted edits.
 - "No test files found" means nothing was tested. It is not a pass.
 

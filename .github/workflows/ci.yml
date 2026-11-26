@@ -29,7 +29,7 @@ jobs:
       - run: npm audit --omit=dev --audit-level=high
 
   # Keeps the agent rules within their size budgets and tests the Claude Code and git hooks
-  # (DIG-143). Needs only bash, git and jq, so it reports in seconds.
+  # (DIG-143) and the per-ticket worktree scripts (DIG-144). Needs only bash, git and jq, so it reports in seconds.
   agent-docs:
     name: Agent rules and hooks
     if: github.event_name != 'schedule'
@@ -39,6 +39,7 @@ jobs:
       - uses: actions/checkout@v7
       - run: bash scripts/check-agent-docs.sh
       - run: bash scripts/test-agent-hooks.sh
+      - run: bash scripts/test-worktree-scripts.sh
 
   test:
     name: Build and test
