@@ -204,7 +204,7 @@ Before the first browser run, install Chromium:
 npx playwright install chromium
 ```
 
-Which tests a change needs depends on its risk ([decision 0024](docs/decisions/0024-testing-by-risk.md)):
+Which tests a change needs depends on its risk ([decision 0026](docs/decisions/0026-testing-by-risk.md)):
 
 | Change | Test |
 | --- | --- |

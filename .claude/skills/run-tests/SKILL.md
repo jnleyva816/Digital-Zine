@@ -17,7 +17,7 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 | Milestone named by the owner, or a change to dependencies, build config, route structure, the Prisma schema, auth, middleware, payments, or shared test helpers | Full run: `npm run build`, then `npm test`, then `npm run test:e2e`, one after another |
 
 ## Environment
-- There is no global Node, and Prisma and Playwright need NixOS paths. Run: `source scripts/nix-env.sh && nix shell nixpkgs#nodejs_22 nixpkgs#openssl -c <command>`.
+- There is no global Node, and Prisma and Playwright need NixOS paths. Run: `nix-shell --run '<command>'` (`shell.nix` sets both up).
 - A new worktree needs `npx prisma generate` after `npm ci` (`scripts/worktree-new.sh` does both).
 - Database down: `docker start digital-zine-pg`. If Prisma cannot open `libquery_engine.node`: `nix build --no-link nixpkgs#prisma-engines_6`.
 
