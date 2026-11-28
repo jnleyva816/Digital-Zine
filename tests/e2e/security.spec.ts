@@ -85,7 +85,7 @@ test.describe("Content Security Policy", () => {
     const res = await request.get("/signin");
     const nonce = /'nonce-([^']+)'/.exec(res.headers()["content-security-policy"])![1];
     const html = await res.text();
-    const tags = [...html.matchAll(/<script\b[^>]*>/g)].map((m) => m[0]);
+    const tags = [...html.matchAll(/<script\b[^>]*>/gi)].map((m) => m[0]);
     expect(tags.length).toBeGreaterThan(0);
     for (const tag of tags) expect(tag, "script tag without the nonce").toContain(`nonce="${nonce}"`);
   });

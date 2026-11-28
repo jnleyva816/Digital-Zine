@@ -3,6 +3,18 @@ import { buildCsp, cspHeaderName, cspMode } from "@/lib/csp";
 import { checkSameOrigin } from "@/lib/request-origin";
 import { SECURITY_HEADERS } from "@/lib/security-headers";
 
+/** A request value as one safe log line: no line breaks (they would forge entries) and no control characters. */
+function forLog(value: string): string {
+  return value
+    .replace(/\r|\n/g, "")
+    .split("")
+    .filter((c) => {
+      const code = c.charCodeAt(0);
+      return code >= 0x20 && code !== 0x7f && code !== 0x2028 && code !== 0x2029;
+    })
+    .join("");
+}
+
 /**
  * Every request passes here (DIG-104): state-changing ones get the Origin check, and every response
  * gets the security headers and a Content Security Policy with a fresh nonce. Next reads the nonce
@@ -22,7 +34,7 @@ export function middleware(req: NextRequest) {
       forwardedHost: req.headers.get("x-forwarded-host"),
     });
     if (!check.ok) {
-      console.warn(`Cross-site request refused: ${req.method} ${path} (${check.reason})`);
+      console.warn(`Cross-site request refused: ${req.method} ${forLog(path)} (${check.reason})`);
       const refused = NextResponse.json({ error: "Cross-site request refused." }, { status: 403 });
       for (const { key, value } of SECURITY_HEADERS) refused.headers.set(key, value);
       return refused;
