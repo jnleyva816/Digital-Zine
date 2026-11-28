@@ -103,7 +103,15 @@ jobs:
           restore-keys: |
             nextjs-${{ runner.os }}-${{ hashFiles('package-lock.json') }}-
 
-      - name: Build (type check and lint included)
+      # The cached node_modules can hold a client generated from an older schema; tsc needs this one.
+      - name: Generate the Prisma client
+        run: npx prisma generate
+
+      # `next build` type-checks the app only. This covers test files and fixtures too (DIG-145).
+      - name: Type check
+        run: npx tsc --noEmit
+
+      - name: Build (lint included)
         run: npm run build
 
       # Production applies prisma/migrations with `migrate deploy` (DIG-19). This fails when
