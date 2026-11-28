@@ -1,1 +1,0 @@
-src/lib/exif-client.test.ts(10,
