@@ -72,7 +72,8 @@ expect_code 0 "$(stop)" "stop exits 0 when clean"
 
 # --- .githooks/pre-commit (tsc is faked) ---
 pc() { : >"$T/out"; (cd "$repo" && TSC_CMD="$1" "$ROOT/.githooks/pre-commit" >"$T/pc" 2>"$T/err"); echo $?; }
-mkdir -p "$repo/.githooks" && cp "$ROOT/.githooks/tsc-known-errors.txt" "$repo/.githooks/"
+# A fixture list, so this test does not depend on what the real list holds (it may be empty).
+mkdir -p "$repo/.githooks" && printf 'src/lib/exif-client.test.ts(10,\n' > "$repo/.githooks/tsc-known-errors.txt"
 echo 'x' > notes.md && git add notes.md
 expect_code 0 "$(pc 'false')" "pre-commit skips tsc when no TypeScript is staged"
 echo 'export {}' > a.ts && git add a.ts

@@ -51,7 +51,7 @@ Ship each ticket as specified: strict TypeScript, real empty, loading, and error
 
 ## Test-driven development
 
-For each behavior in the acceptance: **red** (write the test; see it fail on an assertion, not on a typo or import; note the failure for the ticket comment), **green** (the smallest change that passes), **refactor** (tests stay green, no new behavior).
+Test by risk (decision 0026): color, spacing, and copy changes skip test-first (look at them, run `npm run typecheck`); auth, payments, schema, middleware, and dependencies get every suite. For each behavior in the acceptance: **red** (write the test; see it fail on an assertion, not on a typo or import; note the failure for the ticket comment), **green** (the smallest change that passes), **refactor** (tests stay green, no new behavior).
 
 | Layer | Tool | Location | Use for |
 | --- | --- | --- | --- |

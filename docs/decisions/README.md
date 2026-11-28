@@ -29,3 +29,4 @@ To add one: copy the shape of an existing file, take the next number, and add on
 - [0023](0023-private-zines.md) **Private zines**: access codes, unlock cookie, what stays hidden
 - [0024](0024-design-language.md) **Design language**: Darkroom and Archival Paper, fonts, accent, motion, surfaces
 - [0025](0025-rounded-surfaces.md) **Rounded surfaces**: radius scale, pill buttons, soft shadows, 3:1 control edges (amends 0024 surfaces)
+- [0026](0026-testing-by-risk.md) **Testing by risk**: the risk table, visual changes skip test-first, fast and API test projects

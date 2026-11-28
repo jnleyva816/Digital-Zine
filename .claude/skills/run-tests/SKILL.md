@@ -10,6 +10,7 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 | When | Run |
 | --- | --- |
 | While coding | Only the test files you are working on |
+| Color, spacing, copy | Look at it; `npm run typecheck` |
 | Before a commit | `npx vitest run --changed` and the e2e specs for the flow you touched. The pre-commit hook runs `tsc` |
 | Pull request | Nothing extra. CI runs the build and every suite |
 | Docs or Markdown only | Nothing |
@@ -21,17 +22,17 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 - Database down: `docker start digital-zine-pg`. If Prisma cannot open `libquery_engine.node`: `nix build --no-link nixpkgs#prisma-engines_6`.
 
 ## Commands
-- Unit, component, API: `npx vitest run <file> [<file>...]`.
-- TypeScript: `npx tsc --noEmit`. Known errors are listed in `.githooks/tsc-known-errors.txt` (today one, at `src/lib/exif-client.test.ts:10`, until `DIG-123`); only new errors count. Delete a line there once its error is fixed.
+- Unit and component, no database, parallel: `npm run test:fast` (about 15 s). API, resets the database: `npm run test:api`. One file: `npx vitest run <file>`.
+- TypeScript: `npm run typecheck`. `.githooks/tsc-known-errors.txt` lists errors the hook ignores (empty today); add none without the owner.
 - E2E: `npm run test:e2e -- tests/e2e/<spec>.spec.ts --reporter=line`.
   - It builds into `.next-e2e/` first, which is slow.
   - The port comes from `E2E_PORT`, then `.env.test.local` (worktrees), then 3417. If `next dev` holds 3417 in the main checkout, prefix the command with `E2E_PORT=3418`. The mail sink takes the port + 100.
   - `E2E_SKIP_BUILD` is for CI: it starts `next start` from `.next`, not `.next-e2e`, so it runs a stale build locally.
 
 ## Traps
-- **Vitest and Playwright both reset the test database when they start.** Never run them at the same time, and never alongside another session's tests on the same database. Run them one after another. For true parallel work, each session uses its own worktree from `scripts/worktree-new.sh`, which has its own database and port (in `.env.test.local`).
+- **`npm run test:api` (or any run that includes `tests/api/`) and Playwright both reset the test database when they start.** `test:fast` does not touch it. Never run them at the same time, and never alongside another session's tests on the same database. Run them one after another. For true parallel work, each session uses its own worktree from `scripts/worktree-new.sh`, which has its own database and port (in `.env.test.local`).
 - `vitest run --changed` runs every test while `.env.test` has uncommitted edits.
-- "No test files found" means nothing was tested. It is not a pass.
+- "No test files found" or "No affected test files" means nothing was tested. It is not a pass. `vitest related src/lib/auth.ts` finds none because every test mocks `@/lib/auth`; only e2e covers it.
 
 ## Keep output out of the context
 - **Any e2e spec, the full Vitest suite, `tsc`, or a build: hand it to the `test-runner` subagent** with the exact commands. It returns only the failures.

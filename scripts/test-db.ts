@@ -24,7 +24,7 @@ export function loadTestEnv(root: string = ROOT): Record<string, string> {
   );
 }
 
-function assertTestDatabase(url: string | undefined): string {
+export function assertTestDatabase(url: string | undefined): string {
   const name = url ? new URL(url).pathname.replace(/^\//, "") : "";
   if (!url || !name.endsWith("_test")) {
     throw new Error(`Refusing to reset database "${name || "(unset)"}": test databases must end in "_test".`);
