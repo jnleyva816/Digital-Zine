@@ -8,7 +8,8 @@ import { prisma } from "@/lib/prisma";
  */
 export async function legacyZineAddress(slug: string): Promise<{ owner: string; slug: string } | null> {
   const zine = await prisma.zine.findFirst({
-    where: { slug, published: true, owner: { deactivatedAt: null } },
+    // A private zine (DIG-112) is never found by slug alone: its address is the creator's to share.
+    where: { slug, published: true, visibility: "public", owner: { deactivatedAt: null } },
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: { slug: true, owner: { select: { publicId: true } } },
   });

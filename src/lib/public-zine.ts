@@ -54,6 +54,10 @@ export interface PublicZinePage {
 }
 
 export interface PublicZine {
+  id: string;
+  /** A private zine (DIG-112) renders only for a reader whose unlock cookie matches this version. */
+  visibility: "public" | "private";
+  accessCodeVersion: number;
   /** The creator's public ID: the first part of the zine's address (DIG-102). */
   owner: string;
   slug: string;
@@ -74,7 +78,7 @@ export interface PublicZine {
  * `owner` is the creator's public ID (DIG-102).
  */
 export const getPublicZine = cache((owner: string, slug: string): Promise<PublicZine | null> =>
-  unstable_cache(() => loadPublicZine(owner, slug), ["public-zine", owner, slug], {
+  unstable_cache(() => loadPublicZine(owner, slug), ["public-zine", "v2", owner, slug], {
     tags: [publicZineTag(owner, slug)],
     revalidate: PUBLIC_ZINE_MAX_AGE_SECONDS,
   })()
@@ -84,6 +88,9 @@ async function loadPublicZine(owner: string, slug: string): Promise<PublicZine |
   const zine = await prisma.zine.findFirst({
     where: { slug, published: true, owner: { publicId: owner, deactivatedAt: null } },
     select: {
+      id: true,
+      visibility: true,
+      accessCodeVersion: true,
       slug: true,
       ownerId: true,
       title: true,
@@ -140,6 +147,9 @@ async function loadPublicZine(owner: string, slug: string): Promise<PublicZine |
   });
 
   return {
+    id: zine.id,
+    visibility: zine.visibility,
+    accessCodeVersion: zine.accessCodeVersion,
     owner: zine.owner.publicId,
     slug: zine.slug,
     title: zine.title,
