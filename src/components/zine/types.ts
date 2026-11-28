@@ -1,5 +1,5 @@
-import type { PhotoEdit } from "@/lib/photo-edit";
-import type { ExifData, RecipeData } from "@/lib/types";
+import type { PhotoEdit } from "@/lib/board/photo-edit";
+import type { ExifData, RecipeData } from "@/lib/zine/types";
 
 /** One page of a public zine, as the page already renders it. The full-screen view adds no fetch (DIG-49). */
 export interface ZinePageData {

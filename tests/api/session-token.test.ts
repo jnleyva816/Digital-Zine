@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { checkSessionToken, isSessionRevoked, markSignedIn } from "@/lib/session-token";
+import { checkSessionToken, isSessionRevoked, markSignedIn } from "@/lib/auth/session-token";
 import { createTestUser, deleteTestUser } from "./helpers";
 
 // DIG-107: a password reset signs out every session issued before it.

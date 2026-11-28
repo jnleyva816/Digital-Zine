@@ -2,7 +2,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import { DEFAULT_EDIT, type PhotoEdit } from "@/lib/photo-edit";
+import { DEFAULT_EDIT, type PhotoEdit } from "@/lib/board/photo-edit";
 import { PhotoEditor } from "./PhotoEditor";
 
 function setup(over: Partial<React.ComponentProps<typeof PhotoEditor>> = {}) {

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import type Stripe from "stripe";
-import { decidingSubscription, tierForStatus } from "@/lib/billing";
-import { cancelIfDeactivated } from "@/lib/admin-users";
-import { handleDispute, handleFraudWarning, handleRefund } from "@/lib/billing-risk";
+import { decidingSubscription, tierForStatus } from "@/lib/billing/billing";
+import { cancelIfDeactivated } from "@/lib/admin/admin-users";
+import { handleDispute, handleFraudWarning, handleRefund } from "@/lib/billing/billing-risk";
 import { prisma } from "@/lib/prisma";
-import { getStripeClient } from "@/lib/stripe";
+import { getStripeClient } from "@/lib/billing/stripe";
 
 export const runtime = "nodejs";
 

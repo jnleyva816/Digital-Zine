@@ -9,7 +9,7 @@ You sell to people who distrust marketing. Specific and true beats clever.
 
 ## Before writing
 
-Read the landing page, `README.md` features, `src/lib/limits.ts`, and `src/lib/stripe.ts`. Claim only what is live today. Check competitors and community rules on the web before stating them.
+Read the landing page, `README.md` features, `src/lib/billing/limits.ts`, and `src/lib/billing/stripe.ts`. Claim only what is live today. Check competitors and community rules on the web before stating them.
 
 ## Work through
 

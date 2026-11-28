@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
-import { AI_TRAINING_CRAWLERS, PRIVATE_PATHS } from "@/lib/seo";
-import { siteUrl } from "@/lib/site";
+import { AI_TRAINING_CRAWLERS, PRIVATE_PATHS } from "@/lib/site/seo";
+import { siteUrl } from "@/lib/site/site";
 
 /**
  * robots.txt (DIG-106). Search crawlers may read the public site; the signed-in and transactional

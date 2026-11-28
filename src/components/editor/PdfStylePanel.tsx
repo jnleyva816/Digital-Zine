@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { FileDown, Loader2 } from "lucide-react";
-import { PALETTES, PAPERS, TEMPLATES, TYPEFACES, type PdfPaletteName, type PdfPaper, type PdfTemplate, type PdfTypeface } from "@/lib/pdf-settings";
-import { TYPEFACE_FACES } from "@/lib/pdf-typefaces";
+import { PALETTES, PAPERS, TEMPLATES, TYPEFACES, type PdfPaletteName, type PdfPaper, type PdfTemplate, type PdfTypeface } from "@/lib/pdf/pdf-settings";
+import { TYPEFACE_FACES } from "@/lib/pdf/pdf-typefaces";
 import { PREVIEW_WIDTH, PdfPagePreview, WebPhoto, type PreviewPage, type PreviewZine, type WebPhotoSource } from "./PdfPagePreview";
 import { Check, Choice, Group, PanelLayout, SaveError, Segment, UpgradePrompt, savedMessage, segments } from "./pdf-panel-ui";
 import { webFontFamily } from "./pdf-web-fonts";

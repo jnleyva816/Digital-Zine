@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { appOrigin, BILLING_NOT_CONFIGURED } from "@/lib/billing";
-import { getStripeClient } from "@/lib/stripe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { appOrigin, BILLING_NOT_CONFIGURED } from "@/lib/billing/billing";
+import { getStripeClient } from "@/lib/billing/stripe";
 
 export const runtime = "nodejs";
 

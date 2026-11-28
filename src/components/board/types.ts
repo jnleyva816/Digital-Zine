@@ -1,5 +1,5 @@
-import { parseExif, parseRecipe, type ExifData, type RecipeData } from "@/lib/types";
-import { parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
+import { parseExif, parseRecipe, type ExifData, type RecipeData } from "@/lib/zine/types";
+import { parsePhotoEdit, type PhotoEdit } from "@/lib/board/photo-edit";
 
 /** Serializable shape of a Vision Board asset, shared by the server page and client board. */
 export interface BoardAsset {

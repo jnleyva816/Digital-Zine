@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { DEFAULT_EDIT } from "@/lib/photo-edit";
+import { DEFAULT_EDIT } from "@/lib/board/photo-edit";
 import { EditedPhoto } from "./EditedPhoto";
 
 const dims = { width: 6000, height: 4000 };

@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/sign-in";
-import { sendVerificationEmail } from "@/lib/email";
-import { issueVerificationToken, verificationLink } from "@/lib/email-verification";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { clientIp } from "@/lib/auth/sign-in";
+import { sendVerificationEmail } from "@/lib/infra/email";
+import { issueVerificationToken, verificationLink } from "@/lib/auth/email-verification";
 
 const resendSchema = z.object({ email: z.string().trim().toLowerCase().max(254).email("Enter a valid email address.") });
 

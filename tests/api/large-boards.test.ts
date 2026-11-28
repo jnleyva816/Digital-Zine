@@ -1,12 +1,12 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { GET } from "@/app/api/assets/route";
 import { POST as REORDER } from "@/app/api/assets/reorder/route";
-import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
+import { BOARD_PAGE_SIZE } from "@/lib/board/board-pages";
 import { createBoard, createTestUser, defaultBoardId, deleteTestUser, jsonRequest, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;

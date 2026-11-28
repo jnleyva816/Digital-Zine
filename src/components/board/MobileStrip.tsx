@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type ReactNode, type Ref } from "react";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import { prefersReducedMotion } from "@/lib/board-transition";
-import { photoDay, stripLayout } from "@/lib/strip";
+import { prefersReducedMotion } from "@/lib/board/board-transition";
+import { photoDay, stripLayout } from "@/lib/board/strip";
 import { assetLabel } from "./board-utils";
 import type { BoardAsset } from "./types";
 

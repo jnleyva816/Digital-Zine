@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { uploadLimitResponse } from "@/lib/limit-response";
-import { checkUpload } from "@/lib/limits";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { uploadLimitResponse } from "@/lib/billing/limit-response";
+import { checkUpload } from "@/lib/billing/limits";
 import { buildStorageKey, getStorageDriver } from "@/lib/storage";
-import { getAccountUsageBytes } from "@/lib/usage";
-import { limitRequest } from "@/lib/rate-limit";
+import { getAccountUsageBytes } from "@/lib/billing/usage";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const presignSchema = z.object({
   filename: z.string().min(1).max(255),

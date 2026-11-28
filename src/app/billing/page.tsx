@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { appOrigin, automaticTaxEnabled, describeSubscription } from "@/lib/billing";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { appOrigin, automaticTaxEnabled, describeSubscription } from "@/lib/billing/billing";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { prisma } from "@/lib/prisma";
-import { fetchPlanEnd } from "@/lib/plan-end";
-import { isStripeConfigured } from "@/lib/stripe";
+import { fetchPlanEnd } from "@/lib/billing/plan-end";
+import { isStripeConfigured } from "@/lib/billing/stripe";
 import { StudioHeader } from "@/components/StudioHeader";
 import { BillingPanel } from "@/components/billing/BillingPanel";
 

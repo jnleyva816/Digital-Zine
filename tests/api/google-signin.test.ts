@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { resolveGoogleUser } from "@/lib/google-signin";
+import { resolveGoogleUser } from "@/lib/auth/google-signin";
 
 // DIG-94: turning a Google profile into one of our accounts.
 const RUN = Date.now();

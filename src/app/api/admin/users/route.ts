@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-guard";
-import { listAdminUsers, readCursor } from "@/lib/admin-users";
-import { limitRequest } from "@/lib/rate-limit";
+import { requireAdmin } from "@/lib/admin/admin-guard";
+import { listAdminUsers, readCursor } from "@/lib/admin/admin-users";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const MAX_QUERY = 200;
 

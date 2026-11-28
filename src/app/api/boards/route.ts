@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { boardNameSchema, listBoards } from "@/lib/boards";
-import { boardLimitFor, boardLimitMessage } from "@/lib/limits";
-import { withUserLock } from "@/lib/usage";
-import { limitRequest } from "@/lib/rate-limit";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { boardNameSchema, listBoards } from "@/lib/board/boards";
+import { boardLimitFor, boardLimitMessage } from "@/lib/billing/limits";
+import { withUserLock } from "@/lib/billing/usage";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const createBoardSchema = z.object({ name: boardNameSchema });
 

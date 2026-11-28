@@ -4,15 +4,15 @@ import type Stripe from "stripe";
 import { revalidateTag } from "next/cache";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { getStripeClient } from "@/lib/stripe";
-import { checkSessionToken } from "@/lib/session-token";
-import { AccountDeactivatedError, authorizeCredentials } from "@/lib/sign-in";
-import { resolveGoogleUser } from "@/lib/google-signin";
-import { consumeVerificationToken, issueVerificationToken } from "@/lib/email-verification";
-import { getPublicZine } from "@/lib/public-zine";
-import { legacyZineAddress } from "@/lib/legacy-zine-url";
-import { cancelIfDeactivated } from "@/lib/admin-users";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { getStripeClient } from "@/lib/billing/stripe";
+import { checkSessionToken } from "@/lib/auth/session-token";
+import { AccountDeactivatedError, authorizeCredentials } from "@/lib/auth/sign-in";
+import { resolveGoogleUser } from "@/lib/auth/google-signin";
+import { consumeVerificationToken, issueVerificationToken } from "@/lib/auth/email-verification";
+import { getPublicZine } from "@/lib/zine/public-zine";
+import { legacyZineAddress } from "@/lib/zine/legacy-zine-url";
+import { cancelIfDeactivated } from "@/lib/admin/admin-users";
 import sitemap from "@/app/sitemap";
 import { POST as STATUS } from "@/app/api/admin/users/[id]/status/route";
 import { POST as DELETE_USER } from "@/app/api/admin/users/[id]/delete/route";
@@ -20,9 +20,9 @@ import { POST as SET_ROLE } from "@/app/api/admin/users/[id]/role/route";
 import { createAsset, createZineUsing, jsonRequest, params, resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-137: admins deactivate, reactivate, and delete accounts.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
-vi.mock("@/lib/stripe", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/stripe")>()),
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/billing/stripe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/billing/stripe")>()),
   getStripeClient: vi.fn(),
 }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));

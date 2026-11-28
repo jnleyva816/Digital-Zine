@@ -1,8 +1,8 @@
 import { after, NextResponse } from "next/server";
-import { forgotPasswordSchema } from "@/lib/password-reset-schema";
-import { requestPasswordReset } from "@/lib/password-reset";
-import { limitRequest } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/sign-in";
+import { forgotPasswordSchema } from "@/lib/auth/password-reset-schema";
+import { requestPasswordReset } from "@/lib/auth/password-reset";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { clientIp } from "@/lib/auth/sign-in";
 
 /**
  * DIG-107: ask for a password reset link. The answer is the same whether or not the address has an

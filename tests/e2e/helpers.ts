@@ -5,7 +5,7 @@ import bcrypt from "bcryptjs";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { expect, type Page } from "@playwright/test";
 import { loadTestEnv } from "../../scripts/test-db";
-import { getOrCreateDefaultBoard } from "../../src/lib/boards";
+import { getOrCreateDefaultBoard } from "../../src/lib/board/boards";
 
 export const SEEDED = { email: "creator@digitalzine.local", password: "zine1234" } as const;
 

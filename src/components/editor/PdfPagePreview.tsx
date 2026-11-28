@@ -4,12 +4,12 @@ import { Fragment, isValidElement, useId, useMemo, type CSSProperties, type Reac
 import Image from "next/image";
 import { EditedPhoto } from "@/components/EditedPhoto";
 import { withSourceWidth } from "@/lib/media/variant-urls";
-import { frameLayout, type PhotoEdit } from "@/lib/photo-edit";
-import type { PdfPalette, PdfSettings } from "@/lib/pdf-settings";
-import { PDF_TEMPLATES } from "@/lib/pdf-templates";
-import { Cover } from "@/lib/pdf-templates/covers";
-import { templateContext } from "@/lib/pdf-templates/context";
-import type { PdfRenderedPageItem, PdfZinePayload } from "@/lib/pdf-templates/types";
+import { frameLayout, type PhotoEdit } from "@/lib/board/photo-edit";
+import type { PdfPalette, PdfSettings } from "@/lib/pdf/pdf-settings";
+import { PDF_TEMPLATES } from "@/lib/pdf/pdf-templates";
+import { Cover } from "@/lib/pdf/pdf-templates/covers";
+import { templateContext } from "@/lib/pdf/pdf-templates/context";
+import type { PdfRenderedPageItem, PdfZinePayload } from "@/lib/pdf/pdf-templates/types";
 import { webFontFamily } from "./pdf-web-fonts";
 
 export interface WebPhotoSource {

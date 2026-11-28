@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { assertSafeAuthSecret } from "./lib/env";
-import { sentryOptions } from "./lib/sentry-options";
+import { sentryOptions } from "./lib/infra/sentry-options";
 
 /**
  * Runs once when the Next.js server starts. The media worker (DIG-26) is Node-only (sharp, pg),

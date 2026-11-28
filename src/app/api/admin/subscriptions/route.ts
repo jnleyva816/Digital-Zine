@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-guard";
-import { readCursor } from "@/lib/admin-users";
-import { listAdminSubscriptions } from "@/lib/admin-subscriptions";
-import { limitRequest } from "@/lib/rate-limit";
+import { requireAdmin } from "@/lib/admin/admin-guard";
+import { readCursor } from "@/lib/admin/admin-users";
+import { listAdminSubscriptions } from "@/lib/admin/admin-subscriptions";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 /** Admin-only, read-only: a page of active subscriptions (DIG-139). Changes happen in Stripe. */
 export async function GET(req: Request) {

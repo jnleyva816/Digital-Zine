@@ -4,7 +4,7 @@ import { useId, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, Pencil, Plus, Trash2 } from "lucide-react";
-import { BOARD_NAME_MAX, type BoardSummary } from "@/lib/boards";
+import { BOARD_NAME_MAX, type BoardSummary } from "@/lib/board/boards";
 import { readApiError } from "@/components/board/types";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;

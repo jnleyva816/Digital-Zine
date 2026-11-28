@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePublicZines } from "@/lib/public-zine-cache";
-import { pdfSettingsSchema } from "@/lib/pdf-settings";
-import { parsePageContent, slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { limitRequest } from "@/lib/rate-limit";
+import { revalidatePublicZines } from "@/lib/zine/public-zine-cache";
+import { pdfSettingsSchema } from "@/lib/pdf/pdf-settings";
+import { parsePageContent, slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/zine/types";
+import { isUniqueViolation } from "@/lib/infra/db-errors";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const pageInputSchema = z.object({
   assetId: z.string().min(1),

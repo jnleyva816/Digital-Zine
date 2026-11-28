@@ -1,9 +1,9 @@
 import sharp from "sharp";
 import { expect, test } from "@playwright/test";
 import { buildFujiMakerNote, CLASSIC_CHROME_TAGS, withMakerNote } from "../fixtures/fuji-jpeg";
-import { readFujiRecipe } from "../../src/lib/fuji-makernote";
+import { readFujiRecipe } from "../../src/lib/fuji/fuji-makernote";
 import { boardCards, createUser, createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 /** DIG-24: a library of saved recipes, used on many photos. */
 

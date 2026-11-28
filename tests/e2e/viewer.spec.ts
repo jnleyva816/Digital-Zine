@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createUser, createUserWithPhotos, deleteUser, signIn, testDb, uploadAndProcess, defaultBoardId } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 test.afterAll(async () => {
   await testDb.$disconnect();

@@ -1,6 +1,6 @@
 import sharp from "sharp";
 import { describe, expect, it } from "vitest";
-import { AVIF_QUALITY, VARIANT_WIDTHS } from "@/lib/limits";
+import { AVIF_QUALITY, VARIANT_WIDTHS } from "@/lib/billing/limits";
 import { shareImageUrl } from "./variant-urls";
 import { pickVariantUrl, renderVariants, splitSourceWidth, variantKeys, variantWidthsFor, withSourceWidth } from "./variants";
 

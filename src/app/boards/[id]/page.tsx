@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { prisma } from "@/lib/prisma";
 import { StudioHeader } from "@/components/StudioHeader";
 import { VisionBoard } from "@/components/board/VisionBoard";
 import { toBoardAsset } from "@/components/board/types";
-import { listSavedRecipes } from "@/lib/recipes";
-import { parseViewPrefs, type Placement } from "@/lib/board-layout";
-import { BOARD_ASSET_SELECT, boardPhotoPage } from "@/lib/board-photos";
-import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
-import { getAccountUsageBytes } from "@/lib/usage";
+import { listSavedRecipes } from "@/lib/fuji/recipes";
+import { parseViewPrefs, type Placement } from "@/lib/board/board-layout";
+import { BOARD_ASSET_SELECT, boardPhotoPage } from "@/lib/board/board-photos";
+import { BOARD_PAGE_SIZE } from "@/lib/board/board-pages";
+import { getAccountUsageBytes } from "@/lib/billing/usage";
 import { caveat } from "../fonts";
 
 export const metadata: Metadata = {

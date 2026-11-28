@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
-import "@/lib/zod-setup";
-import { getAuthenticatedUser } from "@/lib/auth";
+import "@/lib/infra/zod-setup";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
-import { deleteAccountCompletely, isRecentSignIn, type DeletionFailure } from "@/lib/account-deletion";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { deleteAccountCompletely, isRecentSignIn, type DeletionFailure } from "@/lib/auth/account-deletion";
 
 const bodySchema = z.object({ email: z.string().max(254), password: z.string().max(200).optional() });
 

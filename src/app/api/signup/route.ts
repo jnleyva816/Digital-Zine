@@ -2,11 +2,11 @@ import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/sign-in";
-import { signupSchema } from "@/lib/signup";
-import { EmailNotConfiguredError, sendVerificationEmail } from "@/lib/email";
-import { issueVerificationToken, verificationLink } from "@/lib/email-verification";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { clientIp } from "@/lib/auth/sign-in";
+import { signupSchema } from "@/lib/auth/signup";
+import { EmailNotConfiguredError, sendVerificationEmail } from "@/lib/infra/email";
+import { issueVerificationToken, verificationLink } from "@/lib/auth/email-verification";
 
 /** DIG-94: create a password account and mail the link that verifies it. */
 export async function POST(req: Request) {

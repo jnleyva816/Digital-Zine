@@ -1,6 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
-import { limitRequest } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/sign-in";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { clientIp } from "@/lib/auth/sign-in";
 
 /** More than a real browser ever sends in one report. */
 const MAX_BODY_BYTES = 8 * 1024;

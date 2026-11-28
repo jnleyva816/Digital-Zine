@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { swipeDirection } from "@/lib/pan-zoom";
-import { DEFAULT_EDIT, frameLayout } from "@/lib/photo-edit";
-import { bookSpreads, spreadIndexOf, spreadLabel } from "@/lib/reading-view";
+import { swipeDirection } from "@/lib/board/pan-zoom";
+import { DEFAULT_EDIT, frameLayout } from "@/lib/board/photo-edit";
+import { bookSpreads, spreadIndexOf, spreadLabel } from "@/lib/zine/reading-view";
 import type { ZinePageData } from "./types";
 
 const WIDE_SCREEN = "(min-width: 1024px)";

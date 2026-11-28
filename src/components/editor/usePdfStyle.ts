@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { readApiError } from "@/components/board/types";
-import { defaultPdfSettings, withTemplate, type PdfPaper, type PdfSettings, type PdfTemplate } from "@/lib/pdf-settings";
+import { defaultPdfSettings, withTemplate, type PdfPaper, type PdfSettings, type PdfTemplate } from "@/lib/pdf/pdf-settings";
 
 const SAVE_DELAY_MS = 600;
 

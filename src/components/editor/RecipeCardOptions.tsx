@@ -11,8 +11,8 @@ import {
   type CardStyle,
   type PdfSettings,
   type RecipeCardSize,
-} from "@/lib/pdf-settings";
-import type { RecipeData } from "@/lib/types";
+} from "@/lib/pdf/pdf-settings";
+import type { RecipeData } from "@/lib/zine/types";
 import { PdfPagePreview, type PreviewPage, type PreviewZine } from "./PdfPagePreview";
 import { Check, Choice, Group, PanelLayout, SaveError, Segment, savedMessage, segments } from "./pdf-panel-ui";
 import type { PdfStyle } from "./usePdfStyle";

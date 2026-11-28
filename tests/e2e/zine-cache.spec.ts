@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 /** DIG-27: public zine pages come from the cache and refresh as soon as the creator changes them. */
 

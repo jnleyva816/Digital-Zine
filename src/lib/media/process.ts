@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getStorageDriver } from "@/lib/storage";
 import { renderVariants, variantKeys } from "./variants";
-import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
+import { revalidateZinesUsingAssets } from "@/lib/zine/public-zine-cache";
 
 const MISSING = "The uploaded file is missing. Delete this photo and upload it again.";
 const UNREADABLE = "This file could not be read as an image.";

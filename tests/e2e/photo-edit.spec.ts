@@ -1,8 +1,8 @@
-import { defaultPdfSettings } from "../../src/lib/pdf-settings";
+import { defaultPdfSettings } from "../../src/lib/pdf/pdf-settings";
 import { expect, test } from "@playwright/test";
-import { cropPixels, parsePhotoEdit } from "../../src/lib/photo-edit";
+import { cropPixels, parsePhotoEdit } from "../../src/lib/board/photo-edit";
 import { boardCards, createUserWithPhotos, defaultBoardId, deleteUser, makePro, signIn, testDb } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 /** DIG-33: crop, zoom, reposition, frame, and card size, shown the same everywhere. */
 

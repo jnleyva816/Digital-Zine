@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const reorderSchema = z.object({ orderedIds: z.array(z.string().min(1)).min(1).max(500) });
 

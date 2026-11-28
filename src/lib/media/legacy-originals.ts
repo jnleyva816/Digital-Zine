@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
+import { revalidateZinesUsingAssets } from "@/lib/zine/public-zine-cache";
 import { getStorageDriver } from "@/lib/storage";
 import { cleanJpeg } from "./strip-metadata";
 

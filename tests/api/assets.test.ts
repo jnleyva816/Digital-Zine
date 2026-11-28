@@ -3,13 +3,13 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { GET, POST } from "@/app/api/assets/route";
 import { DELETE, PATCH } from "@/app/api/assets/[id]/route";
 import { POST as REORDER } from "@/app/api/assets/reorder/route";
 import { POST as PROCESS } from "@/app/api/assets/[id]/process/route";
 import { enqueueProcessing } from "@/lib/media/queue";
-import { ACCOUNT_STORAGE_BYTES } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES } from "@/lib/billing/limits";
 import { writeLocalObject } from "@/lib/storage/local";
 import sharp from "sharp";
 import {
@@ -25,7 +25,7 @@ import {
   resetRateLimits,
 } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 // The real queue is pg-boss; these tests check what is sent to it (DIG-26).
 vi.mock("@/lib/media/queue", () => ({ enqueueProcessing: vi.fn() }));
 const enqueue = vi.mocked(enqueueProcessing);

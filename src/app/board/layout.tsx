@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 /**
  * Auth gate for /board. It lives in the layout, outside the `loading.tsx`

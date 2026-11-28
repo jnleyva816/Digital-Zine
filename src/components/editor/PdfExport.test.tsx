@@ -2,7 +2,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultPdfSettings } from "@/lib/pdf-settings";
+import { defaultPdfSettings } from "@/lib/pdf/pdf-settings";
 import { PdfExport } from "./PdfExport";
 
 vi.mock("./pdf-web-fonts", () => ({ webFontFamily: (family: string) => family }));

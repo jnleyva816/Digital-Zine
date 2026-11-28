@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { fujiRecipeSchema } from "@/lib/fuji-recipe";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { PHOTO_NAME_MAX } from "@/lib/limits";
-import { toSavedRecipe } from "@/lib/recipes";
-import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
+import { fujiRecipeSchema } from "@/lib/fuji/fuji-recipe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { PHOTO_NAME_MAX } from "@/lib/billing/limits";
+import { toSavedRecipe } from "@/lib/fuji/recipes";
+import { revalidateZinesUsingAssets } from "@/lib/zine/public-zine-cache";
 import { readImageSize } from "@/lib/media/variants";
-import { isDefaultEdit, photoEditSchema } from "@/lib/photo-edit";
+import { isDefaultEdit, photoEditSchema } from "@/lib/board/photo-edit";
 import { getStorageDriver } from "@/lib/storage";
 import { prisma } from "@/lib/prisma";
 import { deleteStoredFiles, storedKeysFor } from "@/lib/storage/cleanup";
-import { limitRequest } from "@/lib/rate-limit";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const updateAssetSchema = z.object({
   kind: z.enum(["photo", "recipe"]).optional(),

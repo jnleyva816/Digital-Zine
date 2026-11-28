@@ -1,6 +1,6 @@
 import { notFound, permanentRedirect } from "next/navigation";
-import { legacyZineAddress } from "@/lib/legacy-zine-url";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { legacyZineAddress } from "@/lib/zine/legacy-zine-url";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 
 // The answer depends on what is published right now.
 export const dynamic = "force-dynamic";

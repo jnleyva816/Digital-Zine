@@ -2,13 +2,13 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { ensureAdmin } from "@/lib/admin-account";
-import { VIEW_AS_FREE_COOKIE } from "@/lib/entitlements";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { ensureAdmin } from "@/lib/admin/admin-account";
+import { VIEW_AS_FREE_COOKIE } from "@/lib/billing/entitlements";
 import { POST as VIEW_AS } from "@/app/api/admin/view-as/route";
 import { createTestUser, deleteTestUser, jsonRequest } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 type User = Awaited<ReturnType<typeof createTestUser>>;

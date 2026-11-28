@@ -2,15 +2,15 @@ import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { POST as CREATE_ZINE } from "@/app/api/zines/route";
 import { DELETE as DELETE_ZINE, PATCH as PATCH_ZINE } from "@/app/api/zines/[id]/route";
 import { PATCH as PATCH_ASSET } from "@/app/api/assets/[id]/route";
 import { PATCH as PATCH_RECIPE } from "@/app/api/recipes/[id]/route";
-import { publicZineTag } from "@/lib/public-zine";
+import { publicZineTag } from "@/lib/zine/public-zine";
 import { createAsset, createSavedRecipe, createTestUser, defaultBoardId, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 const revalidated = vi.mocked(revalidateTag);
 

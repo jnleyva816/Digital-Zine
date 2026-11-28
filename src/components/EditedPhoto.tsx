@@ -1,6 +1,6 @@
 import Image from "next/image";
 import { withSourceWidth } from "@/lib/media/variant-urls";
-import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/photo-edit";
+import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/board/photo-edit";
 
 const pct = (n: number) => `${Math.round(n * 1000) / 1000}%`;
 

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import "@/lib/zod-setup";
-import { confirmIdentity, requireAdmin } from "@/lib/admin-guard";
-import { refusal } from "@/lib/admin-refusals";
-import { deleteUserAsAdmin } from "@/lib/admin-users";
-import type { DeletionFailure } from "@/lib/account-deletion";
+import "@/lib/infra/zod-setup";
+import { confirmIdentity, requireAdmin } from "@/lib/admin/admin-guard";
+import { refusal } from "@/lib/admin/admin-refusals";
+import { deleteUserAsAdmin } from "@/lib/admin/admin-users";
+import type { DeletionFailure } from "@/lib/auth/account-deletion";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const bodySchema = z.object({ email: z.string().max(254), password: z.string().max(200).optional() });
 

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { describe, expect, it } from "vitest";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { DEFAULT_BOARD_NAME, migrateToBoards } from "@/lib/board-migration";
+import { DEFAULT_BOARD_NAME, migrateToBoards } from "@/lib/board/board-migration";
 
 /**
  * DIG-25 data migration. Each test runs in a transaction that puts the tables back in their

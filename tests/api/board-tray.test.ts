@@ -1,11 +1,11 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { GET } from "@/app/api/assets/route";
 import { createAsset, createBoard, createTestUser, deleteTestUser } from "./helpers";
 
 // DIG-88: the tray searches and filters a whole board on the server.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 let me: Awaited<ReturnType<typeof createTestUser>>;
 let other: typeof me;

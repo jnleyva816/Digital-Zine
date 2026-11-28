@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/site/brand";
 import { headers } from "next/headers";
 import "./globals.css";
 

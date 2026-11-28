@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { MAX_BOARD_NOTES, noteSchema } from "@/lib/board-layout";
-import { limitRequest } from "@/lib/rate-limit";
-import { withUserLock } from "@/lib/usage";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { MAX_BOARD_NOTES, noteSchema } from "@/lib/board/board-layout";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { withUserLock } from "@/lib/billing/usage";
 
 /** Adds a sticky note to a board (DIG-85). */
 export async function POST(req: Request, context: { params: Promise<{ id: string }> }) {

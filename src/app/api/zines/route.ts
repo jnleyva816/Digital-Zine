@@ -1,15 +1,15 @@
 import crypto from "node:crypto";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { zineLimitFor, zineLimitMessage } from "@/lib/limits";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { zineLimitFor, zineLimitMessage } from "@/lib/billing/limits";
 import { prisma } from "@/lib/prisma";
-import { withUserLock } from "@/lib/usage";
-import { getOrCreateDefaultBoard } from "@/lib/boards";
-import { revalidatePublicZines } from "@/lib/public-zine-cache";
-import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/types";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { limitRequest } from "@/lib/rate-limit";
+import { withUserLock } from "@/lib/billing/usage";
+import { getOrCreateDefaultBoard } from "@/lib/board/boards";
+import { revalidatePublicZines } from "@/lib/zine/public-zine-cache";
+import { slugifyTitle, ZINE_TEMPLATE_ID } from "@/lib/zine/types";
+import { isUniqueViolation } from "@/lib/infra/db-errors";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const createZineSchema = z.object({
   title: z.string().min(1).max(140),

@@ -4,7 +4,7 @@ import type { CSSProperties, DragEvent } from "react";
 import { Ellipsis, Loader2, RotateCw } from "lucide-react";
 import { EditedPhoto } from "@/components/EditedPhoto";
 import { Windowed } from "@/components/Windowed";
-import { DEFAULT_EDIT, frameLayout } from "@/lib/photo-edit";
+import { DEFAULT_EDIT, frameLayout } from "@/lib/board/photo-edit";
 import { cameraLine } from "./board-utils";
 import { CoverPhoto } from "./PhotoCard";
 import { ReorderHandle, type ReorderHandleProps } from "./ReorderHandle";

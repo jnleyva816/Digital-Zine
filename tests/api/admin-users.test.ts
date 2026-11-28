@@ -2,14 +2,14 @@ import { randomUUID } from "node:crypto";
 import bcrypt from "bcryptjs";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { PRIVATE_PATHS } from "@/lib/seo";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { PRIVATE_PATHS } from "@/lib/site/seo";
 import { GET as LIST } from "@/app/api/admin/users/route";
 import { POST as SET_ROLE } from "@/app/api/admin/users/[id]/role/route";
 import { jsonRequest, params, resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-136: the admin panel's user list and role changes.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 const PASSWORD = "correct-horse-9";

@@ -1,21 +1,21 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { PUT as putAccess } from "@/app/api/zines/[id]/access/route";
 import { GET as getZine, PATCH as patchZine } from "@/app/api/zines/[id]/route";
 import { POST as unlock } from "@/app/api/z/[owner]/[slug]/unlock/route";
 import sitemap from "@/app/sitemap";
-import { getPublicProfile } from "@/lib/public-profile";
-import { legacyZineAddress } from "@/lib/legacy-zine-url";
-import { getPublicZine } from "@/lib/public-zine";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { isUnlocked, unlockCookieName } from "@/lib/zine-access";
+import { getPublicProfile } from "@/lib/profile/public-profile";
+import { legacyZineAddress } from "@/lib/zine/legacy-zine-url";
+import { getPublicZine } from "@/lib/zine/public-zine";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
+import { isUnlocked, unlockCookieName } from "@/lib/zine/zine-access";
 import { createAsset, createTestUser, deleteTestUser, jsonRequest, params, resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-112: private zines, readable only with the creator's code. Every place a published zine can
 // show up is checked here, so a private one never leaks its title, photos, or address.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 const TAG = randomUUID().replaceAll("-", "").slice(0, 8);

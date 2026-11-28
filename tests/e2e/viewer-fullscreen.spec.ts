@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 import { createUserWithPhotos, defaultBoardId, deleteUser, testDb } from "./helpers";
 
 /** DIG-49: a reader opens any photo of a public zine full screen. */

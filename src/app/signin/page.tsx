@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 import { SignInForm } from "@/components/SignInForm";
-import { googleEnabled } from "@/lib/google-config";
+import { googleEnabled } from "@/lib/auth/google-config";
 
 export const metadata: Metadata = {
   title: "Sign in",

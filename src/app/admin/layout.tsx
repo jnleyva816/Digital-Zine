@@ -1,5 +1,5 @@
 import { notFound, redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 
 /**
  * The gate for the admin panel (DIG-136). It sits outside the `loading.tsx` boundary, so signed-out

@@ -7,25 +7,25 @@ import type Stripe from "stripe";
 import { revalidateTag } from "next/cache";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { getStripeClient } from "@/lib/stripe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { getStripeClient } from "@/lib/billing/stripe";
 import { LocalStorageDriver, writeLocalObject } from "@/lib/storage/local";
-import { sendVerificationEmail } from "@/lib/email";
+import { sendVerificationEmail } from "@/lib/infra/email";
 import { POST as DELETE_ACCOUNT } from "@/app/api/account/delete/route";
 import { POST as SIGNUP } from "@/app/api/signup/route";
 import sitemap from "@/app/sitemap";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { getPublicZine } from "@/lib/public-zine";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
+import { getPublicZine } from "@/lib/zine/public-zine";
 import { createAsset, createZineUsing, jsonRequest, resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-108: deleting your own account, and everything it owns, once it is confirmed.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
-vi.mock("@/lib/stripe", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/stripe")>()),
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/billing/stripe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/billing/stripe")>()),
   getStripeClient: vi.fn(),
 }));
-vi.mock("@/lib/email", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/email")>()),
+vi.mock("@/lib/infra/email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/infra/email")>()),
   sendVerificationEmail: vi.fn(),
 }));
 vi.mock("@sentry/nextjs", () => ({ captureException: vi.fn() }));

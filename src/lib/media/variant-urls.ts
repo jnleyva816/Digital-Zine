@@ -1,4 +1,4 @@
-import { VARIANT_WIDTHS } from "@/lib/limits";
+import { VARIANT_WIDTHS } from "@/lib/billing/limits";
 
 // No server-only imports here: the next/image loader runs this in the browser.
 

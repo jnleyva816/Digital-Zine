@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 /** Auth gate for /editor/*, outside every loading boundary so redirects are real HTTP 307s. */
 export default async function EditorLayout({ children }: { children: React.ReactNode }) {

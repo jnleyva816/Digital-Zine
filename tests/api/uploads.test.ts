@@ -2,14 +2,14 @@ import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
 import { POST as PRESIGN } from "@/app/api/uploads/presign/route";
 import { PUT } from "@/app/api/uploads/local/[...key]/route";
-import { ACCOUNT_STORAGE_BYTES, MAX_UPLOAD_BYTES } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES, MAX_UPLOAD_BYTES } from "@/lib/billing/limits";
 import { createAssetOfSize, createTestUser, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;

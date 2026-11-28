@@ -26,7 +26,7 @@ Describe the steps in order: what you expect, what happens, and where you hesita
 - Upload speed, large files, and whether a lost photo can be recovered.
 - Sequencing: pairs, rhythm, a cover, white space. Not just a grid.
 - Ownership: who sees it, GPS and metadata leaks, theft, leaving with your files.
-- Correct names and steps for film simulations, grain, Color Chrome, and white balance shift. Check against `src/lib/fuji-recipe.ts` and Fujifilm's documentation.
+- Correct names and steps for film simulations, grain, Color Chrome, and white balance shift. Check against `src/lib/fuji/fuji-recipe.ts` and Fujifilm's documentation.
 
 ## Challenge
 

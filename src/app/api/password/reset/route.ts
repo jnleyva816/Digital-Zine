@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { resetPasswordSchema } from "@/lib/password-reset-schema";
-import { resetPassword } from "@/lib/password-reset";
-import { limitRequest } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/sign-in";
+import { resetPasswordSchema } from "@/lib/auth/password-reset-schema";
+import { resetPassword } from "@/lib/auth/password-reset";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { clientIp } from "@/lib/auth/sign-in";
 
 const INVALID_TOKEN = {
   error: "This link is expired or already used. Ask for a new one.",

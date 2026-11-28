@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import "@/lib/zod-setup";
-import { confirmIdentity, requireAdmin } from "@/lib/admin-guard";
-import { refusal } from "@/lib/admin-refusals";
-import { deactivateUser, reactivateUser } from "@/lib/admin-users";
-import { limitRequest } from "@/lib/rate-limit";
+import "@/lib/infra/zod-setup";
+import { confirmIdentity, requireAdmin } from "@/lib/admin/admin-guard";
+import { refusal } from "@/lib/admin/admin-refusals";
+import { deactivateUser, reactivateUser } from "@/lib/admin/admin-users";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const bodySchema = z.object({ action: z.enum(["deactivate", "reactivate"]), password: z.string().max(200).optional() });
 

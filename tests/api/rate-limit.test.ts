@@ -1,9 +1,9 @@
 import bcrypt from "bcryptjs";
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { RATE_LIMITS, consumeRateLimit, rateLimitKey, type RateLimitRule } from "@/lib/rate-limit";
-import { SignInRateLimitedError, authorizeCredentials, clientIp } from "@/lib/sign-in";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { RATE_LIMITS, consumeRateLimit, rateLimitKey, type RateLimitRule } from "@/lib/infra/rate-limit";
+import { SignInRateLimitedError, authorizeCredentials, clientIp } from "@/lib/auth/sign-in";
 import { POST as PRESIGN } from "@/app/api/uploads/presign/route";
 import { POST as CREATE_ASSET } from "@/app/api/assets/route";
 import { DELETE as DELETE_ASSET, PATCH as PATCH_ASSET } from "@/app/api/assets/[id]/route";
@@ -19,7 +19,7 @@ import { DELETE as DELETE_RECIPE, PATCH as PATCH_RECIPE } from "@/app/api/recipe
 import { GET as PDF } from "@/app/api/pdf/[slug]/route";
 import { createTestUser, deleteTestUser, jsonRequest, params } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;

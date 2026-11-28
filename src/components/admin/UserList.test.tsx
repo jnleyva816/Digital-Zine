@@ -2,7 +2,7 @@
 import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { AdminUser } from "@/lib/admin-users";
+import type { AdminUser } from "@/lib/admin/admin-users";
 import { UserList } from "./UserList";
 
 // DIG-136: the admin panel's user list.

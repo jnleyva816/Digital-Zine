@@ -1,1 +1,1 @@
-src/lib/exif-client.test.ts(10,
+src/lib/fuji/exif-client.test.ts(10,

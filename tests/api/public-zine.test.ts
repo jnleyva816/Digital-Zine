@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getPublicZine } from "@/lib/public-zine";
+import { getPublicZine } from "@/lib/zine/public-zine";
 import { createAsset, createTestUser, defaultBoardId, deleteTestUser } from "./helpers";
 
 let owner: Awaited<ReturnType<typeof createTestUser>>;

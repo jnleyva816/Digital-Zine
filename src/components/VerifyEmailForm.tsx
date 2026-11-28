@@ -4,7 +4,7 @@ import { useState } from "react";
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { BadgeCheck } from "lucide-react";
-import { useResendVerification } from "@/lib/use-resend-verification";
+import { useResendVerification } from "@/lib/auth/use-resend-verification";
 
 /**
  * The page the email link opens (DIG-94). Opening it spends nothing: the creator presses the

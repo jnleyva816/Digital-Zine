@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { revalidatePublicZines } from "@/lib/public-zine-cache";
-import { limitRequest } from "@/lib/rate-limit";
-import { accessCodeProblem, hashAccessCode } from "@/lib/zine-access";
+import { revalidatePublicZines } from "@/lib/zine/public-zine-cache";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { accessCodeProblem, hashAccessCode } from "@/lib/zine/zine-access";
 
 const accessSchema = z.object({
   visibility: z.enum(["public", "private"]),

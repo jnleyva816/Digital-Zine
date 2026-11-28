@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ACCOUNT_STORAGE_BYTES } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES } from "@/lib/billing/limits";
 import { StorageMeter } from "./StorageMeter";
 
 const MB = 1024 * 1024;

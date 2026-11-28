@@ -1,14 +1,14 @@
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { EmailNotConfiguredError, sendVerificationEmail } from "@/lib/email";
+import { EmailNotConfiguredError, sendVerificationEmail } from "@/lib/infra/email";
 import { POST as SIGNUP } from "@/app/api/signup/route";
 import { POST as RESEND } from "@/app/api/signup/resend/route";
 import { resetRateLimits } from "./helpers";
 
 // DIG-94: creating an account with a password, and asking for the verification email again.
-vi.mock("@/lib/email", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/email")>()),
+vi.mock("@/lib/infra/email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/infra/email")>()),
   sendVerificationEmail: vi.fn(),
 }));
 const sendMock = vi.mocked(sendVerificationEmail);

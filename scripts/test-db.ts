@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { parseEnv } from "node:util";
 import { PrismaClient } from "@prisma/client";
-import { migrateToBoards } from "../src/lib/board-migration";
+import { migrateToBoards } from "../src/lib/board/board-migration";
 
 // npm scripts, Vitest, and Playwright all run from the repository root.
 const ROOT = process.cwd();

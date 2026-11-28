@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { createUserWithPhotos, deleteUser, testDb, defaultBoardId } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 /** DIG-106: robots.txt, sitemap.xml, JSON-LD, llms.txt, and per-page titles and canonicals. */
 test.afterAll(async () => {

@@ -1,20 +1,20 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { fujiRecipeSchema } from "@/lib/fuji-recipe";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { fujiRecipeSchema } from "@/lib/fuji/fuji-recipe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { prisma } from "@/lib/prisma";
-import { isUniqueViolation } from "@/lib/db-errors";
-import { BOARD_ORDER, BOARD_PAGE_MAX } from "@/lib/board-pages";
-import { TRAY_FILTERS, TRAY_SEARCH_MAX, boardPhotoPage, trayCounts, type TrayFilter } from "@/lib/board-photos";
-import { uploadLimitResponse } from "@/lib/limit-response";
-import { checkUpload } from "@/lib/limits";
+import { isUniqueViolation } from "@/lib/infra/db-errors";
+import { BOARD_ORDER, BOARD_PAGE_MAX } from "@/lib/board/board-pages";
+import { TRAY_FILTERS, TRAY_SEARCH_MAX, boardPhotoPage, trayCounts, type TrayFilter } from "@/lib/board/board-photos";
+import { uploadLimitResponse } from "@/lib/billing/limit-response";
+import { checkUpload } from "@/lib/billing/limits";
 import { enqueueProcessing } from "@/lib/media/queue";
 import { getStorageDriver } from "@/lib/storage";
 import { isValidStorageKey, isWellFormedStorageKey } from "@/lib/storage/keys";
-import { getAccountUsageBytes, withUserLock } from "@/lib/usage";
-import { getOrCreateDefaultBoard } from "@/lib/boards";
-import { limitRequest } from "@/lib/rate-limit";
+import { getAccountUsageBytes, withUserLock } from "@/lib/billing/usage";
+import { getOrCreateDefaultBoard } from "@/lib/board/boards";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const exifSchema = z
   .object({

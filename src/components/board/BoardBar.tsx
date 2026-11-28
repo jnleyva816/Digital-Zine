@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { GalleryHorizontal, LayoutGrid, Pencil, Shapes, Upload } from "lucide-react";
-import type { BoardView } from "@/lib/board-layout";
+import type { BoardView } from "@/lib/board/board-layout";
 
 const VIEWS = { free: { label: "Free form", icon: Shapes }, grid: { label: "Grid", icon: LayoutGrid }, strip: { label: "Strip", icon: GalleryHorizontal } } as const;
 export type BuiltView = Extract<BoardView, keyof typeof VIEWS>;

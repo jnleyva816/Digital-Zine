@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { isRecentSignIn } from "@/lib/account-deletion";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { isRecentSignIn } from "@/lib/auth/account-deletion";
 import { prisma } from "@/lib/prisma";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { StudioHeader } from "@/components/StudioHeader";
 import { DeleteAccountPanel } from "@/components/account/DeleteAccountPanel";
 import { ProfilePanel } from "@/components/account/ProfilePanel";

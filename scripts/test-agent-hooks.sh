@@ -76,7 +76,7 @@ mkdir -p "$repo/.githooks" && cp "$ROOT/.githooks/tsc-known-errors.txt" "$repo/.
 echo 'x' > notes.md && git add notes.md
 expect_code 0 "$(pc 'false')" "pre-commit skips tsc when no TypeScript is staged"
 echo 'export {}' > a.ts && git add a.ts
-expect_code 0 "$(pc "printf 'src/lib/exif-client.test.ts(10,5): error TS2322: known\n'")" "pre-commit ignores the known tsc error"
+expect_code 0 "$(pc "printf 'src/lib/fuji/exif-client.test.ts(10,5): error TS2322: known\n'")" "pre-commit ignores the known tsc error"
 expect_code 1 "$(pc "printf 'src/lib/x.ts(3,1): error TS2304: new\n'")" "pre-commit blocks a new tsc error"
 grep -q "src/lib/x.ts" "$T/pc" && ok || bad "pre-commit prints the new error"
 

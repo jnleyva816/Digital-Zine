@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
-import { defaultPdfSettings } from "@/lib/pdf-settings";
+import { defaultPdfSettings } from "@/lib/pdf/pdf-settings";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { GET as LIST, POST as CREATE } from "@/app/api/zines/route";
 import { DELETE, GET, PATCH } from "@/app/api/zines/[id]/route";
 import {
@@ -15,7 +15,7 @@ import {
   resetRateLimits,
 } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
