@@ -27,3 +27,4 @@ To add one: copy the shape of an existing file, take the next number, and add on
 - [0021](0021-agent-workflow.md) **Agent workflow and context**: tickets, handoff page, this folder, `AGENTS.md`
 - [0022](0022-creator-profiles.md) **Creator profiles**: optional handles, renames that redirect, byline link
 - [0023](0023-private-zines.md) **Private zines**: access codes, unlock cookie, what stays hidden
+- [0024](0024-testing-by-risk.md) **Testing by risk**: the risk table, visual changes skip test-first, fast and API test projects

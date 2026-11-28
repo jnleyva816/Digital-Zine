@@ -7,21 +7,17 @@ import { defineConfig } from "vitest/config";
 // so tests never see the dev database.
 const env = loadEnv("test", process.cwd(), "");
 
-const shared = {
+// Two projects (DIG-123): `fast` needs no database and runs files in parallel; `api` resets the
+// test database once and runs its files one at a time, because they share it. Each project
+// inherits the plugins and alias declared here.
+export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: { "@": path.resolve(import.meta.dirname, "src") },
   },
-};
-
-// Two projects (DIG-123): `fast` needs no database and runs files in parallel; `api` resets the
-// test database once and runs its files one at a time, because they share it.
-export default defineConfig({
-  ...shared,
   test: {
     projects: [
       {
-        ...shared,
         test: {
           name: "fast",
           env,
@@ -32,7 +28,6 @@ export default defineConfig({
         },
       },
       {
-        ...shared,
         test: {
           name: "api",
           env,

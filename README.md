@@ -173,7 +173,10 @@ The forwarder's secret is not the same as the one on a webhook endpoint in the S
 | `npm run db:push` | Applies the schema without migrations. Only for the test database and quick local experiments |
 | `npm run db:seed` | Reseeds the sample user, assets, and zine |
 | `npm run db:setup` | `db:deploy` followed by `db:seed` |
-| `npm test` | Unit, component, and API tests (Vitest) against the test database |
+| `npm test` | Unit, component, and API tests (Vitest): both projects below |
+| `npm run test:fast` | Unit and component tests only, in parallel, with no database |
+| `npm run test:api` | API tests only, against the test database, one file at a time |
+| `npm run typecheck` | `tsc --noEmit` over the whole project, test files included |
 | `npm run test:watch` | Vitest in watch mode |
 | `npm run test:e2e` | Builds the app, starts it on port 3417, and runs the Playwright browser tests against the test database |
 | `npm run test:db:reset` | Applies the schema to the test database, empties it, and reseeds it |
@@ -191,7 +194,9 @@ This project is test-driven. Write a failing test, make it pass, then refactor. 
 | API route handlers | Vitest against Postgres | `tests/api/` |
 | End to end | Playwright against `next start` | `tests/e2e/` |
 
-Tests use the separate `digital_zine_test` database from `.env.test`. That file is committed because it holds only local, non-secret values. `npm test` and `npm run test:e2e` reset and seed the test database before each run. The reset refuses to touch any database whose name does not end in `_test`, so your dev data is safe. The Postgres user must be allowed to create that database; the Docker command above allows it.
+Vitest has two projects. `fast` (unit and component, `src/`) needs no database and runs files in parallel. `api` (`tests/api/`) resets the test database once and runs files one at a time, because they share it.
+
+Tests use the separate `digital_zine_test` database from `.env.test`. That file is committed because it holds only local, non-secret values. To use another database (for example a second checkout), put `DATABASE_URL` in the gitignored `.env.test.local`, which overrides `.env.test`; `scripts/worktree-new.sh` writes it for you. `npm run test:api` and `npm run test:e2e` reset and seed the test database before each run. The reset refuses to touch any database whose name does not end in `_test`, so your dev data is safe. The Postgres user must be allowed to create that database; the Docker command above allows it.
 
 Before the first browser run, install Chromium:
 
@@ -199,7 +204,18 @@ Before the first browser run, install Chromium:
 npx playwright install chromium
 ```
 
-CI (`.github/workflows/ci.yml`) runs the build, `npm test`, and `npm run test:e2e` on every push and pull request.
+Which tests a change needs depends on its risk ([decision 0024](docs/decisions/0024-testing-by-risk.md)):
+
+| Change | Test |
+| --- | --- |
+| Color, spacing, copy | Look at it; `npm run typecheck` for code |
+| Button or other UI behavior | One component test |
+| Logic | Unit test |
+| API route | API tests, including auth and abuse cases |
+| Upload, sign-up, publish, viewer, billing, deletion | The above, plus that flow's e2e spec |
+| Auth, payments, schema, middleware, dependencies | Everything |
+
+CI (`.github/workflows/ci.yml`) runs the type check, the build, `npm test`, and `npm run test:e2e` on every push and pull request.
 
 ## Environment variables
 
