@@ -12,12 +12,13 @@ const PUBLIC_PAGES = ["/", "/terms", "/privacy"];
 
 /**
  * sitemap.xml (DIG-106): the landing page, the legal pages, and every published zine at its public
- * address. Drafts and unpublished zines are never selected. Saving a zine always updates `updatedAt`,
+ * address. Drafts, unpublished zines, and private zines are never selected. Saving a zine always updates `updatedAt`,
  * so `lastmod` follows renames and edits; the query reads three columns and nothing else.
  */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const zines = await prisma.zine.findMany({
-    where: { published: true, owner: { deactivatedAt: null } },
+    // Private zines (DIG-112) are never listed.
+    where: { published: true, visibility: "public", owner: { deactivatedAt: null } },
     select: { slug: true, updatedAt: true, owner: { select: { publicId: true } } },
     orderBy: { updatedAt: "desc" },
     take: MAX_URLS - PUBLIC_PAGES.length,

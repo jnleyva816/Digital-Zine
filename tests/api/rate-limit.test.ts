@@ -79,6 +79,8 @@ describe("the decided limits (DIG-28)", () => {
       upload: { limit: 300, windowSeconds: 3600 },
       write: { limit: 120, windowSeconds: 60 },
       pdf: { limit: 10, windowSeconds: 3600 },
+      "unlock-ip": { limit: 10, windowSeconds: 900 },
+      "unlock-zine": { limit: 30, windowSeconds: 900 },
     });
   });
 });

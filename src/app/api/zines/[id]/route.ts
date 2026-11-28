@@ -39,6 +39,8 @@ export async function GET(
   const { id } = await context.params;
   const zine = await prisma.zine.findFirst({
     where: { id, ownerId: user.id },
+    // The access code's hash never leaves the server (DIG-112).
+    omit: { accessCodeHash: true },
     include: {
       pages: {
         orderBy: { pageNumber: "asc" },
@@ -232,6 +234,7 @@ export async function PATCH(
               }
             : {}),
         },
+        omit: { accessCodeHash: true },
         include: {
           pages: {
             orderBy: { pageNumber: "asc" },

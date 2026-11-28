@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-react";
 import { readApiError, toBoardAsset, type BoardAsset } from "@/components/board/types";
+import { ZineAccessPanel, type ZineAccess } from "./ZineAccessPanel";
 import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
 import { ZineBoardPicker } from "./ZineBoardPicker";
 import { EditedPhoto } from "@/components/EditedPhoto";
@@ -57,6 +58,7 @@ export function ZineEditor({
   tier,
   authorName = null,
   pdfSettings = null,
+  access = { visibility: "public", hasAccessCode: false },
 }: {
   zine: EditorZine;
   /** The creator's public ID: the first part of the zine's address (DIG-102). */
@@ -77,6 +79,8 @@ export function ZineEditor({
   authorName?: string | null;
   /** How the zine's PDF looks, or null before its first style (DIG-71). */
   pdfSettings?: PdfSettings | null;
+  /** Public, or private with a code (DIG-112). */
+  access?: ZineAccess;
 }) {
   const router = useRouter();
   const id = useId();
@@ -298,6 +302,8 @@ export function ZineEditor({
           ) : null}
         </div>
       </div>
+
+      <ZineAccessPanel zineId={zine.id} initial={access} />
 
       {/* Save and publish bar */}
       <div className="sticky top-[72px] z-20 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-paper-300 bg-paper-50/95 px-4 py-3 shadow-xs backdrop-blur-sm">

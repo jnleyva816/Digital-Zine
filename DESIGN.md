@@ -1,6 +1,6 @@
 # Folio design specification: Tactile Editorial Print
 
-**Status: draft, decided with the owner on 26 Nov (DIG-147). Surfaces revised the same day: see `docs/decisions/0024-rounded-surfaces.md`.** Tokens below are the source for `src/app/globals.css`. Do not add colors, fonts, radii, or easing curves that are not listed here.
+**Status: draft, decided with the owner on 26 Nov (DIG-147). Surfaces revised the same day: see `docs/decisions/0025-rounded-surfaces.md`.** Tokens below are the source for `src/app/globals.css`. Do not add colors, fonts, radii, or easing curves that are not listed here.
 
 The product is a print zine for photographers. The interface should feel like paper and ink: warm surfaces, hairline rules, soft rounded corners, pill controls, a serif voice, and mono for the numbers a photographer cares about (film-simulation recipe settings, exposure data).
 

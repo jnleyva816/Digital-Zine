@@ -32,7 +32,7 @@ export type PublicProfileResult = { kind: "redirect"; handle: string } | { kind:
 /**
  * A creator's public profile at `/u/<handle>` (DIG-111), built from public fields only: never the
  * email or the account id. An old handle answers with the current one to redirect to. Unknown,
- * invalid, and deactivated creators are null. Only published zines are listed.
+ * invalid, and deactivated creators are null. Only published, public zines are listed.
  */
 export const getPublicProfile = cache(async (input: string): Promise<PublicProfileResult> => {
   const checked = checkHandle(input);
@@ -46,7 +46,8 @@ export const getPublicProfile = cache(async (input: string): Promise<PublicProfi
   if (user.handle !== checked.handle) return { kind: "redirect", handle: user.handle };
 
   const zines = await prisma.zine.findMany({
-    where: { ownerId: user.id, published: true },
+    // Private zines (DIG-112) are only for readers with the code: never listed.
+    where: { ownerId: user.id, published: true, visibility: "public" },
     orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
     take: PROFILE_ZINE_LIMIT,
     select: {
