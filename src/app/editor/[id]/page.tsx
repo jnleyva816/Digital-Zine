@@ -80,6 +80,7 @@ export default async function ZineEditorPage({ params }: { params: Promise<{ id:
           tier={user.tier}
           authorName={user.name?.trim() || null}
           pdfSettings={parsePdfSettings(zine.pdfSettings)}
+          access={{ visibility: zine.visibility, hasAccessCode: zine.accessCodeHash !== null }}
         />
       </main>
     </>

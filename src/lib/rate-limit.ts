@@ -21,7 +21,9 @@ export type RateLimitRule =
   | "csp-report"
   | "upload"
   | "write"
-  | "pdf";
+  | "pdf"
+  | "unlock-ip"
+  | "unlock-zine";
 
 export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: number }> = {
   /** Failed sign-in tries per email address from one IP (DIG-37). */
@@ -59,6 +61,10 @@ export const RATE_LIMITS: Record<RateLimitRule, { limit: number; windowSeconds: 
   write: { limit: 120, windowSeconds: 60 },
   /** PDF exports per user; each one is CPU-heavy. */
   pdf: { limit: 10, windowSeconds: 60 * 60 },
+  /** Tries at a private zine's code per client IP, right or wrong (DIG-112). */
+  "unlock-ip": { limit: 10, windowSeconds: 15 * 60 },
+  /** Wrong codes per private zine, from any IP, so guesses spread over many IPs are still capped. */
+  "unlock-zine": { limit: 30, windowSeconds: 15 * 60 },
 };
 
 export const rateLimitKey = (rule: RateLimitRule, id: string) => `${rule}:${id}`;
@@ -119,6 +125,8 @@ const MESSAGES: Record<RateLimitRule, string> = {
   upload: "You've reached the limit of 300 uploads an hour.",
   write: "You're making changes too quickly.",
   pdf: "You've reached the limit of 10 PDF exports an hour.",
+  "unlock-ip": "Too many tries at the code.",
+  "unlock-zine": "This zine has had too many wrong codes.",
 };
 
 /** "in 45 seconds", "in 1 minute", "in 30 minutes". */
@@ -135,8 +143,13 @@ function waitText(seconds: number): string {
 export async function limitRequest(rule: RateLimitRule, id: string): Promise<NextResponse | null> {
   const check = await consumeRateLimit(rule, id);
   if (check.ok) return null;
+  return rateLimitedResponse(rule, check.retryAfterSeconds);
+}
+
+/** The 429 for `rule`, for a route that checked the limit itself (for example with `peekRateLimit`). */
+export function rateLimitedResponse(rule: RateLimitRule, retryAfterSeconds: number): NextResponse {
   return NextResponse.json(
-    { error: `${MESSAGES[rule]} Try again ${waitText(check.retryAfterSeconds)}.`, code: "rate_limited" },
-    { status: 429, headers: { "Retry-After": String(check.retryAfterSeconds) } }
+    { error: `${MESSAGES[rule]} Try again ${waitText(retryAfterSeconds)}.`, code: "rate_limited" },
+    { status: 429, headers: { "Retry-After": String(retryAfterSeconds) } }
   );
 }

@@ -54,12 +54,18 @@ export interface PublicZinePage {
 }
 
 export interface PublicZine {
+  id: string;
+  /** A private zine (DIG-112) renders only for a reader whose unlock cookie matches this version. */
+  visibility: "public" | "private";
+  accessCodeVersion: number;
   /** The creator's public ID: the first part of the zine's address (DIG-102). */
   owner: string;
   slug: string;
   title: string;
   description: string | null;
   ownerName: string | null;
+  /** The creator's handle, so the byline can link `/u/<handle>` (DIG-111), or null without one. */
+  ownerHandle: string | null;
   /** ISO date. A string, not a Date, because the page data is cached as JSON (DIG-27). */
   publishedAt: string | null;
   pages: PublicZinePage[];
@@ -72,7 +78,7 @@ export interface PublicZine {
  * `owner` is the creator's public ID (DIG-102).
  */
 export const getPublicZine = cache((owner: string, slug: string): Promise<PublicZine | null> =>
-  unstable_cache(() => loadPublicZine(owner, slug), ["public-zine", owner, slug], {
+  unstable_cache(() => loadPublicZine(owner, slug), ["public-zine", "v2", owner, slug], {
     tags: [publicZineTag(owner, slug)],
     revalidate: PUBLIC_ZINE_MAX_AGE_SECONDS,
   })()
@@ -82,12 +88,15 @@ async function loadPublicZine(owner: string, slug: string): Promise<PublicZine |
   const zine = await prisma.zine.findFirst({
     where: { slug, published: true, owner: { publicId: owner, deactivatedAt: null } },
     select: {
+      id: true,
+      visibility: true,
+      accessCodeVersion: true,
       slug: true,
       ownerId: true,
       title: true,
       description: true,
       publishedAt: true,
-      owner: { select: { name: true, publicId: true } },
+      owner: { select: { name: true, publicId: true, handle: true } },
       pages: { orderBy: { pageNumber: "asc" }, select: { pageNumber: true, flipEnabled: true, content: true } },
     },
   });
@@ -138,11 +147,15 @@ async function loadPublicZine(owner: string, slug: string): Promise<PublicZine |
   });
 
   return {
+    id: zine.id,
+    visibility: zine.visibility,
+    accessCodeVersion: zine.accessCodeVersion,
     owner: zine.owner.publicId,
     slug: zine.slug,
     title: zine.title,
     description: zine.description,
     ownerName: zine.owner.name?.trim() || null,
+    ownerHandle: zine.owner.handle,
     publishedAt: zine.publishedAt?.toISOString() ?? null,
     pages,
   };

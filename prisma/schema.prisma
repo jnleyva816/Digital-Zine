@@ -26,6 +26,12 @@ enum AssetStatus {
   failed
 }
 
+/// DIG-112: who can read a published zine. `private` needs the creator's access code.
+enum ZineVisibility {
+  public
+  private
+}
+
 enum AssetKind {
   photo
   recipe
@@ -63,6 +69,24 @@ model User {
   sessionsValidAfter   DateTime?
   /// Set by an admin (DIG-137): the account cannot sign in and its zines are hidden. Null when active.
   deactivatedAt        DateTime?
+  /// The creator's current handle, lowercase: their profile is /u/<handle> (DIG-111). Null until
+  /// they pick one. Every handle they have used is also in `UserHandle`, which keeps it theirs.
+  handle               String?                  @unique
+  /// A short plain-text bio for the profile page (DIG-111).
+  bio                  String?
+  handles              UserHandle[]
+}
+
+/// Every handle a creator has used, current and old (DIG-111). The handle is the key, so claiming
+/// one is a single insert that no other account can race. An old handle redirects to the current
+/// one and nobody else can take it. Deleting the account frees them.
+model UserHandle {
+  handle    String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
 }
 
 enum AdminActionType {
@@ -240,6 +264,12 @@ model Zine {
   publishedAt DateTime?
   /// How this zine's PDF looks (DIG-64), validated by `pdfSettingsSchema`. Null until the creator picks a style.
   pdfSettings Json?      @db.JsonB
+  /// DIG-112: a private zine is published but readable only with the access code.
+  visibility        ZineVisibility @default(public)
+  /// bcrypt hash of the access code; the code itself is never stored. Null until one is set.
+  accessCodeHash    String?
+  /// Bumped when the code changes or the zine turns private, which ends every earlier unlock.
+  accessCodeVersion Int            @default(0)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
   pages       ZinePage[]

@@ -7,11 +7,15 @@ const SITE = "https://folio-digital-zine.app";
 
 function zine(overrides: Partial<PublicZine> = {}): PublicZine {
   return {
+    id: "zine-1",
+    visibility: "public",
+    accessCodeVersion: 0,
     owner: "010ecb05",
     slug: "cars",
     title: "Brine & Light",
     description: "Three plates from the pickling shelf.",
     ownerName: "Mara Ito",
+    ownerHandle: null,
     publishedAt: "2026-11-02T12:00:00.000Z",
     pages: [
       {
