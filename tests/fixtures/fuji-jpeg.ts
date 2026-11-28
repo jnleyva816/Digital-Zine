@@ -15,7 +15,7 @@ export type FujiTagValue =
 const TYPE_CODE = { int16u: 3, int32s: 9 } as const;
 
 /** Encodes the maker note: header, IFD, then any values that don't fit in 4 bytes. */
-export function buildFujiMakerNote(tags: Record<number, FujiTagValue>): Uint8Array {
+export function buildFujiMakerNote(tags: Record<number, FujiTagValue>): Uint8Array<ArrayBuffer> {
   const entries = Object.entries(tags)
     .map(([tag, v]) => [Number(tag), v] as const)
     .sort((a, b) => a[0] - b[0]);
@@ -45,7 +45,7 @@ export function buildFujiMakerNote(tags: Record<number, FujiTagValue>): Uint8Arr
 export function buildJpegWithMakerNote(
   makerNote: Uint8Array,
   { byteOrder = "MM", make = "FUJIFILM" }: { byteOrder?: "II" | "MM"; make?: string } = {}
-): Uint8Array {
+): Uint8Array<ArrayBuffer> {
   const be = byteOrder === "MM";
   const u16 = (n: number) => (be ? be16(n) : le16(n));
   const u32 = (n: number) => (be ? be32(n) : le32(n));
@@ -78,7 +78,7 @@ export function buildJpegWithMakerNote(
 }
 
 /** Inserts an APP1 Exif segment right after a real JPEG's SOI marker (for e2e uploads). */
-export function withMakerNote(jpeg: Uint8Array, makerNote: Uint8Array, make = "FUJIFILM"): Uint8Array {
+export function withMakerNote(jpeg: Uint8Array, makerNote: Uint8Array, make = "FUJIFILM"): Uint8Array<ArrayBuffer> {
   const app1Jpeg = buildJpegWithMakerNote(makerNote, { make });
   const app1 = app1Jpeg.subarray(2, app1Jpeg.length - 2);
   return Uint8Array.from([...jpeg.subarray(0, 2), ...app1, ...jpeg.subarray(2)]);

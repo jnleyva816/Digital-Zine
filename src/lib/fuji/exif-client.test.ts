@@ -6,7 +6,7 @@ import {
 } from "../../../tests/fixtures/fuji-jpeg";
 import { extractExifFromFile } from "./exif-client";
 
-function jpegFile(bytes: Uint8Array, name = "DSCF0412.jpg") {
+function jpegFile(bytes: Uint8Array<ArrayBuffer>, name = "DSCF0412.jpg") {
   return new File([bytes], name, { type: "image/jpeg" });
 }
 
