@@ -52,7 +52,7 @@ async function arrangeZine(options: ZineOptions = {}) {
 }
 
 function metaContent(html: string, attr: "property" | "name", key: string): string | null {
-  const tag = html.match(new RegExp(`<meta[^>]*${attr}="${key.replace(/[:]/g, "\\$&")}"[^>]*>`));
+  const tag = html.match(new RegExp(`<meta[^>]*${attr}="${key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}"[^>]*>`));
   if (!tag) return null;
   return tag[0].match(/content="([^"]*)"/)?.[1] ?? null;
 }
