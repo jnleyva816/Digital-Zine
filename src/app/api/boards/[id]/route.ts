@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { boardViewPrefsSchema, parseViewPrefs } from "@/lib/board-layout";
-import { boardNameSchema } from "@/lib/boards";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { boardViewPrefsSchema, parseViewPrefs } from "@/lib/board/board-layout";
+import { boardNameSchema } from "@/lib/board/boards";
 import { prisma } from "@/lib/prisma";
-import { withUserLock } from "@/lib/usage";
-import { limitRequest } from "@/lib/rate-limit";
+import { withUserLock } from "@/lib/billing/usage";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const updateSchema = z
   .object({

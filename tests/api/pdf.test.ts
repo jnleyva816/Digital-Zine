@@ -2,16 +2,16 @@ import { randomUUID } from "node:crypto";
 import sharp from "sharp";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { writeLocalObject } from "@/lib/storage/local";
 import { Prisma } from "@prisma/client";
 import { GET } from "@/app/api/pdf/[slug]/route";
-import { defaultPdfSettings, type PdfSettings } from "@/lib/pdf-settings";
+import { defaultPdfSettings, type PdfSettings } from "@/lib/pdf/pdf-settings";
 import { processAsset } from "@/lib/media/process";
 import { readPdf } from "../pdf-text";
 import { createTestUser, defaultBoardId, deleteTestUser, params, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 type User = Awaited<ReturnType<typeof createTestUser>>;

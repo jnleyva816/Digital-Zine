@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { buildCsp, cspHeaderName, cspMode } from "@/lib/csp";
-import { checkSameOrigin } from "@/lib/request-origin";
-import { SECURITY_HEADERS } from "@/lib/security-headers";
+import { buildCsp, cspHeaderName, cspMode } from "@/lib/site/csp";
+import { checkSameOrigin } from "@/lib/infra/request-origin";
+import { SECURITY_HEADERS } from "@/lib/site/security-headers";
 
 /**
  * Every request passes here (DIG-104): state-changing ones get the Origin check, and every response

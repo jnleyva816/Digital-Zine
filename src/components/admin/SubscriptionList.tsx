@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ExternalLink } from "lucide-react";
-import type { AdminSubscription, AdminSubscriptionPage } from "@/lib/admin-subscriptions";
+import type { AdminSubscription, AdminSubscriptionPage } from "@/lib/admin/admin-subscriptions";
 import { OFFLINE, badge, focusRing, secondary } from "./styles";
 
 const STATUS: Record<AdminSubscription["status"], string> = { active: "Active", trialing: "Trial", past_due: "Payment failed" };

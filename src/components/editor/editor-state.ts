@@ -1,4 +1,4 @@
-import { parsePageContent, slugifyTitle } from "@/lib/types";
+import { parsePageContent, slugifyTitle } from "@/lib/zine/types";
 
 /** Limits from `src/app/api/zines/[id]/route.ts`. */
 export const ZINE_LIMITS = {

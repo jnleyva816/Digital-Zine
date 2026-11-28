@@ -5,12 +5,12 @@ import { notFound } from "next/navigation";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { UnlockZineForm } from "@/components/zine/UnlockZineForm";
 import { ZinePages } from "@/components/zine/ZinePages";
-import { profilePath } from "@/lib/handles";
-import { getPublicZine, shareDescription, type PublicZine } from "@/lib/public-zine";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { siteUrl } from "@/lib/site";
-import { zineJsonLd } from "@/lib/structured-data";
-import { isUnlocked, unlockCookieName } from "@/lib/zine-access";
+import { profilePath } from "@/lib/profile/handles";
+import { getPublicZine, shareDescription, type PublicZine } from "@/lib/zine/public-zine";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
+import { siteUrl } from "@/lib/site/site";
+import { zineJsonLd } from "@/lib/site/structured-data";
+import { isUnlocked, unlockCookieName } from "@/lib/zine/zine-access";
 
 /** `owner` is the creator's public ID (DIG-102): slugs are only unique per creator. */
 type Props = { params: Promise<{ owner: string; slug: string }> };

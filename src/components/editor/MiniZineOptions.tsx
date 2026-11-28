@@ -2,8 +2,8 @@
 
 import { useId, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, X } from "lucide-react";
-import { MINI_PHOTO_MINIMUM, miniInnerPages, pickMiniPages } from "@/lib/mini-zine";
-import { MINI_PHOTO_LIMIT, type PdfSettings } from "@/lib/pdf-settings";
+import { MINI_PHOTO_MINIMUM, miniInnerPages, pickMiniPages } from "@/lib/pdf/mini-zine";
+import { MINI_PHOTO_LIMIT, type PdfSettings } from "@/lib/pdf/pdf-settings";
 import { FoldingSteps } from "./FoldingSteps";
 import { WebPhoto, nameOf, onePerPhoto, type PreviewPage, type PreviewZine } from "./PdfPagePreview";
 import { Check, Group } from "./pdf-panel-ui";

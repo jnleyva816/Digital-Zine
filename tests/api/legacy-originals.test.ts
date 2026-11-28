@@ -6,7 +6,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vites
 import { revalidateTag } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { stripLegacyOriginals } from "@/lib/media/legacy-originals";
-import { publicZineTag } from "@/lib/public-zine";
+import { publicZineTag } from "@/lib/zine/public-zine";
 import { readLocalObject, writeLocalObject } from "@/lib/storage/local";
 import { createAsset, createTestUser, defaultBoardId, deleteTestUser } from "./helpers";
 

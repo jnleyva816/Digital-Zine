@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
 import { ChevronLeft, ChevronRight, X, ZoomIn, ZoomOut } from "lucide-react";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import { DOUBLE_TAP_ZOOM, clampOffset, isDoubleTap, pinchTo, swipeDirection, zoomAt, type Offset, type Tap } from "@/lib/pan-zoom";
-import { DEFAULT_EDIT, frameLayout } from "@/lib/photo-edit";
+import { DOUBLE_TAP_ZOOM, clampOffset, isDoubleTap, pinchTo, swipeDirection, zoomAt, type Offset, type Tap } from "@/lib/board/pan-zoom";
+import { DEFAULT_EDIT, frameLayout } from "@/lib/board/photo-edit";
 import type { ZinePageData } from "./types";
 
 interface Zoom {

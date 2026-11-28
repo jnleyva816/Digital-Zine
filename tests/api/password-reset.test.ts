@@ -2,16 +2,16 @@ import { createHash } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { sendGoogleSignInReminderEmail, sendPasswordResetEmail } from "@/lib/email";
-import { issueVerificationToken } from "@/lib/email-verification";
-import { issueResetToken, RESET_TTL_MS } from "@/lib/password-reset";
+import { sendGoogleSignInReminderEmail, sendPasswordResetEmail } from "@/lib/infra/email";
+import { issueVerificationToken } from "@/lib/auth/email-verification";
+import { issueResetToken, RESET_TTL_MS } from "@/lib/auth/password-reset";
 import { POST as FORGOT } from "@/app/api/password/forgot/route";
 import { POST as RESET } from "@/app/api/password/reset/route";
 import { resetRateLimits, settleAfter } from "./helpers";
 
 // DIG-107: forgot password. A request that never says who has an account, and a reset that works once.
-vi.mock("@/lib/email", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/email")>()),
+vi.mock("@/lib/infra/email", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/infra/email")>()),
   sendPasswordResetEmail: vi.fn(),
   sendGoogleSignInReminderEmail: vi.fn(),
 }));

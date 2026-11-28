@@ -8,7 +8,7 @@
  */
 import { parseArgs } from "node:util";
 import { PrismaClient } from "@prisma/client";
-import { ensureAdmin } from "../src/lib/admin-account";
+import { ensureAdmin } from "../src/lib/admin/admin-account";
 
 async function main() {
   const { values } = parseArgs({

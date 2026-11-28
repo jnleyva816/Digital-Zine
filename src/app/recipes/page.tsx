@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { prisma } from "@/lib/prisma";
-import { listSavedRecipes } from "@/lib/recipes";
+import { listSavedRecipes } from "@/lib/fuji/recipes";
 import { StudioHeader } from "@/components/StudioHeader";
 import { RecipeLibrary } from "@/components/recipes/RecipeLibrary";
 

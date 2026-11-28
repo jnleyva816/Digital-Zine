@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { GET as LIST } from "@/app/api/admin/zines/route";
 import { createAsset, createZineUsing, resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-138: admins see every zine; a private one shows that it exists, and nothing of what is in it.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 const created: string[] = [];
 

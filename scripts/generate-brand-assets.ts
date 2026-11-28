@@ -1,13 +1,13 @@
 /**
  * Draws the brand mark into the files browsers ask for (DIG-105). Run `npm run brand:generate`
- * after changing `src/lib/brand.ts`, and commit what it writes. They are committed rather than
+ * after changing `src/lib/site/brand.ts`, and commit what it writes. They are committed rather than
  * built so the app serves them as plain files, with no image work at request time.
  */
 import fs from "node:fs";
 import path from "node:path";
 import sharp from "sharp";
-import { brandMarkSvg } from "../src/lib/brand";
-import { buildIco } from "../src/lib/ico";
+import { brandMarkSvg } from "../src/lib/site/brand";
+import { buildIco } from "../src/lib/site/ico";
 
 const root = path.resolve(__dirname, "..");
 const png = (svg: string, size: number) => sharp(Buffer.from(svg), { density: 384 }).resize(size, size).png({ compressionLevel: 9 }).toBuffer();

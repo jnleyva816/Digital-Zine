@@ -2,7 +2,7 @@
 
 import { useState, type RefObject } from "react";
 import { ImagePlus } from "lucide-react";
-import { formatBytes, MAX_UPLOAD_BYTES } from "@/lib/limits";
+import { formatBytes, MAX_UPLOAD_BYTES } from "@/lib/billing/limits";
 import { ACCEPTED_IMAGE_TYPES } from "./types";
 
 export interface UploadDropzoneProps {

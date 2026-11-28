@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 /** Auth gate outside the loading boundary, so signed-out visitors get a real redirect. */
 export default async function BillingLayout({ children }: { children: React.ReactNode }) {

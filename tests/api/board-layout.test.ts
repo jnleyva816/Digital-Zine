@@ -1,16 +1,16 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { DELETE as DELETE_BOARD, PATCH as PATCH_BOARD } from "@/app/api/boards/[id]/route";
 import { GET, PUT } from "@/app/api/boards/[id]/layout/route";
 import { POST as ADD_NOTE } from "@/app/api/boards/[id]/notes/route";
 import { DELETE as DELETE_NOTE, PATCH as PATCH_NOTE } from "@/app/api/boards/[id]/notes/[noteId]/route";
 import { DELETE as DELETE_ASSET, PATCH as PATCH_ASSET } from "@/app/api/assets/[id]/route";
-import { MAX_BOARD_NOTES } from "@/lib/board-layout";
+import { MAX_BOARD_NOTES } from "@/lib/board/board-layout";
 import { createAsset, createBoard, createTestUser, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
 // DIG-85: each board remembers its free-form layout and notes.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 type User = Awaited<ReturnType<typeof createTestUser>>;

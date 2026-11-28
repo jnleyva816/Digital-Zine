@@ -1,4 +1,4 @@
-import type { ExifData } from "@/lib/types";
+import type { ExifData } from "@/lib/zine/types";
 import type { BoardAsset } from "./types";
 
 export function assetLabel(asset: BoardAsset, index: number): string {

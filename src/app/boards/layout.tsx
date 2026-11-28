@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 /**
  * Auth gate for /boards (DIG-25). Like /board, it sits outside the `loading.tsx` boundary so

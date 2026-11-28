@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, MailCheck } from "lucide-react";
-import { forgotPasswordSchema } from "@/lib/password-reset-schema";
+import { forgotPasswordSchema } from "@/lib/auth/password-reset-schema";
 
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20";

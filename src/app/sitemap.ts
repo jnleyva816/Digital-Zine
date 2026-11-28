@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
 import { prisma } from "@/lib/prisma";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { absoluteUrl } from "@/lib/site";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
+import { absoluteUrl } from "@/lib/site/site";
 
 // What is published changes all the time; build time knows nothing about it.
 export const dynamic = "force-dynamic";

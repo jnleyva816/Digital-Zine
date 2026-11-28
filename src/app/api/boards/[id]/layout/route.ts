@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { layoutChangeSchema } from "@/lib/board-layout";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { layoutChangeSchema } from "@/lib/board/board-layout";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 type Context = { params: Promise<{ id: string }> };
 

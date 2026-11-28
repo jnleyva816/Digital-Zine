@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, Check } from "lucide-react";
-import { landingTiers, SIGNUP_HREF, type LandingTier } from "@/lib/landing";
+import { landingTiers, SIGNUP_HREF, type LandingTier } from "@/lib/site/landing";
 
 const focus =
   "focus-visible:outline-solid focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-vermilion-600";

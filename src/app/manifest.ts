@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/site/brand";
 
 /** Lets a phone add the site to its home screen. No service worker, so it makes no promise about offline use (DIG-105). */
 export default function manifest(): MetadataRoute.Manifest {

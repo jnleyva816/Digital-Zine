@@ -1,5 +1,5 @@
 import { ImageResponse } from "next/og";
-import { BRAND } from "@/lib/brand";
+import { BRAND } from "@/lib/site/brand";
 
 /** The default share image: the landing page, and any page without its own (DIG-105). */
 export const alt = "Folio: photo zines you can flip";

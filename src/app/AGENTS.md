@@ -14,7 +14,7 @@
 ## API routes
 - Every write route, presign, and PDF: the 401 check first, then `limitRequest`. Scope ownership in the query's `where`, not after the read.
 - Routes that take a storage key check it with `src/lib/storage/keys.ts` first. The local PUT never decodes segments itself.
-- Anything that changes what readers see revalidates the public zine (`src/lib/public-zine-cache.ts`).
+- Anything that changes what readers see revalidates the public zine (`src/lib/zine/public-zine-cache.ts`).
 - `GET /api/pdf/[slug]` is owner-only (404 for anyone else) and sends `Cache-Control: private, no-store`.
 - `GET /api/assets?boardId=&limit=&cursor=` pages the board, and `?ids=` serves the processing poll. Reorder treats the sent ids as the loaded prefix and renumbers the whole board in one SQL statement.
 - `DELETE /api/assets/[id]` returns 409 while a zine page uses the photo.

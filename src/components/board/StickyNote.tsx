@@ -1,8 +1,8 @@
 "use client";
 
 import { memo, useEffect, useLayoutEffect, useRef } from "react";
-import { NOTE_TEXT_MAX, type BoardNote } from "@/lib/board-layout";
-import type { Corner } from "@/lib/freeform";
+import { NOTE_TEXT_MAX, type BoardNote } from "@/lib/board/board-layout";
+import type { Corner } from "@/lib/board/freeform";
 import { placedTransform, ResizeHandles } from "./PlacedPhoto";
 
 /** A note's height before it has been measured, and its least height. */

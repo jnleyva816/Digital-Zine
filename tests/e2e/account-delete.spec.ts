@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { createUserWithPhotos, defaultBoardId, deleteUser, signIn, storedFileExists, testDb } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 import { startMailSink } from "./mail-sink";
 
 // DIG-108: deleting your own account, through the real page.

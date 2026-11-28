@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getPublicProfile } from "@/lib/public-profile";
-import { getPublicZine } from "@/lib/public-zine";
+import { getPublicProfile } from "@/lib/profile/public-profile";
+import { getPublicZine } from "@/lib/zine/public-zine";
 
 // DIG-111: the public profile at /u/<handle>.
 const created: string[] = [];

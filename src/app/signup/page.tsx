@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
-import { googleEnabled } from "@/lib/google-config";
+import { auth } from "@/lib/auth/auth";
+import { googleEnabled } from "@/lib/auth/google-config";
 import { AuthCard } from "@/components/AuthCard";
 import { SignUpForm } from "@/components/SignUpForm";
 

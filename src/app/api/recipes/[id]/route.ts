@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { fujiRecipeSchema } from "@/lib/fuji-recipe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { fujiRecipeSchema } from "@/lib/fuji/fuji-recipe";
 import { prisma } from "@/lib/prisma";
-import { duplicateNameMessage, recipeNameTaken, settingsOf, syncLinkedPhotos, toSavedRecipe } from "@/lib/recipes";
-import { withUserLock } from "@/lib/usage";
-import { limitRequest } from "@/lib/rate-limit";
-import { revalidateZinesUsingAssets } from "@/lib/public-zine-cache";
+import { duplicateNameMessage, recipeNameTaken, settingsOf, syncLinkedPhotos, toSavedRecipe } from "@/lib/fuji/recipes";
+import { withUserLock } from "@/lib/billing/usage";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { revalidateZinesUsingAssets } from "@/lib/zine/public-zine-cache";
 
 const updateSchema = z.object({ recipe: fujiRecipeSchema });
 type Context = { params: Promise<{ id: string }> };

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { VIEW_AS_FREE_COOKIE } from "@/lib/entitlements";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { VIEW_AS_FREE_COOKIE } from "@/lib/billing/entitlements";
 
 const bodySchema = z.object({ viewAsFree: z.boolean() });
 

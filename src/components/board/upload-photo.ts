@@ -1,4 +1,4 @@
-import type { FoundRecipe } from "@/lib/fuji-makernote";
+import type { FoundRecipe } from "@/lib/fuji/fuji-makernote";
 import type { PreparedUpload } from "@/lib/storage/types";
 import { readApiError, toBoardAsset, type BoardAsset } from "./types";
 
@@ -27,7 +27,7 @@ export async function uploadOne(
 ): Promise<{ asset: BoardAsset; foundRecipe: FoundRecipe | null }> {
   onStage("reading");
   // Loaded on demand so exifreader stays out of the board's initial bundle.
-  const { extractExifFromFile } = await import("@/lib/exif-client");
+  const { extractExifFromFile } = await import("@/lib/fuji/exif-client");
   const { exif, foundRecipe } = await extractExifFromFile(file);
 
   onStage("uploading");

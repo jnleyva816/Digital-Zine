@@ -2,7 +2,7 @@
 
 import { useId, useState } from "react";
 import { readApiError } from "@/components/board/types";
-import { ACCESS_CODE_MAX, ACCESS_CODE_MIN } from "@/lib/zine-access-rules";
+import { ACCESS_CODE_MAX, ACCESS_CODE_MIN } from "@/lib/zine/zine-access-rules";
 
 export interface ZineAccess {
   visibility: "public" | "private";

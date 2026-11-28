@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { GET as LIST } from "@/app/api/admin/subscriptions/route";
 import { resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-139: admins see who is paying, read-only, with a link to Stripe.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 const created: string[] = [];
 const TAG = randomUUID().slice(0, 8);

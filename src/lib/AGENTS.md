@@ -2,6 +2,9 @@
 
 Constraints the code does not make obvious. Extend these modules; do not rewrite them unless a bug blocks the ticket.
 
+## Folders (DIG-153)
+`billing/` plans, Stripe, limits, usage. `admin/` admin panel logic. `auth/` sign-in, sign-up, sessions, password reset, account deletion. `board/` boards, layout, pan-zoom, photo edit. `pdf/` PDF export, fonts, `pdf-templates/`. `fuji/` recipes and maker notes. `zine/` public zines, access, shared types. `profile/` handles and profiles. `site/` SEO, brand, CSP, headers, image loader. `infra/` email, rate limit, request origin. `media/` and `storage/` are unchanged. `env.ts`, `prisma.ts`, `utils.ts` stay at the top. Tests sit next to their source. Import with `@/lib/<folder>/<file>`.
+
 ## Media and photos
 - The worker starts from `src/instrumentation-node.ts`, which `src/instrumentation.ts` imports only when `NEXT_RUNTIME === "nodejs"`. Importing Node-only code (sharp, pg-boss) straight from `instrumentation.ts` breaks `next dev`. pg-boss keeps its tables in the `pgboss` schema.
 - `media/variant-urls.ts` is client-safe; `variants.ts` imports sharp. `variantWidthsFor` is the only answer to which copies exist (copies are made only below a photo's own width).

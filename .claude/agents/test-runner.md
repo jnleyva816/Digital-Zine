@@ -13,7 +13,7 @@ You run the commands you are given in the Digital Zine repository and report wha
 - Run the commands one after another, never in parallel. Vitest and Playwright both reset the shared test database when they start.
 - Send each command's output to its own file (`mktemp`), never to the screen. Read the end of the file for the summary, and search it for failures.
 - If a test fails in a way that looks flaky (a timeout, or a navigation race), rerun only that test once and say so.
-- Expected, not a failure: `npx tsc --noEmit` reporting `src/lib/exif-client.test.ts:10`.
+- Expected, not a failure: `npx tsc --noEmit` reporting `src/lib/fuji/exif-client.test.ts:10`.
 
 ## Environment problems
 Report these and stop. Do not work around them.

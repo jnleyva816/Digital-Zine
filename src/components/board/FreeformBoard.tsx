@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { Hand, Maximize, MousePointer2, PanelLeftOpen, StickyNote as NoteIcon } from "lucide-react";
-import { prefersReducedMotion, transitionBoard } from "@/lib/board-transition";
-import { MAX_BOARD_NOTES, type BoardNote, type Placement } from "@/lib/board-layout";
-import { NUDGE, SIZE_STEP, bounds, clampWidth, fitView, nextTilt, resizeFrom, scatter, tidy, toBoard, zoomAt, type BoardViewport, type Corner, type Item } from "@/lib/freeform";
+import { prefersReducedMotion, transitionBoard } from "@/lib/board/board-transition";
+import { MAX_BOARD_NOTES, type BoardNote, type Placement } from "@/lib/board/board-layout";
+import { NUDGE, SIZE_STEP, bounds, clampWidth, fitView, nextTilt, resizeFrom, scatter, tidy, toBoard, zoomAt, type BoardViewport, type Corner, type Item } from "@/lib/board/freeform";
 import { assetLabel } from "./board-utils";
 import { PhotoTray } from "./PhotoTray";
 import { PlacedPhoto, placedHeight, placedTransform } from "./PlacedPhoto";

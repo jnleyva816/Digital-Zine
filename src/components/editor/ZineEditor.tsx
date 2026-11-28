@@ -6,17 +6,17 @@ import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, ImagePlus, Trash2 } from "lucide-react";
 import { readApiError, toBoardAsset, type BoardAsset } from "@/components/board/types";
 import { ZineAccessPanel, type ZineAccess } from "./ZineAccessPanel";
-import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
+import { BOARD_PAGE_SIZE } from "@/lib/board/board-pages";
 import { ZineBoardPicker } from "./ZineBoardPicker";
 import { EditedPhoto } from "@/components/EditedPhoto";
 
 const dimsOf = (a: BoardAsset) => (a.width && a.height ? { width: a.width, height: a.height } : null);
 import { assetLabel } from "@/components/board/board-utils";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { DeleteZineDialog } from "./DeleteZineDialog";
 import { PdfExport } from "./PdfExport";
 import type { PreviewZine } from "./PdfPagePreview";
-import type { PdfSettings } from "@/lib/pdf-settings";
+import type { PdfSettings } from "@/lib/pdf/pdf-settings";
 import {
   addPage,
   canPublish,

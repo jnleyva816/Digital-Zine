@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { COVERS, type CoverStyle } from "@/lib/pdf-settings";
+import { COVERS, type CoverStyle } from "@/lib/pdf/pdf-settings";
 import { WebPhoto, nameOf, onePerPhoto, type PreviewZine } from "./PdfPagePreview";
 import { Choice, Group } from "./pdf-panel-ui";
 import type { PdfStyle } from "./usePdfStyle";

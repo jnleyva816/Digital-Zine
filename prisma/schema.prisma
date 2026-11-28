@@ -142,7 +142,7 @@ model Recipe {
   ownerId   String
   owner     User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   name      String
-  /// The recipe's settings without its name; see `src/lib/fuji-recipe.ts`.
+  /// The recipe's settings without its name; see `src/lib/fuji/fuji-recipe.ts`.
   settings  Json         @db.JsonB
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
@@ -232,7 +232,7 @@ model MediaAsset {
   height          Int?
   /// A tiny inline WebP shown while the photo loads.
   blurDataUrl     String?
-  /// Crop, frame, and board card size (DIG-33): see `src/lib/photo-edit.ts`. Null is unedited.
+  /// Crop, frame, and board card size (DIG-33): see `src/lib/board/photo-edit.ts`. Null is unedited.
   /// The stored image is never changed.
   edit            Json?           @db.JsonB
   kind            AssetKind       @default(photo)

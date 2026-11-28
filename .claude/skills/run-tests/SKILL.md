@@ -22,7 +22,7 @@ description: How to run Digital Zine tests without flooding the context. Covers 
 
 ## Commands
 - Unit, component, API: `npx vitest run <file> [<file>...]`.
-- TypeScript: `npx tsc --noEmit`. Known errors are listed in `.githooks/tsc-known-errors.txt` (today one, at `src/lib/exif-client.test.ts:10`, until `DIG-123`); only new errors count. Delete a line there once its error is fixed.
+- TypeScript: `npx tsc --noEmit`. Known errors are listed in `.githooks/tsc-known-errors.txt` (today one, at `src/lib/fuji/exif-client.test.ts:10`, until `DIG-123`); only new errors count. Delete a line there once its error is fixed.
 - E2E: `npm run test:e2e -- tests/e2e/<spec>.spec.ts --reporter=line`.
   - It builds into `.next-e2e/` first, which is slow.
   - The port comes from `E2E_PORT`, then `.env.test.local` (worktrees), then 3417. If `next dev` holds 3417 in the main checkout, prefix the command with `E2E_PORT=3418`. The mail sink takes the port + 100.

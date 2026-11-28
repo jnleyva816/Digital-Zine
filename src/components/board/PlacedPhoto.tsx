@@ -2,9 +2,9 @@
 
 import { memo } from "react";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import type { Placement } from "@/lib/board-layout";
-import type { Corner } from "@/lib/freeform";
-import { DEFAULT_EDIT, frameLayout } from "@/lib/photo-edit";
+import type { Placement } from "@/lib/board/board-layout";
+import type { Corner } from "@/lib/board/freeform";
+import { DEFAULT_EDIT, frameLayout } from "@/lib/board/photo-edit";
 import type { BoardAsset } from "./types";
 
 const BORDER = 8;

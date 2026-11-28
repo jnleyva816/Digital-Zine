@@ -5,8 +5,8 @@ import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowRight, KeyRound } from "lucide-react";
-import { safeCallbackUrl } from "@/lib/safe-callback-url";
-import { useResendVerification } from "@/lib/use-resend-verification";
+import { safeCallbackUrl } from "@/lib/auth/safe-callback-url";
+import { useResendVerification } from "@/lib/auth/use-resend-verification";
 import { GoogleButton, OrDivider } from "@/components/GoogleButton";
 
 /** Shown only once the person has proven who they are (DIG-137). */

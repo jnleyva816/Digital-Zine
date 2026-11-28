@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { boardCards, createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 /** DIG-34: photos get a name in the app; the camera file name is kept. */
 

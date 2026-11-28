@@ -2,12 +2,12 @@ import { randomUUID } from "node:crypto";
 import { revalidateTag } from "next/cache";
 import { afterAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { PATCH } from "@/app/api/account/profile/route";
 import { jsonRequest, resetRateLimits, sessionFor } from "./helpers";
 
 // DIG-111: a creator sets their handle, display name, and bio.
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 const created: string[] = [];
 const TAG = randomUUID().replaceAll("-", "").slice(0, 8);

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import fs from "node:fs/promises";
 import { expect, test, type Page } from "@playwright/test";
-import { defaultPdfSettings } from "../../src/lib/pdf-settings";
+import { defaultPdfSettings } from "../../src/lib/pdf/pdf-settings";
 import { readPdf } from "../pdf-text";
 import { createUserWithPhotos, deleteUser, makePro, signIn, testDb, defaultBoardId } from "./helpers";
 

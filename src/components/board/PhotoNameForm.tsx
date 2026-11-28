@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { PHOTO_NAME_MAX } from "@/lib/limits";
+import { PHOTO_NAME_MAX } from "@/lib/billing/limits";
 
 /**
  * Names a photo in the app (DIG-34). The camera's file name is kept; saving blank clears the name

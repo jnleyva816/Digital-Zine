@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
 import sitemap from "@/app/sitemap";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { createAsset, createTestUser, createZineUsing, deleteTestUser } from "./helpers";
 
 // DIG-106: the sitemap lists exactly what search engines may index.

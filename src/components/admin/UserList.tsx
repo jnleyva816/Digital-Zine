@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { signOut } from "next-auth/react";
-import type { AdminUser, AdminUserPage } from "@/lib/admin-users";
+import type { AdminUser, AdminUserPage } from "@/lib/admin/admin-users";
 import { OFFLINE, badge, day, focusRing, plural, primary, secondary } from "./styles";
 
 interface UserListProps {

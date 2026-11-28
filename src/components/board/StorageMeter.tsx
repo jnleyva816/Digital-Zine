@@ -1,4 +1,4 @@
-import { ACCOUNT_STORAGE_BYTES, formatBytes } from "@/lib/limits";
+import { ACCOUNT_STORAGE_BYTES, formatBytes } from "@/lib/billing/limits";
 
 /** How much of the account's 2 GB is used, across all boards (DIG-32, DIG-25). Warns from 90%. */
 export function StorageMeter({ usedBytes }: { usedBytes: number }) {

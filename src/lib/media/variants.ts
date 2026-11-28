@@ -1,5 +1,5 @@
 import sharp, { type Sharp } from "sharp";
-import { AVIF_QUALITY } from "@/lib/limits";
+import { AVIF_QUALITY } from "@/lib/billing/limits";
 import { variantWidthsFor } from "./variant-urls";
 
 export { pickVariantUrl, splitSourceWidth, variantKeys, variantWidthsFor, withSourceWidth } from "./variant-urls";

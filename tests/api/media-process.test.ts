@@ -7,7 +7,7 @@ import { prisma } from "@/lib/prisma";
 import { processAsset } from "@/lib/media/process";
 import { writeLocalObject } from "@/lib/storage/local";
 import { revalidateTag } from "next/cache";
-import { publicZineTag } from "@/lib/public-zine";
+import { publicZineTag } from "@/lib/zine/public-zine";
 import { createAsset, createTestUser, defaultBoardId, deleteTestUser, resetRateLimits } from "./helpers";
 
 let me: Awaited<ReturnType<typeof createTestUser>>;

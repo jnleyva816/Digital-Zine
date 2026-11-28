@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { enqueueProcessing } from "@/lib/media/queue";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 /** Retries a photo whose processing failed (DIG-26). */
 export async function POST(_req: Request, context: { params: Promise<{ id: string }> }) {

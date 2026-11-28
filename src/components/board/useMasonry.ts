@@ -1,8 +1,8 @@
 "use client";
 
 import { useLayoutEffect, useMemo, useState, type CSSProperties } from "react";
-import { MASONRY_GAP, masonryColumns, packMasonry } from "@/lib/masonry";
-import { DEFAULT_EDIT, frameLayout } from "@/lib/photo-edit";
+import { MASONRY_GAP, masonryColumns, packMasonry } from "@/lib/board/masonry";
+import { DEFAULT_EDIT, frameLayout } from "@/lib/board/photo-edit";
 import type { BoardAsset } from "./types";
 
 /** A card's caption, until the card has been measured. */

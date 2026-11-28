@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { BoardNote, NoteSpot, Placement } from "@/lib/board-layout";
+import type { BoardNote, NoteSpot, Placement } from "@/lib/board/board-layout";
 import { readApiError } from "./types";
 
 type NewNote = Omit<BoardNote, "id" | "text">;

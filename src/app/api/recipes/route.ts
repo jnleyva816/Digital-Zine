@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { fujiRecipeSchema } from "@/lib/fuji-recipe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { fujiRecipeSchema } from "@/lib/fuji/fuji-recipe";
 import { prisma } from "@/lib/prisma";
-import { duplicateNameMessage, listSavedRecipes, recipeNameTaken, settingsOf, toSavedRecipe } from "@/lib/recipes";
-import { withUserLock } from "@/lib/usage";
-import { limitRequest } from "@/lib/rate-limit";
+import { duplicateNameMessage, listSavedRecipes, recipeNameTaken, settingsOf, toSavedRecipe } from "@/lib/fuji/recipes";
+import { withUserLock } from "@/lib/billing/usage";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const createSchema = z.object({
   recipe: fujiRecipeSchema,

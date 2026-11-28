@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { getOrCreateDefaultBoard } from "@/lib/boards";
-import { withUserLock } from "@/lib/usage";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { getOrCreateDefaultBoard } from "@/lib/board/boards";
+import { withUserLock } from "@/lib/billing/usage";
 
 /** `/board` predates multiple boards (DIG-25); it opens the creator's first board. */
 export default async function BoardRedirect() {

@@ -2,9 +2,9 @@
 
 import { useId, useState } from "react";
 import Link from "next/link";
-import { HANDLE_MAX, checkHandle, profilePath } from "@/lib/handles";
-import { BIO_MAX } from "@/lib/profile-rules";
-import { NAME_MAX } from "@/lib/signup";
+import { HANDLE_MAX, checkHandle, profilePath } from "@/lib/profile/handles";
+import { BIO_MAX } from "@/lib/profile/profile-rules";
+import { NAME_MAX } from "@/lib/auth/signup";
 
 const inputClass =
   "mt-1.5 w-full rounded-xl border border-paper-300 bg-white px-4 py-2.5 text-sm text-ink-900 shadow-xs focus:border-vermilion-500 focus:outline-hidden focus:ring-2 focus:ring-vermilion-500/20 aria-invalid:border-red-500";

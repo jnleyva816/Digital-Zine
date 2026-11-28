@@ -1,5 +1,5 @@
 import { PrismaClient } from "@prisma/client";
-import { getOrCreateDefaultBoard } from "../src/lib/boards";
+import { getOrCreateDefaultBoard } from "../src/lib/board/boards";
 import { seedLargeBoard } from "./large-board";
 
 /**

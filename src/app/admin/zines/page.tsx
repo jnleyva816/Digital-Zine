@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { listAdminZines, type AdminZineFilter } from "@/lib/admin-zines";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { listAdminZines, type AdminZineFilter } from "@/lib/admin/admin-zines";
 import { prisma } from "@/lib/prisma";
 import { StudioHeader } from "@/components/StudioHeader";
 import { AdminNav } from "@/components/admin/AdminNav";

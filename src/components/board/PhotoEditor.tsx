@@ -13,7 +13,7 @@ import {
   isDefaultEdit,
   type PhotoEdit,
   type PhotoFrame,
-} from "@/lib/photo-edit";
+} from "@/lib/board/photo-edit";
 import { quoteList } from "./board-utils";
 
 /** How far one arrow-key press moves the photo, as a fraction of its width or height. */

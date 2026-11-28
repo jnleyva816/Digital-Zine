@@ -3,14 +3,14 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { PUT } from "@/app/api/uploads/local/[...key]/route";
 import { POST as PRESIGN } from "@/app/api/uploads/presign/route";
 import { GET as MEDIA } from "@/app/api/media/[...key]/route";
 import { writeLocalObject } from "@/lib/storage/local";
 import { createTestUser, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;

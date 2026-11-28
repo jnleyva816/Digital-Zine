@@ -2,7 +2,7 @@
 import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { DEFAULT_EDIT } from "@/lib/photo-edit";
+import { DEFAULT_EDIT } from "@/lib/board/photo-edit";
 import { boardAsset, json } from "./board-test-utils";
 import { VisionBoard } from "./VisionBoard";
 

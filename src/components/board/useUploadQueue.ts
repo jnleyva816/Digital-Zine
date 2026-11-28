@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { FoundRecipe } from "@/lib/fuji-makernote";
-import { checkUpload } from "@/lib/limits";
+import type { FoundRecipe } from "@/lib/fuji/fuji-makernote";
+import { checkUpload } from "@/lib/billing/limits";
 import { ACCEPTED_IMAGE_TYPES, type BoardAsset } from "./types";
 import { uploadOne, type UploadItem } from "./upload-photo";
 

@@ -2,11 +2,11 @@
 
 import { useRef, useState } from "react";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/photo-edit";
+import { DEFAULT_EDIT, frameLayout, type PhotoEdit } from "@/lib/board/photo-edit";
 import { Camera, Maximize2, RotateCw, SlidersHorizontal } from "lucide-react";
 import { CameraBack, CopyRecipeButton, RecipeBack } from "@/components/FilmCard";
-import { shotOnLabel } from "@/lib/film-card";
-import type { ExifData, RecipeData } from "@/lib/types";
+import { shotOnLabel } from "@/lib/pdf/film-card";
+import type { ExifData, RecipeData } from "@/lib/zine/types";
 
 export interface FlipCardProps {
   pageNumber: number;

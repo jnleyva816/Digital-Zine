@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/auth";
 
 /** Auth gate, so signed-out visitors get a real redirect (DIG-108). */
 export default async function AccountLayout({ children }: { children: React.ReactNode }) {

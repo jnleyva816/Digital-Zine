@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 import { createUserWithPhotos, defaultBoardId, deleteUser, signIn, testDb } from "./helpers";
 
 /** DIG-102: a zine's public address includes its creator, so slugs only need to be unique per creator. */

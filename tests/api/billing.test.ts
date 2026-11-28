@@ -2,16 +2,16 @@ import { randomUUID } from "node:crypto";
 import Stripe from "stripe";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { getStripeClient } from "@/lib/stripe";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { getStripeClient } from "@/lib/billing/stripe";
 import { POST as CHECKOUT } from "@/app/api/billing/checkout/route";
 import { POST as PORTAL } from "@/app/api/billing/portal/route";
 import { POST as WEBHOOK } from "@/app/api/billing/webhook/route";
 import { createTestUser, deleteTestUser, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
-vi.mock("@/lib/stripe", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/stripe")>()),
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/billing/stripe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/billing/stripe")>()),
   getStripeClient: vi.fn(),
 }));
 const mockedUser = vi.mocked(getAuthenticatedUser);

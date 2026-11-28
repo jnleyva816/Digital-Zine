@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { appOrigin, automaticTaxEnabled, BILLING_NOT_CONFIGURED, tierForStatus } from "@/lib/billing";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { appOrigin, automaticTaxEnabled, BILLING_NOT_CONFIGURED, tierForStatus } from "@/lib/billing/billing";
 import { prisma } from "@/lib/prisma";
-import { getStripeClient, PRO_MONTHLY_PRICE_CENTS } from "@/lib/stripe";
+import { getStripeClient, PRO_MONTHLY_PRICE_CENTS } from "@/lib/billing/stripe";
 
 export const runtime = "nodejs";
 

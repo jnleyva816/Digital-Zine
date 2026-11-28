@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import type { AdminZine, AdminZineFilter, AdminZinePage } from "@/lib/admin-zines";
+import type { AdminZine, AdminZineFilter, AdminZinePage } from "@/lib/admin/admin-zines";
 import { OFFLINE, badge, day, focusRing, plural, secondary } from "./styles";
 
 const FILTERS: { value: AdminZineFilter; label: string }[] = [

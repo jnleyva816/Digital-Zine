@@ -17,7 +17,7 @@ import bcrypt from "bcryptjs";
 import { Prisma, PrismaClient } from "@prisma/client";
 import { chromium, expect, type Page } from "@playwright/test";
 import { deleteAccount } from "../src/lib/storage/cleanup";
-import { publicZinePath } from "../src/lib/public-zine-path";
+import { publicZinePath } from "../src/lib/zine/public-zine-path";
 
 try {
   process.loadEnvFile(".env");

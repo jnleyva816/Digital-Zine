@@ -2,8 +2,8 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { FujiRecipe } from "@/lib/fuji-recipe";
-import type { FoundRecipe } from "@/lib/fuji-makernote";
+import type { FujiRecipe } from "@/lib/fuji/fuji-recipe";
+import type { FoundRecipe } from "@/lib/fuji/fuji-makernote";
 import { RecipeEditor } from "./RecipeEditor";
 
 function setup(props: Partial<React.ComponentProps<typeof RecipeEditor>> = {}) {

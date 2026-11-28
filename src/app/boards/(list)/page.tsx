@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { listBoards } from "@/lib/boards";
-import { boardLimitFor, boardLimitMessage } from "@/lib/limits";
-import { publicZinePath } from "@/lib/public-zine-path";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { listBoards } from "@/lib/board/boards";
+import { boardLimitFor, boardLimitMessage } from "@/lib/billing/limits";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
 import { prisma } from "@/lib/prisma";
-import { withUserLock } from "@/lib/usage";
+import { withUserLock } from "@/lib/billing/usage";
 import { StudioHeader } from "@/components/StudioHeader";
 import { BoardList } from "@/components/boards/BoardList";
 

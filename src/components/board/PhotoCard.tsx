@@ -15,8 +15,8 @@ import {
 } from "lucide-react";
 import { EditedPhoto } from "@/components/EditedPhoto";
 import { Windowed } from "@/components/Windowed";
-import type { GridLayout } from "@/lib/board-layout";
-import { DEFAULT_EDIT, targetAspect } from "@/lib/photo-edit";
+import type { GridLayout } from "@/lib/board/board-layout";
+import { DEFAULT_EDIT, targetAspect } from "@/lib/board/photo-edit";
 import { photoMeta } from "./board-utils";
 import { MovePhotoPanel } from "./MovePhotoPanel";
 import { PhotoNameForm } from "./PhotoNameForm";

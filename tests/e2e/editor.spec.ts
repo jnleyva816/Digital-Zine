@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { createUserWithPhotos, deleteUser, signIn, testDb, defaultBoardId } from "./helpers";
-import { publicZinePath } from "../../src/lib/public-zine-path";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
 
 test.afterAll(async () => {
   await testDb.$disconnect();

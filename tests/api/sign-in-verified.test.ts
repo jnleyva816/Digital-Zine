@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { EmailNotVerifiedError, authorizeCredentials } from "@/lib/sign-in";
+import { EmailNotVerifiedError, authorizeCredentials } from "@/lib/auth/sign-in";
 import { resetRateLimits } from "./helpers";
 
 // DIG-94: password sign-in needs a verified email, and Google-only accounts have no password.

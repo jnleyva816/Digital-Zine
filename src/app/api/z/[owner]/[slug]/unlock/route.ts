@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { consumeRateLimit, limitRequest, peekRateLimit, rateLimitedResponse } from "@/lib/rate-limit";
-import { clientIp } from "@/lib/sign-in";
-import { checkAccessCode, signUnlock, UNLOCK_MAX_AGE_SECONDS, unlockCookieName } from "@/lib/zine-access";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
+import { consumeRateLimit, limitRequest, peekRateLimit, rateLimitedResponse } from "@/lib/infra/rate-limit";
+import { clientIp } from "@/lib/auth/sign-in";
+import { checkAccessCode, signUnlock, UNLOCK_MAX_AGE_SECONDS, unlockCookieName } from "@/lib/zine/zine-access";
 
 const unlockSchema = z.object({ code: z.string().trim().min(1).max(512) });
 

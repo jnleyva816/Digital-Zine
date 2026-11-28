@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { Check, Copy } from "lucide-react";
-import { copyRecipeText, recipeSettings, scalePosition, type Drawing, type FilmCardSetting } from "@/lib/film-card";
-import type { ExifData, RecipeData } from "@/lib/types";
+import { copyRecipeText, recipeSettings, scalePosition, type Drawing, type FilmCardSetting } from "@/lib/pdf/film-card";
+import type { ExifData, RecipeData } from "@/lib/zine/types";
 
 const pct = (n: number) => `${Math.round(n * 1000) / 10}%`;
 

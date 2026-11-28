@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { legacyZineAddress } from "@/lib/legacy-zine-url";
+import { legacyZineAddress } from "@/lib/zine/legacy-zine-url";
 import { createTestUser, defaultBoardId, deleteTestUser } from "./helpers";
 
 // DIG-102: /z/<slug> links shared before creators were in the address keep working.

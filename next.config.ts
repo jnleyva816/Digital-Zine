@@ -1,6 +1,6 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
-import { MAX_UPLOAD_BYTES } from "./src/lib/limits";
+import { MAX_UPLOAD_BYTES } from "./src/lib/billing/limits";
 
 const nextConfig: NextConfig = {
   // Playwright builds into its own folder so test runs never clobber a running `next dev`.
@@ -15,7 +15,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@react-pdf/renderer", "sharp", "pg-boss"],
   images: {
     loader: "custom",
-    loaderFile: "./src/lib/image-loader.ts",
+    loaderFile: "./src/lib/site/image-loader.ts",
     // Match the stored AVIF widths (DIG-26, `VARIANT_WIDTHS`), so a phone asks for the 480 px copy
     // instead of Next's default smallest of 640 px. Wider requests get the full-resolution copy.
     deviceSizes: [480, 960, 1600, 3840],

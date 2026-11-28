@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { limitRequest } from "@/lib/rate-limit";
-import { parseProfileInput } from "@/lib/profile-rules";
-import { updateProfile } from "@/lib/profile";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { parseProfileInput } from "@/lib/profile/profile-rules";
+import { updateProfile } from "@/lib/profile/profile";
 
 /** The signed-in creator changes their handle, display name, or bio (DIG-111). */
 export async function PATCH(req: Request) {

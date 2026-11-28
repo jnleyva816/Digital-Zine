@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/admin-guard";
-import { readCursor } from "@/lib/admin-users";
-import { listAdminZines, type AdminZineFilter } from "@/lib/admin-zines";
-import { limitRequest } from "@/lib/rate-limit";
+import { requireAdmin } from "@/lib/admin/admin-guard";
+import { readCursor } from "@/lib/admin/admin-users";
+import { listAdminZines, type AdminZineFilter } from "@/lib/admin/admin-zines";
+import { limitRequest } from "@/lib/infra/rate-limit";
 
 const FILTERS = new Set<AdminZineFilter>(["all", "public", "private"]);
 const ID = /^[A-Za-z0-9_-]{1,64}$/;

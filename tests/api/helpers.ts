@@ -1,8 +1,8 @@
 import { randomUUID } from "node:crypto";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { getOrCreateDefaultBoard } from "@/lib/boards";
-import type { getAuthenticatedUser } from "@/lib/auth";
+import { getOrCreateDefaultBoard } from "@/lib/board/boards";
+import type { getAuthenticatedUser } from "@/lib/auth/auth";
 
 type SessionUser = NonNullable<Awaited<ReturnType<typeof getAuthenticatedUser>>>;
 

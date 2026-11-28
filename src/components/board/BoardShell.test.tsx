@@ -2,7 +2,7 @@
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import type { Placement } from "@/lib/board-layout";
+import type { Placement } from "@/lib/board/board-layout";
 import { boardAsset, json } from "./board-test-utils";
 import { VisionBoard } from "./VisionBoard";
 

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { isRecentSignIn } from "@/lib/account-deletion";
-import { listAdminUsers } from "@/lib/admin-users";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { isRecentSignIn } from "@/lib/auth/account-deletion";
+import { listAdminUsers } from "@/lib/admin/admin-users";
 import { prisma } from "@/lib/prisma";
 import { StudioHeader } from "@/components/StudioHeader";
 import { AdminNav } from "@/components/admin/AdminNav";

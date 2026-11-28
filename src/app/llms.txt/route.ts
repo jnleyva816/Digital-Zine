@@ -1,4 +1,4 @@
-import { siteUrl } from "@/lib/site";
+import { siteUrl } from "@/lib/site/site";
 
 /**
  * /llms.txt (DIG-106), following https://llmstxt.org: a title, a one-paragraph summary, and sections

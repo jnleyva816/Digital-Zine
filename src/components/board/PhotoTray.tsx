@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from "react";
 import { Check, ImagePlus, PanelLeftClose, Search } from "lucide-react";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
+import { BOARD_PAGE_SIZE } from "@/lib/board/board-pages";
 import { LoadMore } from "./LoadMore";
 import { assetLabel } from "./board-utils";
 import { ACCEPTED_IMAGE_TYPES, readApiError, toBoardAsset, type BoardAsset } from "./types";

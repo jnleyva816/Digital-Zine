@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { listAdminSubscriptions } from "@/lib/admin-subscriptions";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { listAdminSubscriptions } from "@/lib/admin/admin-subscriptions";
 import { StudioHeader } from "@/components/StudioHeader";
 import { AdminNav } from "@/components/admin/AdminNav";
 import { SubscriptionList } from "@/components/admin/SubscriptionList";

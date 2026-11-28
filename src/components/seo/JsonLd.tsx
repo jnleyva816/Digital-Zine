@@ -1,4 +1,4 @@
-import { serializeJsonLd } from "@/lib/structured-data";
+import { serializeJsonLd } from "@/lib/site/structured-data";
 
 /**
  * A structured-data block for search engines (DIG-106). Browsers treat `application/ld+json` as data,

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
-import { publicZinePath } from "../../src/lib/public-zine-path";
-import { SECURITY_HEADERS } from "../../src/lib/security-headers";
+import { publicZinePath } from "../../src/lib/zine/public-zine-path";
+import { SECURITY_HEADERS } from "../../src/lib/site/security-headers";
 import { createUserWithPhotos, defaultBoardId, deleteUser, makePro, signIn, testDb, uploadAndProcess } from "./helpers";
 
 /**

@@ -2,8 +2,8 @@
 
 import { useEffect, useId, useRef, useState } from "react";
 import { X } from "lucide-react";
-import { matchSavedRecipe, type SavedRecipe } from "@/lib/recipe-library";
-import type { FoundRecipe } from "@/lib/fuji-makernote";
+import { matchSavedRecipe, type SavedRecipe } from "@/lib/fuji/recipe-library";
+import type { FoundRecipe } from "@/lib/fuji/fuji-makernote";
 import {
   COLOR_CHROME_LEVELS,
   DYNAMIC_RANGES,
@@ -21,7 +21,7 @@ import {
   steps,
   type FujiRecipe,
   type ToneKey,
-} from "@/lib/fuji-recipe";
+} from "@/lib/fuji/fuji-recipe";
 
 interface RecipeEditorProps {
   /** Asset label used in the dialog heading. */

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BOARD_PAGE_SIZE } from "@/lib/board-pages";
+import { BOARD_PAGE_SIZE } from "@/lib/board/board-pages";
 import { readApiError, toBoardAsset, type BoardAsset } from "./types";
 
 export interface BoardPagingOptions {

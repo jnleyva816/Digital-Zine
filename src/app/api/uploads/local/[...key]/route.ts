@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { uploadLimitResponse } from "@/lib/limit-response";
-import { checkUpload } from "@/lib/limits";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { uploadLimitResponse } from "@/lib/billing/limit-response";
+import { checkUpload } from "@/lib/billing/limits";
 import { contentTypeForKey, writeLocalObject } from "@/lib/storage/local";
 import { isValidStorageKey, isWellFormedStorageKey } from "@/lib/storage/keys";
-import { getAccountUsageBytes } from "@/lib/usage";
+import { getAccountUsageBytes } from "@/lib/billing/usage";
 
 export async function PUT(
   req: Request,

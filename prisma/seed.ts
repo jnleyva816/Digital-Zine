@@ -2,9 +2,9 @@ import bcrypt from "bcryptjs";
 import sharp from "sharp";
 import { PrismaClient } from "@prisma/client";
 import { writeLocalObject } from "../src/lib/storage/local";
-import { ZINE_TEMPLATE_ID } from "../src/lib/types";
-import { getOrCreateDefaultBoard } from "../src/lib/boards";
-import type { FujiRecipe } from "../src/lib/fuji-recipe";
+import { ZINE_TEMPLATE_ID } from "../src/lib/zine/types";
+import { getOrCreateDefaultBoard } from "../src/lib/board/boards";
+import type { FujiRecipe } from "../src/lib/fuji/fuji-recipe";
 
 const prisma = new PrismaClient();
 

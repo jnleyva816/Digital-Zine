@@ -1,7 +1,7 @@
 import localFont from "next/font/local";
 
 /**
- * The PDF's own font files for the style panel's preview (DIG-71): the same files `src/lib/pdf-fonts.ts`
+ * The PDF's own font files for the style panel's preview (DIG-71): the same files `src/lib/pdf/pdf-fonts.ts`
  * gives react-pdf. Not preloaded: a browser fetches a face only when the preview draws with it.
  */
 const fraunces = localFont({

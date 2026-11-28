@@ -1,4 +1,4 @@
-import { defaultPdfSettings } from "../../src/lib/pdf-settings";
+import { defaultPdfSettings } from "../../src/lib/pdf/pdf-settings";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { createUserWithPhotos, deleteUser, signIn, testDb, defaultBoardId } from "./helpers";

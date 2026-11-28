@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import { profilePath } from "@/lib/handles";
+import { profilePath } from "@/lib/profile/handles";
 import { shareImageUrl } from "@/lib/media/variant-urls";
-import { getPublicProfile, type PublicProfile } from "@/lib/public-profile";
+import { getPublicProfile, type PublicProfile } from "@/lib/profile/public-profile";
 
 /** A creator's public profile (DIG-111, decisions 0007 and 0022). */
 type Props = { params: Promise<{ handle: string }> };

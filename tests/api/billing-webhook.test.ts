@@ -3,15 +3,15 @@ import * as Sentry from "@sentry/nextjs";
 import Stripe from "stripe";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getStripeClient } from "@/lib/stripe";
+import { getStripeClient } from "@/lib/billing/stripe";
 import { POST as WEBHOOK } from "@/app/api/billing/webhook/route";
 import { createTestUser, deleteTestUser } from "./helpers";
 
 // DIG-15: what the webhook does when money is at risk. The owner decided on 20 Nov 2026:
 // a full refund of the latest payment cancels Pro at once; a dispute and an early fraud warning
 // only alert the owner. Every case also reports to Sentry.
-vi.mock("@/lib/stripe", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/lib/stripe")>()),
+vi.mock("@/lib/billing/stripe", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/lib/billing/stripe")>()),
   getStripeClient: vi.fn(),
 }));
 vi.mock("@sentry/nextjs", () => ({ captureMessage: vi.fn(), captureException: vi.fn() }));

@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Pencil, Plus, SlidersHorizontal, Trash2 } from "lucide-react";
-import type { FujiRecipe } from "@/lib/fuji-recipe";
-import type { SavedRecipe } from "@/lib/recipe-library";
+import type { FujiRecipe } from "@/lib/fuji/fuji-recipe";
+import type { SavedRecipe } from "@/lib/fuji/recipe-library";
 import { RecipeEditor } from "@/components/board/RecipeEditor";
 import { readApiError } from "@/components/board/types";
 

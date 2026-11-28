@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ArrowRight, MailCheck } from "lucide-react";
-import { PASSWORD_MAX, PASSWORD_MIN, signupSchema } from "@/lib/signup";
-import { useResendVerification } from "@/lib/use-resend-verification";
+import { PASSWORD_MAX, PASSWORD_MIN, signupSchema } from "@/lib/auth/signup";
+import { useResendVerification } from "@/lib/auth/use-resend-verification";
 import { GoogleButton, OrDivider } from "@/components/GoogleButton";
 
 const inputClass =

@@ -1,19 +1,19 @@
 import { NextResponse } from "next/server";
 import sharp from "sharp";
-import { getAuthenticatedUser } from "@/lib/auth";
-import { renderMiniZinePdfBuffer, renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf-zine";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
+import { renderMiniZinePdfBuffer, renderZinePdfBuffer, type PdfRenderedPageItem } from "@/lib/pdf/pdf-zine";
 import { readImageSize } from "@/lib/media/variants";
 import { duotone } from "@/lib/media/duotone";
-import { MINI_PHOTO_MINIMUM, miniPalette, pickMiniPages } from "@/lib/mini-zine";
-import { PALETTES, parsePdfSettings } from "@/lib/pdf-settings";
-import { publicZinePath } from "@/lib/public-zine-path";
-import { absoluteUrl } from "@/lib/site";
-import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/photo-edit";
+import { MINI_PHOTO_MINIMUM, miniPalette, pickMiniPages } from "@/lib/pdf/mini-zine";
+import { PALETTES, parsePdfSettings } from "@/lib/pdf/pdf-settings";
+import { publicZinePath } from "@/lib/zine/public-zine-path";
+import { absoluteUrl } from "@/lib/site/site";
+import { cropPixels, parsePhotoEdit, type PhotoEdit } from "@/lib/board/photo-edit";
 import { prisma } from "@/lib/prisma";
-import { limitRequest } from "@/lib/rate-limit";
-import { mapLimit } from "@/lib/concurrency";
+import { limitRequest } from "@/lib/infra/rate-limit";
+import { mapLimit } from "@/lib/infra/concurrency";
 import { readLocalObject } from "@/lib/storage/local";
-import { parseExif, parsePageContent, parseRecipe } from "@/lib/types";
+import { parseExif, parsePageContent, parseRecipe } from "@/lib/zine/types";
 
 export const runtime = "nodejs";
 

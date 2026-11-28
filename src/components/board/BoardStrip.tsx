@@ -2,8 +2,8 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties, type DragEvent, type KeyboardEvent, type ReactNode } from "react";
 import { EditedPhoto } from "@/components/EditedPhoto";
-import { DEFAULT_EDIT, frameLayout } from "@/lib/photo-edit";
-import { inView, photoDay, stripLayout } from "@/lib/strip";
+import { DEFAULT_EDIT, frameLayout } from "@/lib/board/photo-edit";
+import { inView, photoDay, stripLayout } from "@/lib/board/strip";
 import { assetLabel } from "./board-utils";
 import type { BoardAsset } from "./types";
 

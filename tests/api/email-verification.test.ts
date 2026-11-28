@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { consumeVerificationToken, issueVerificationToken, verificationLink } from "@/lib/email-verification";
+import { consumeVerificationToken, issueVerificationToken, verificationLink } from "@/lib/auth/email-verification";
 import { createTestUser, deleteTestUser } from "./helpers";
 
 // DIG-94: single-use, expiring links that prove the creator owns the email.

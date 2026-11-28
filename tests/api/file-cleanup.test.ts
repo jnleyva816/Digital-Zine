@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { prisma } from "@/lib/prisma";
-import { getAuthenticatedUser } from "@/lib/auth";
+import { getAuthenticatedUser } from "@/lib/auth/auth";
 import { DELETE } from "@/app/api/assets/[id]/route";
 import { processAsset } from "@/lib/media/process";
 import { deleteAccount, storedKeysFor } from "@/lib/storage/cleanup";
@@ -11,7 +11,7 @@ import { LocalStorageDriver, writeLocalObject } from "@/lib/storage/local";
 import sharp from "sharp";
 import { createAsset, createTestUser, createZineUsing, deleteTestUser, jsonRequest, params, resetRateLimits } from "./helpers";
 
-vi.mock("@/lib/auth", () => ({ getAuthenticatedUser: vi.fn() }));
+vi.mock("@/lib/auth/auth", () => ({ getAuthenticatedUser: vi.fn() }));
 const mockedUser = vi.mocked(getAuthenticatedUser);
 
 let me: Awaited<ReturnType<typeof createTestUser>>;
