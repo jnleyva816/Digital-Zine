@@ -1,0 +1,27 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "nix-shell",
+      "args": [
+        "--run",
+        "exec npx -y @playwright/mcp@latest --headless --executable-path \"$PLAYWRIGHT_CHROMIUM_EXECUTABLE\""
+      ]
+    },
+    "frontend-inspo": {
+      "command": "npx",
+      "args": ["-y", "frontend-inspo-mcp"]
+    },
+    "context7": {
+      "command": "npx",
+      "args": ["-y", "@upstash/context7-mcp"]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["shadcn@latest", "mcp"]
+    },
+    "figma": {
+      "type": "http",
+      "url": "https://mcp.figma.com/mcp"
+    }
+  }
+}

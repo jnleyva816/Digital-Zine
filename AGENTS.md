@@ -8,6 +8,10 @@ Linear is the source of truth for **what** to build and where each ticket stands
 
 Use the `start-ticket` skill (`.claude/skills/start-ticket/SKILL.md`; in Cursor, read that file and follow it). In short: read the short [Agent handoff](https://linear.app/joshsws/document/agent-handoff-1dfe2c98ac86) page, then only your ticket and its newest comment, which is the checkpoint. Do not read the archived handoff, the old log, or whole long documents "for context".
 
+## Environment (NixOS)
+
+There is no global Node. Always run `node`, `npm`, `npx`, `prisma`, `tsc`, `vitest`, `playwright`, and `next` through the repo's `shell.nix`: `nix-shell --run '<command>'`. Never use `nix shell nixpkgs#...` or bare `npm`. Add a missing tool to `shell.nix`.
+
 ## Hooks
 
 In Claude Code, `.claude/settings.json` runs hooks that cost no tokens. A session starts with the branch, the ticket ID, and the uncommitted files already printed. Commits and pushes on `main` are blocked, and a force-push or `gh pr merge` asks the owner. When files changed this session and are not committed, the owner sees a warning at the end of a turn. Once per clone, run `git config core.hooksPath .githooks`: the pre-commit hook then runs `tsc` when TypeScript is staged. `scripts/check-agent-docs.sh` enforces the size budgets in CI.
