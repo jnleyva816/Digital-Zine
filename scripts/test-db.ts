@@ -24,6 +24,16 @@ export function loadTestEnv(root: string = ROOT): Record<string, string> {
   );
 }
 
+/**
+ * The e2e server's port: an exported `E2E_PORT`, then the one in `.env.test.local` (a worktree's,
+ * DIG-144), then 3417. The mail sink listens on port + 100. The Playwright config and the mail sink
+ * both use this, so the app always sends mail where the sink listens (DIG-146).
+ */
+export function e2ePorts(): { port: number; mailPort: number } {
+  const port = Number(process.env.E2E_PORT ?? loadTestEnv().E2E_PORT ?? 3417);
+  return { port, mailPort: port + 100 };
+}
+
 export function assertTestDatabase(url: string | undefined): string {
   const name = url ? new URL(url).pathname.replace(/^\//, "") : "";
   if (!url || !name.endsWith("_test")) {

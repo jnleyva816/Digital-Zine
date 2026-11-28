@@ -1,7 +1,8 @@
 import http from "node:http";
+import { e2ePorts } from "../../scripts/test-db";
 
 /** The port the e2e server is told to send "Resend" requests to (see playwright.config.ts). */
-export const MAIL_PORT = Number(process.env.E2E_PORT ?? 3417) + 100;
+export const MAIL_PORT = e2ePorts().mailPort;
 
 export interface SentMail {
   to: string[];
